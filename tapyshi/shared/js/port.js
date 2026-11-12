@@ -1,319 +1,413 @@
-/* Макет переноса игротеки внутрь оболочки «Тапышей». Без сервера, цифры статичные. */
+/* Оболочка макета: светлый стиль page-designer + наши игры, 3D-питомец, ставки, MAX-приглашение. */
 (function () {
   'use strict';
-  var A = window.ART, IC = A.IC;
-  var GAMES = window.HUB_GAMES, PETS = window.HUB_PETS, ICONS = window.HUB_ICONS, META = window.HUB_META || {};
-  var $app = document.getElementById('app');
-  var $tabs = document.getElementById('tabs');
-  var $layer = document.getElementById('layer');
-  var $toast = document.getElementById('toast');
 
-  var TI_TASKS = '<svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="18" rx="3.5" fill="currentColor"/><rect x="8.5" y="2" width="7" height="4" rx="1.6" fill="#fff" opacity=".9"/><path d="M8 11.5 l2 2 4-4 M8 17 h8" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  var IC_EXIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M9 8l-4 4 4 4M5 12h10"/></svg>';
-  var LX = '<button class="lx" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+  var GAMES = window.HUB_GAMES || [];
+  var ICONS = window.HUB_ICONS || {};
+  var META = window.HUB_META || {};
+  var TAP = window.TAPYSHI;
 
-  // Статичный «игрок» как на снимке живой главной (home-progress): енот Булочка, 7 ур., 12 000 монет
   var ME = {
-    pet: 'raccoon', petName: 'Булочка', stage: 1, petLvl: 7, coins: 12000, trophies: 40,
-    energy: 330, maxEnergy: 330, tapPower: 1, hat: null, skin: null,
-    nextStageName: 'взрослого', nextLvl: 10
+    pet: 'raccoon',
+    petName: 'Булочка',
+    stage: 1,
+    stageName: 'Подросток',
+    nextStageName: 'Взрослый',
+    petLvl: 7,
+    nextLvl: 10,
+    coins: 12000,
+    energy: 330,
+    maxEnergy: 330,
+    tapPower: 1
   };
-  var HATS = [
-    { id: 'cap', name: 'Кепка', price: 100, own: true, wear: false },
-    { id: 'bow', name: 'Бантик', price: 500 },
-    { id: 'shades', name: 'Тёмные очки', price: 2000 },
-    { id: 'wreath', name: 'Венок', price: 6000 },
-    { id: 'ushanka', name: 'Ушанка', price: 15000 },
-    { id: 'crown', name: 'Корона', price: 50000 }
-  ];
-  var tryHat = null, trySkin = undefined, shopTab = 'hats';
+
+  var INVITE = 'https://max.ru/tapyshi_bot?startapp=duel_8F3K';
+  var STAKES = [50, 150, 300, 500];
+
   var tab = 'pet';
+  var curPage = 0;
+  var sheetId = null;
+  var sheetView = null;
+  var openId = null;
+  var frame = null;
+  var closeT = 0;
+  var searchT = 0;
+  var searchTick = 0;
+  var searchSec = 0;
+  var stake = 150;
+  var gamesLoaded = true;
+  var inClan = true;
+  var clanView = 'in';
+  var soundOn = true;
+  var dailyClaimed = false;
+  var shopTab = 't1';
+  var pendingBuy = null;
+  var equipped = null;
+  var owned = {};
+  var createEmblem = 'raccoon';
+  var overlayOpen = null;
+  var livePet = null;
 
-  function fmt(n) { return Math.floor(n || 0).toLocaleString('ru-RU').replace(/\u00a0|\u202f/g, ' '); }
-  function coin(v) { return '<span class="coinv">' + IC.coin + fmt(v) + '</span>'; }
-  function q(sel, root) { return (root || document).querySelector(sel); }
-  function qa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
-  function petURL(k, happy) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(PETS[k + (happy ? 'H' : 'N')]); }
-  function petArt(kind, o) {
-    o = o || {};
-    if (window.TAPYSHI && TAPYSHI.petSvg) return TAPYSHI.petSvg(kind || ME.pet, o);
-    return A.pet(kind || ME.pet, o);
-  }
-  function stagePet(o) {
-    o = o || {};
-    var st = o.stage != null ? o.stage : ME.stage;
-    var kind = o.pet || ME.pet;
-    // шляпы/скины есть только у старых SVG — оставляем их в магазине
-    if (o.hat || o.skin) {
-      return A.pet(kind, {
-        hat: o.hat !== undefined ? o.hat : ME.hat,
-        skin: o.skin !== undefined ? o.skin : ME.skin,
-        grow: st, cls: o.cls,
-        vb: o.vb || (st > 0 ? '0 -24 200 230' : undefined)
-      });
-    }
-    return petArt(kind, { cls: o.cls, happy: (o.cls || '').indexOf('happy') >= 0, mood: o.mood });
-  }
-  function stagePetHero() {
-    if (window.TAPYSHI && TAPYSHI.petHero) {
-      return TAPYSHI.petHero(ME.pet, { pose: 'neutral', cls: 'home-hero', tap: true });
-    }
-    return stagePet();
-  }
-  function ava(kind, hat, skin) {
-    return '<div class="ava c-' + kind + '">' + A.avatar(kind, { hat: hat, skin: skin }) + '</div>';
-  }
-  var toastT = 0;
-  function toast(msg) {
-    $toast.innerHTML = msg;
-    $toast.classList.add('on');
-    clearTimeout(toastT);
-    toastT = setTimeout(function () { $toast.classList.remove('on'); }, 2200);
-  }
-  function mockToast() { toast('Это макет — без сервера и покупок'); }
-  function closeLayer() { $layer.innerHTML = ''; }
-  function openSheet(html, cls) {
-    $layer.innerHTML = '<div class="dim" data-close="1"></div><div class="sheet' + (cls ? ' ' + cls : '') + '">' + LX + html + '</div>';
-    q('.lx', $layer).onclick = closeLayer;
-    q('.dim', $layer).onclick = closeLayer;
-  }
+  var CLAN_MEMBERS = [
+    { name: 'Булочка', role: 'Вы · лидер', pet: 'raccoon', pts: 1240, me: true },
+    { name: 'Мила', role: 'Гусь', pet: 'goose', pts: 980 },
+    { name: 'Тима', role: 'Дракон', pet: 'dragon', pts: 760 },
+    { name: 'Лера', role: 'Капибара', pet: 'capybara', pts: 510 }
+  ];
+  var CLANS = [
+    { name: 'Пончики', pet: 'raccoon', n: 4, pts: 3490, mine: true },
+    { name: 'Северные', pet: 'goose', n: 8, pts: 5120 },
+    { name: 'Огненные', pet: 'dragon', n: 6, pts: 4710 },
+    { name: 'Тихие воды', pet: 'capybara', n: 5, pts: 2880 }
+  ];
+  var TASKS = [
+    { id: 'login', title: 'Зайти сегодня', reward: 200, ready: true },
+    { id: 'tap', title: 'Сделать 50 тапов', reward: 150, ready: false, hint: '0 / 50' },
+    { id: 'play', title: 'Сыграть партию', reward: 300, ready: false, hint: '0 / 1' }
+  ];
 
-  // ---------- вкладки ----------
-  var TABS = [['pet', 'Питомец', 'paw'], ['clan', 'Клан', 'shield'], ['games', 'Игры', 'swords'], ['shop', 'Магазин', 'bag']];
-  function renderTabs() {
-    $tabs.hidden = false;
-    $tabs.innerHTML = TABS.map(function (t) {
-      var badge = t[0] === 'clan' ? '<i class="badge"></i>' : '';
-      return '<button class="tab' + (t[0] === tab ? ' on' : '') + '" data-tab="' + t[0] + '">' + IC[t[2]] + '<span>' + t[1] + '</span>' + badge + '</button>';
-    }).join('');
-    qa('.tab', $tabs).forEach(function (b) {
-      b.onclick = function () { go(b.dataset.tab); };
-    });
-  }
-  function go(t, noHist) {
-    if (openId) closeGame(true);
-    closeSheet(true);
-    if (tab === t) { renderTabs(); return; }
-    closeLayer();
-    tab = t;
-    qa('#screen > .scr').forEach(function (s) { s.classList.toggle('on', s.dataset.tab === t); });
-    renderTabs();
-    if (t === 'shop') drawShop();
-    if (!noHist) {
-      try {
-        var hash = t === 'pet' ? '' : '#' + t;
-        history.replaceState({ tab: t }, '', location.pathname + location.search + hash);
-      } catch (e) {}
-    }
-    if (t === 'games') setTimeout(function () { syncPages(true); }, 40);
-  }
+  var SHOP = {
+    t1: [
+      { id: 'mint', name: 'Мятный скин', price: 800, pet: 'raccoon', filter: 'hue-rotate(100deg) saturate(1.05)', cat: 'Скины' },
+      { id: 'peach', name: 'Персиковый', price: 1200, pet: 'raccoon', filter: 'hue-rotate(-18deg) saturate(1.25)', cat: 'Скины' },
+      { id: 'night', name: 'Ночной', price: 2500, pet: 'raccoon', filter: 'hue-rotate(210deg) brightness(.86)', cat: 'Скины' },
+      { id: 'crown', name: 'Корона', price: 25000, pet: 'raccoon', filter: 'saturate(1.2) contrast(1.05)', cat: 'Скины' }
+    ],
+    t2: [
+      { id: 'cookie', name: 'Печенье', price: 150, color: 'linear-gradient(180deg,#FFE2A8,#E8A94A)', cat: 'Еда' },
+      { id: 'berries', name: 'Ягодки', price: 300, color: 'linear-gradient(180deg,#FFB3C8,#E35A7A)', cat: 'Еда' },
+      { id: 'honey', name: 'Горшочек мёда', price: 500, color: 'linear-gradient(180deg,#FFE7A0,#F2B432)', cat: 'Еда' },
+      { id: 'cake', name: 'Тортик', price: 900, color: 'linear-gradient(180deg,#FFD4E6,#FF9AB5)', cat: 'Еда' }
+    ],
+    t3: [
+      { id: 'x2', name: 'x2 за тап', price: 2000, color: 'linear-gradient(180deg,#C3D2FF,#7C9CFF)', cat: 'Бонусы' },
+      { id: 'energy', name: 'Энергия +100', price: 800, color: 'linear-gradient(180deg,#FFF1B0,#FFD36E)', cat: 'Бонусы' },
+      { id: 'shield', name: 'Щит', price: 1500, color: 'linear-gradient(180deg,#C8F3E1,#7FDDB9)', cat: 'Бонусы' }
+    ]
+  };
 
-  // ---------- главная (логика в home/home.js) ----------
-  function homeCtx() {
-    return {
-      q: q, ME: ME, IC: IC, $app: $app, fmt: fmt, coin: coin,
-      stagePet: stagePet, stagePetHero: stagePetHero,
-      openSheet: openSheet, closeLayer: closeLayer, mockToast: mockToast,
-      TI_TASKS: TI_TASKS
-    };
-  }
-  function drawHome() { window.TapyshiHome.draw(homeCtx()); }
-  function openUpgrade() { window.TapyshiHome.openUpgrade(homeCtx()); }
-  function openTasks() { window.TapyshiHome.openTasks(homeCtx()); }
-
-  // ---------- клан (заглушка) ----------
-  function drawClan() {
-    var members = [
-      { me: true, name: 'Ты', pet: 'raccoon', petName: 'Булочка', level: 7, week: 2400, owner: false },
-      { name: 'Мила', pet: 'goose', petName: 'Гоша', level: 9, week: 3100, owner: true },
-      { name: 'Тима', pet: 'dragon', petName: 'Искорка', level: 6, week: 1800 },
-      { name: 'Лера', pet: 'capybara', petName: 'Бублик', level: 5, week: 900 }
-    ];
-    q('#scr-clan').innerHTML =
-      '<div class="clan-head v24 cn-head">' + A.crest('raccoon') + '<div class="cn-t"><h1>Пончики</h1><div class="sb">4 игрока · <i class="odot"></i>2 онлайн</div></div>' +
-      '<button class="cn-leave" id="leave2" type="button">' + IC_EXIT + 'Выйти</button></div>' +
-      '<p class="mock-note">Макет вкладки «Клан» — без живых данных</p>' +
-      '<div class="pad"><div class="card cxd cxs win"><div class="top"><span class="lbl">' + IC.swords + 'Дуэль кланов</span><span class="tm">' + IC.clock + '<b>1:40</b></span></div>' +
-        '<div class="cxs-row"><div class="cxs-s">' + A.crest('raccoon') + '<div class="sc">12 тыс</div><div class="nm">Пончики</div></div><div class="cxs-vs">vs</div>' +
-        '<div class="cxs-s">' + A.crest('goose') + '<div class="sc">9,4 тыс</div><div class="nm">Речники</div></div></div>' +
-        '<div class="bar"><i style="width:56%"></i></div><div class="cxs-st">Мы побеждаем!</div>' +
-        '<button class="btn green" id="help">' + IC.hand + 'Тапать за клан</button><div class="cxs-pr">Победа: +' + IC.coin + ' 500</div></div></div>' +
-      '<div class="pad"><div class="sec-t"><h3>Игроки клана</h3><span>тапы за неделю</span></div><div class="card list">' +
-        members.map(function (x) {
-          return '<div class="li' + (x.me ? ' me' : '') + '">' + ava(x.pet) + '<div class="tx"><div class="nm">' + x.name + (x.owner ? '<span class="tag own">👑 глава</span>' : '') + '</div><div class="sb">' + x.petName + ' · ур. ' + x.level + '</div></div><div class="pc" style="font-size:14px">' + fmt(x.week) + '</div></div>';
-        }).join('') + '</div></div><div style="height:8px"></div>';
-    q('#help', q('#scr-clan')).onclick = function () { go('pet'); toast('Каждый тап — в дуэль! (в макете тапы не считаются)'); };
-    q('#leave2', q('#scr-clan')).onclick = mockToast;
-  }
-
-  // ---------- магазин (заглушка) ----------
-  function shopTabs() {
-    return '<div class="shoptabs"><button data-st="hats"' + (shopTab === 'hats' ? ' class="on"' : '') + '>Шапки</button><button data-st="skins"' + (shopTab === 'skins' ? ' class="on"' : '') + '>Скины</button></div>';
-  }
-  function drawShop() {
-    var el = q('#scr-shop');
-    if (shopTab === 'skins') {
-      var skins = [
-        { id: null, name: 'Обычный окрас', tier: 'base', price: 0, own: true },
-        { id: 'raccoon_ginger', name: 'Рыжий енот', tier: 'common', price: 80 },
-        { id: 'raccoon_snow', name: 'Снежный енот', tier: 'common', price: 80 },
-        { id: 'raccoon_night', name: 'Ночной енот', tier: 'rare', price: 300 }
-      ];
-      var preview = trySkin !== undefined ? trySkin : ME.skin;
-      var cur = skins.filter(function (k) { return (k.id || null) === (preview || null); })[0] || skins[0];
-      el.innerHTML =
-        '<div class="pagehead"><h1>Магазин</h1><span class="timer tr">' + IC.cup + '<span>' + fmt(ME.trophies) + '</span></span></div>' + shopTabs() +
-        '<div class="shophead skinhead v24"><div class="podium"></div>' + stagePet({ skin: preview, hat: null, cls: 'pv', vb: '-10 -30 220 250' }) +
-          '<div class="sk-name"><b>' + cur.name + '</b></div></div>' +
-        '<p class="note24">Макет: скины только примеряются</p>' +
-        '<div class="items skins">' + skins.map(function (k) {
-          var wear = (preview || null) === k.id;
-          var pr = wear && k.own ? '<span class="pr wear">Надет</span>' : k.own ? '<span class="pr own">Бесплатно</span>' : '<span class="pr tr">' + IC.cup + k.price + '</span>';
-          return '<button class="item skin t-' + k.tier + (wear ? ' sel' : '') + '" data-k="' + (k.id || '') + '">' +
-            (k.tier === 'rare' ? '<span class="tier rare">Редкий</span>' : k.tier === 'common' ? '<span class="tier">Обычный</span>' : '') +
-            '<div class="sk-ava">' + stagePet({ skin: k.id, hat: null, vb: '-34 -32 268 250' }) + '</div>' + pr + '</button>';
-        }).join('') + '</div>';
-    } else {
-      var preview = tryHat !== null ? tryHat : ME.hat;
-      el.innerHTML =
-        '<div class="pagehead"><h1>Магазин</h1><span class="timer">' + coin(ME.coins) + '</span></div>' + shopTabs() +
-        '<div class="shophead v24"><div class="podium"></div>' + stagePet({ hat: preview, cls: 'pv', vb: '-10 -40 220 260' }) + '</div>' +
-        '<div class="note24">Шапки — только для красоты, на силу тапа не влияют</div>' +
-        '<div class="items">' + HATS.map(function (i) {
-          var wear = preview === i.id, can = ME.coins >= i.price;
-          var pr = wear && i.own ? '<span class="pr wear">Надета</span>' : i.own ? '<span class="pr own">Куплена</span>' : '<span class="pr">' + IC.coin + fmt(i.price) + '</span>';
-          return '<button class="item' + (wear ? ' sel' : '') + '" data-hat="' + i.id + '"><div class="hat-svg">' + A.hatIcon(i.id) + '</div><div class="nm">' + i.name + '</div>' + pr + '</button>';
-        }).join('') + '</div>' +
-        '<div class="pad shopcta-static"><button class="btn" id="shopBuy">В макете купить нельзя</button></div>';
-    }
-    qa('[data-st]', el).forEach(function (b) {
-      b.onclick = function () { shopTab = b.dataset.st; drawShop(); };
-    });
-    qa('[data-hat]', el).forEach(function (b) {
-      b.onclick = function () { tryHat = b.dataset.hat; drawShop(); };
-    });
-    qa('[data-k]', el).forEach(function (b) {
-      b.onclick = function () { trySkin = b.dataset.k || null; drawShop(); };
-    });
-    var buy = q('#shopBuy', el); if (buy) buy.onclick = mockToast;
-  }
-
-  // ---------- игротека ----------
-  function buildHub() {
-    q('#gamesBal').innerHTML = IC.coin + fmt(ME.coins);
-    var squad = q('#squad');
-    ['raccoon', 'goose', 'capybara', 'dragon'].forEach(function (k) {
-      var d = document.createElement('div'); d.className = 'p';
-      d.innerHTML = petArt(k, { cls: 'happy', mood: 'happy' });
-      squad.appendChild(d);
-    });
-    var pagesEl = q('#pages'), dotsEl = q('#dots');
-    var PER = 4, NP = Math.ceil(GAMES.length / PER);
-    var PLAY = '<svg viewBox="0 0 12 12"><path d="M2.5 1.3v9.4a.6.6 0 0 0 .9.5l7.6-4.7a.6.6 0 0 0 0-1L3.4.8a.6.6 0 0 0-.9.5z" fill="#fff"/></svg>';
-    for (var p = 0; p < NP; p++) {
-      var pg = document.createElement('section'); pg.className = 'page'; pg.setAttribute('aria-label', 'Страница ' + (p + 1));
-      var gr = document.createElement('div'); gr.className = 'grid';
-      GAMES.slice(p * PER, p * PER + PER).forEach(function (g) {
-        var c = document.createElement('button');
-        c.className = 'hcard'; // .card оставляем для тестов/совместимости, стили — у .hcard
-        c.dataset.id = g.id;
-        c.style.setProperty('--c', g.color);
-        c.style.setProperty('--soft', g.soft);
-        c.setAttribute('aria-label', g.title + '. ' + g.tag);
-        var meta = META[g.id] || {};
-        var rec = meta.kind === 'solo' && meta.record ? '<span class="rec">' + meta.record + '</span>' : '';
-        c.innerHTML = '<div class="art"><div class="icon">' + ICONS[g.icon] + '</div><div class="pet">' + petArt(g.pet) + '</div></div><span class="play">' + PLAY + '</span><div class="meta"><h3>' + g.title + '</h3><p>' + g.tag + '</p>' + rec + '</div>';
-        c.addEventListener('click', function () { onCard(g.id, c); });
-        gr.appendChild(c);
-      });
-      pg.appendChild(gr); pagesEl.appendChild(pg);
-      var d = document.createElement('button'); d.className = 'dot';
-      d.setAttribute('aria-label', 'Страница ' + (p + 1));
-      (function (i) { d.onclick = function () { goPage(i); }; })(p);
-      dotsEl.appendChild(d);
-    }
-    bindPager(pagesEl, NP);
-    q('#loader').innerHTML = petArt(ME.pet, { mood: 'happy', cls: 'happy' });
-  }
-
-  var curPage = 0, NPAGES = 2;
-  function goPage(i) {
-    var pagesEl = q('#pages');
-    i = Math.max(0, Math.min(NPAGES - 1, i));
-    pagesEl.scrollTo({ left: i * pagesEl.clientWidth, behavior: 'smooth' });
-  }
-  function syncPages(force) {
-    var pagesEl = q('#pages'); if (!pagesEl) return;
-    var i = Math.round(pagesEl.scrollLeft / Math.max(1, pagesEl.clientWidth));
-    if (i !== curPage || force) {
-      curPage = i;
-      qa('#dots .dot').forEach(function (d, k) { d.classList.toggle('on', k === i); });
-      q('#prev').disabled = i === 0;
-      q('#next').disabled = i === NPAGES - 1;
-      q('#pageTitle').innerHTML = 'Страница ' + (i + 1) + '<em>из ' + NPAGES + '</em>';
-    }
-  }
-  function bindPager(pagesEl, NP) {
-    NPAGES = NP;
-    pagesEl.addEventListener('scroll', function () { window.requestAnimationFrame(function () { syncPages(false); }); }, { passive: true });
-    q('#prev').onclick = function () { goPage(curPage - 1); };
-    q('#next').onclick = function () { goPage(curPage + 1); };
-    // перетаскивание мышью, как в хабе
-    (function () {
-      var down = false, sx = 0, sl = 0, moved = false;
-      pagesEl.addEventListener('pointerdown', function (e) {
-        if (e.pointerType !== 'mouse') return;
-        down = true; moved = false; sx = e.clientX; sl = pagesEl.scrollLeft;
-      });
-      window.addEventListener('pointermove', function (e) {
-        if (!down) return;
-        var dx = e.clientX - sx;
-        if (Math.abs(dx) > 6) { moved = true; pagesEl.style.scrollSnapType = 'none'; pagesEl.style.scrollBehavior = 'auto'; pagesEl.scrollLeft = sl - dx; }
-      });
-      window.addEventListener('pointerup', function () {
-        if (!down) return; down = false;
-        pagesEl.style.scrollSnapType = ''; pagesEl.style.scrollBehavior = '';
-        if (moved) {
-          var dx = (pagesEl.scrollLeft - sl);
-          var base = Math.round(sl / Math.max(1, pagesEl.clientWidth));
-          goPage(Math.abs(dx) > 60 ? base + (dx > 0 ? 1 : -1) : base);
-        }
-      });
-      pagesEl.addEventListener('click', function (e) {
-        if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
-      }, true);
-    })();
-    window.addEventListener('resize', function () {
-      pagesEl.style.scrollBehavior = 'auto';
-      pagesEl.scrollLeft = curPage * pagesEl.clientWidth;
-      pagesEl.style.scrollBehavior = '';
-    });
-    document.addEventListener('keydown', function (e) {
-      if (openId || tab !== 'games') return;
-      if (e.key === 'ArrowRight') goPage(curPage + 1);
-      else if (e.key === 'ArrowLeft') goPage(curPage - 1);
-    });
-    syncPages(true);
-  }
-
-  var gameEl = q('#game'), wrap = q('#gwrap'), frame = null, openId = null, closeT = 0, lastLaunch = null;
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0'); }
   function byId(id) { for (var i = 0; i < GAMES.length; i++) if (GAMES[i].id === id) return GAMES[i]; }
-  function isSolo(id) { return (META[id] || {}).kind === 'solo'; }
-  function cardEl(id) { return document.querySelector('.hcard[data-id="' + id + '"]'); }
+  function metaOf(id) { return META[id] || {}; }
+  function isSolo(id) { return (metaOf(id).kind || 'versus') === 'solo'; }
+  function petHtml(kind, o) { return (TAP && TAP.petSvg) ? TAP.petSvg(kind, o || {}) : ''; }
+  function petHero(kind, o) { return (TAP && TAP.petHero) ? TAP.petHero(kind, o || {}) : petHtml(kind, o); }
 
-  var RIVALS = ['Лера', 'Макс', 'Соня', 'Тимур', 'Ника', 'Даня', 'Кира', 'Артём', 'Мила', 'Егор'];
-  var FOES = ['goose', 'dragon', 'capybara'];
-  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function setBalances() {
+    $$('.bal-val').forEach(function (el) { el.textContent = fmt(ME.coins); });
+    var en = $('#en-val');
+    if (en) en.textContent = fmt(ME.energy) + ' / ' + fmt(ME.maxEnergy);
+    var bar = $('#en-bar');
+    if (bar) bar.style.width = Math.max(0, Math.min(100, ME.energy / ME.maxEnergy * 100)) + '%';
+    var pt = $('.per-tap');
+    if (pt) pt.textContent = ME.tapPower + ' за тап';
+  }
 
-  function onCard(id, el) {
-    if (isSolo(id)) {
-      var seen = false;
-      try { seen = !!sessionStorage.getItem('tapyshi.seenHint.' + id); } catch (e) {}
-      openGame(id, el, { start: true, hint: !seen });
-      try { sessionStorage.setItem('tapyshi.seenHint.' + id, '1'); } catch (e) {}
-    } else {
-      openSheet(id, el);
+  function bumpBal() {
+    $$('.balance').forEach(function (el) {
+      el.classList.remove('bump');
+      void el.offsetWidth;
+      el.classList.add('bump');
+    });
+  }
+
+  function toast(msg, kind) {
+    var box = $('#toasts'); if (!box) return;
+    var t = document.createElement('div');
+    t.className = 'toast' + (kind === 'warn' ? ' warn' : kind === 'info' ? ' info' : kind === 'coin' ? ' coin-t' : '');
+    var ic = kind === 'warn' ? 'i-info' : kind === 'info' ? 'i-info' : 'i-check';
+    t.innerHTML = '<span class="t-ic">' + (kind === 'coin' ? '<span class="coin"></span>' : '<svg><use href="#' + ic + '"/></svg>') + '</span><span>' + msg + '</span>';
+    box.appendChild(t);
+    setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 320); }, 2400);
+  }
+
+  function screenId(name) { return name === 'pet' ? 'scr-pet' : name; }
+
+  function showScreen(name, noHist) {
+    if (name === 'scr-pet') name = 'pet';
+    tab = name;
+    $$('.screen').forEach(function (s) { s.classList.toggle('active', s.id === screenId(name)); });
+    var scr = document.getElementById(screenId(name));
+    if (scr) scr.scrollTop = 0;
+    $$('#tabs [data-tab]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
+    if (name === 'games' && !$('#hub .hcard')) renderGames();
+    if (name === 'clan') renderClan();
+    if (name === 'shop') renderShop();
+    if (!noHist) {
+      try { history.replaceState({ tab: name }, '', name === 'pet' ? '#' : '#' + name); } catch (e) {}
     }
+  }
+
+  function closeOverlay() {
+    $$('.sheet.on, .modal.on, .full.on').forEach(function (el) { el.classList.remove('on'); });
+    var scrim = $('#scrim');
+    if (scrim) scrim.classList.remove('on');
+    overlayOpen = null;
+    if (sheetView === 'modes' || sheetView === 'search' || sheetView === 'invite') {
+      /* callers set the new view */
+    }
+  }
+
+  function openOverlay(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    $$('.sheet.on, .modal.on').forEach(function (x) { if (x.id !== id) x.classList.remove('on'); });
+    el.classList.add('on');
+    var scrim = $('#scrim');
+    if (scrim && (el.classList.contains('sheet') || el.classList.contains('modal'))) scrim.classList.add('on');
+    overlayOpen = id;
+  }
+
+  function openFull(id) {
+    $$('.full.on').forEach(function (x) { if (x.id !== id) x.classList.remove('on'); });
+    var el = document.getElementById(id);
+    if (el) { el.classList.add('on'); el.scrollTop = 0; }
+  }
+
+  function hideFulls() {
+    $$('.full.on').forEach(function (x) { x.classList.remove('on'); });
+  }
+
+  function closeSheet(silent) {
+    var was = sheetId;
+    $('#playSheet').classList.remove('on');
+    $('#scrim').classList.remove('on');
+    if (sheetView === 'modes') { sheetId = null; sheetView = null; }
+    return was;
+  }
+
+  /* ---------- Home: 3D pet + energy tap ---------- */
+  function mountHomePet() {
+    var stage = $('#pet-stage');
+    if (!stage) return;
+    stage.classList.add('filled');
+    stage.innerHTML = petHero('raccoon', { mood: 'neutral', pose: 'neutral', idle: true, tap: true });
+    var hero = $('[data-live-pet]', stage) || stage;
+    if (TAP && TAP.mountLive) {
+      TAP.mountLive(hero, { kind: 'raccoon', pose: 'neutral', idle: true, tap: true }).then(function (v) { livePet = v || (hero && hero._petViewer) || livePet; }).catch(function () {});
+    }
+    if (TAP && TAP.preloadLive) TAP.preloadLive('raccoon');
+  }
+
+  function onHomeTap(e) {
+    if (e.target && e.target.closest && e.target.closest('.chip, .icon-btn, .btn, .balance, .topbar, .pet-actions, .pet-card')) return;
+    if (ME.energy < ME.tapPower) {
+      toast('Энергия закончилась', 'warn');
+      return;
+    }
+    ME.energy -= ME.tapPower;
+    ME.coins += ME.tapPower;
+    setBalances();
+    bumpBal();
+    var stage = $('#pet-stage');
+    if (stage) {
+      stage.classList.remove('squish');
+      void stage.offsetWidth;
+      stage.classList.add('squish');
+    }
+    var hero = $('[data-live-pet]', stage);
+    var viewer = livePet || (hero && hero._petViewer);
+    if (viewer && viewer.tap) viewer.tap();
+    var f = document.createElement('div');
+    f.className = 'float';
+    f.textContent = '+' + ME.tapPower;
+    var app = $('#app').getBoundingClientRect();
+    f.style.left = (e.clientX - app.left) + 'px';
+    f.style.top = (e.clientY - app.top) + 'px';
+    $('#app').appendChild(f);
+    setTimeout(function () { f.remove(); }, 900);
+  }
+
+  setInterval(function () {
+    if (ME.energy < ME.maxEnergy) {
+      ME.energy += 1;
+      setBalances();
+    }
+  }, 1000);
+
+  /* ---------- Tasks / daily / upgrade ---------- */
+  function renderTasks(empty) {
+    var list = $('#task-list');
+    if (!list) return;
+    if (empty) {
+      list.innerHTML = '<div class="empty"><div class="empty-ic"><svg><use href="#i-list"/></svg></div><div class="empty-t">Пока нет заданий</div><div class="muted">Загляните позже</div></div>';
+      return;
+    }
+    list.innerHTML = TASKS.map(function (t) {
+      return '<div class="task' + (t.ready ? ' claim' : '') + '">' +
+        '<div class="slot task-ic filled">' + petHtml(t.id === 'play' ? 'goose' : 'raccoon', { mood: t.ready ? 'happy' : 'neutral' }) + '</div>' +
+        '<div class="task-main"><div class="task-t">' + t.title + '</div>' +
+        '<div class="task-sub"><span class="coin"></span> +' + t.reward + (t.hint ? ' · ' + t.hint : '') + '</div></div>' +
+        '<div class="task-side">' + (t.ready ? '<button class="mini" data-claim="' + t.id + '">Забрать</button>' : '<button class="mini soft" disabled>Ещё нет</button>') + '</div></div>';
+    }).join('');
+  }
+
+  function openTasks(empty) {
+    renderTasks(empty);
+    openOverlay('s-tasks');
+  }
+
+  function renderDays() {
+    var box = $('#days'); if (!box) return;
+    var html = '';
+    for (var i = 1; i <= 7; i++) {
+      var cls = 'day' + (i === 7 ? ' big' : '') + (i === 1 && !dailyClaimed ? ' today' : '') + (i === 1 && dailyClaimed ? ' got' : '');
+      html += '<div class="' + cls + '"><span class="dl">день ' + i + '</span><span class="coin"></span><span class="dv">' + (50 * i) + '</span></div>';
+    }
+    box.innerHTML = html;
+  }
+
+  function openDaily() {
+    renderDays();
+    $('#daily-claim').disabled = dailyClaimed;
+    $('#daily-claim').textContent = dailyClaimed ? 'Забрано' : 'Забрать';
+    openOverlay('m-daily');
+  }
+
+  /* ---------- Games ---------- */
+  function renderGames() {
+    var gamesEl = $('#games');
+    if (gamesEl) gamesEl.classList.remove('loading');
+    var skel = $('#games-skel');
+    if (skel && !skel.childElementCount) {
+      skel.innerHTML = '<div class="sk-card"><div class="sk sq"></div><div class="sk line"></div><div class="sk line" style="width:60%"></div></div>'.repeat(4);
+    }
+    var pages = $('#pages');
+    if (!pages) return;
+    var groups = [GAMES.slice(0, 4), GAMES.slice(4, 8)];
+    pages.innerHTML = groups.map(function (list) {
+      return '<div class="page">' + list.map(cardHtml).join('') + '</div>';
+    }).join('');
+    updatePager();
+  }
+
+  function cardHtml(g) {
+    var m = metaOf(g.id);
+    var rec = m.record ? '<span class="rec">' + m.record + '</span>' : (m.kind === 'versus' || !m.kind ? '<span class="muted" style="font-size:12px">2 игрока</span>' : '');
+    return '<button type="button" class="game hcard" data-id="' + g.id + '">' +
+      '<div class="slot filled preview" style="--soft:' + (g.soft || '#EEF3FF') + ';background:' + (g.soft || '#EEF3FF') + '">' +
+        petHtml(g.pet, { mood: 'happy' }) +
+        '<span class="gi">' + (ICONS[g.icon] || '') + '</span>' +
+      '</div>' +
+      '<h3 class="name">' + g.title + '</h3>' +
+      '<div class="meta">' + rec + '</div>' +
+    '</button>';
+  }
+
+  function goPage(i) {
+    curPage = Math.max(0, Math.min(1, i));
+    updatePager();
+  }
+
+  function updatePager() {
+    var pages = $('#pages');
+    if (pages) pages.style.transform = 'translateX(' + (-curPage * 100) + '%)';
+    $$('#dots .dot').forEach(function (d, i) { d.classList.toggle('on', i === curPage); });
+  }
+
+  var swipeX = 0, swipeOn = false;
+  function bindPagerSwipe() {
+    var hub = $('#hub'); if (!hub) return;
+    hub.addEventListener('touchstart', function (e) {
+      if (!e.touches || !e.touches[0]) return;
+      swipeOn = true; swipeX = e.touches[0].clientX;
+    }, { passive: true });
+    hub.addEventListener('touchend', function (e) {
+      if (!swipeOn) return;
+      swipeOn = false;
+      var x = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : swipeX;
+      var dx = x - swipeX;
+      if (dx < -40) goPage(curPage + 1);
+      else if (dx > 40) goPage(curPage - 1);
+    });
+  }
+
+  function onCard(id) {
+    if (isSolo(id)) {
+      closeSheet();
+      openGame(id, { mode: 'solo', hint: true });
+    } else {
+      openSheet(id);
+    }
+  }
+
+  function openSheet(id) {
+    var g = byId(id); if (!g) return;
+    var m = metaOf(id);
+    sheetId = id;
+    sheetView = 'modes';
+    stake = m.stake || 150;
+    $('#duel-name').textContent = g.title;
+    $('#duel-rule').textContent = m.rule || g.tag || '';
+    var prev = $('#duel-prev');
+    prev.classList.add('filled');
+    prev.innerHTML = petHtml(g.pet, { mood: 'happy' });
+    var stakes = $('#stakes');
+    var opts = STAKES.slice();
+    if (opts.indexOf(stake) < 0) opts.push(stake);
+    opts.sort(function (a, b) { return a - b; });
+    stakes.innerHTML = opts.map(function (s) {
+      return '<button type="button" class="stake' + (s === stake ? ' on' : '') + '" data-stake="' + s + '">' + fmt(s) + '</button>';
+    }).join('');
+    openOverlay('playSheet');
+  }
+
+  function startSearch(id) {
+    closeSheet();
+    sheetId = id;
+    sheetView = 'search';
+    var g = byId(id);
+    var sub = $('#search-sub');
+    if (sub) sub.textContent = (g ? g.title : 'Игра') + ' · ставка ' + fmt(stake);
+    var radar = $('#psSearch .radar .slot, #psSearch [data-slot="player-avatar"]');
+    if (radar) { radar.classList.add('filled'); radar.innerHTML = petHtml('raccoon', { mood: 'happy' }); }
+    searchSec = 0;
+    var timer = $('#search-timer');
+    if (timer) timer.textContent = '0:00';
+    clearInterval(searchTick);
+    searchTick = setInterval(function () {
+      searchSec += 1;
+      if (timer) timer.textContent = '0:0' + Math.min(9, searchSec);
+    }, 1000);
+    openFull('psSearch');
+    hideOtherSheets();
+    clearTimeout(searchT);
+    searchT = setTimeout(function () {
+      clearInterval(searchTick);
+      hideFulls();
+      sheetView = null; sheetId = null;
+      openGame(id, { mode: 'pvp', rival: 'Соперник' });
+    }, 2200);
+  }
+
+  function hideOtherSheets() {
+    $('#playSheet').classList.remove('on');
+    $('#scrim').classList.remove('on');
+  }
+
+  function renderInvite(id) {
+    hideOtherSheets();
+    sheetId = id;
+    sheetView = 'invite';
+    var t = $('#link-text');
+    if (t) t.textContent = INVITE;
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(INVITE).catch(function () {}); } catch (e) {}
+    openFull('psInvite');
+  }
+
+  function cancelInvite() {
+    hideFulls();
+    if (sheetId) openSheet(sheetId);
+  }
+
+  function cancelSearch() {
+    clearTimeout(searchT);
+    clearInterval(searchTick);
+    hideFulls();
+    if (sheetId) openSheet(sheetId);
+    else { sheetId = null; sheetView = null; }
   }
 
   function launchQuery(opts) {
@@ -327,23 +421,22 @@
     return p.length ? ('?' + p.join('&')) : '';
   }
 
-  function openGame(id, fromEl, opts) {
+  function openGame(id, opts) {
     var g = byId(id); if (!g) return;
     opts = opts || {};
-    if (typeof opts === 'boolean') opts = { noHist: opts };
-    if (tab !== 'games') go('games', true);
+    if (tab !== 'games') showScreen('games', true);
+    closeSheet();
+    hideFulls();
+    sheetId = null;
+    sheetView = null;
     if (openId) destroyFrame();
     clearTimeout(closeT);
     openId = id;
-    lastLaunch = { id: id, mode: opts.mode || (isSolo(id) ? 'solo' : 'bot'), rival: opts.rival || '', foe: opts.foe || '' };
-    var from = fromEl || cardEl(id);
-    var r = from ? from.getBoundingClientRect() : null;
-    var ar = $app.getBoundingClientRect();
-    gameEl.style.setProperty('--ox', r ? (r.left - ar.left + r.width / 2) + 'px' : '50%');
-    gameEl.style.setProperty('--oy', r ? (r.top - ar.top + r.height / 2) + 'px' : '50%');
-    gameEl.style.setProperty('--gbg', g.bg);
-    gameEl.style.setProperty('--gsoft', g.soft);
+    var wrap = $('#gwrap');
+    var gameEl = $('#game');
     wrap.classList.remove('loaded');
+    var loader = $('#loader');
+    if (loader) loader.innerHTML = petHtml(g.pet, { mood: 'happy' });
     frame = document.createElement('iframe');
     frame.title = g.title;
     frame.setAttribute('allow', 'autoplay; fullscreen; vibrate');
@@ -354,228 +447,474 @@
       if (frame) frame.classList.add('ready');
       try { frame.contentWindow.focus(); } catch (e) {}
     });
-    var start = opts.start !== false; // default start
+    var start = opts.start !== false;
+    var foe = opts.foe || (TAP && TAP.foeOf && TAP.foeOf(ME.pet)) || g.pet;
     frame.src = 'games/' + g.id + '/index.html' + launchQuery({
-      start: start, mode: opts.mode, rival: opts.rival, foe: opts.foe, hint: opts.hint
+      start: start, mode: opts.mode || (isSolo(id) ? 'solo' : 'bot'), rival: opts.rival, foe: foe, hint: opts.hint
     });
     wrap.appendChild(frame);
-    void gameEl.offsetWidth;
     gameEl.classList.add('open');
     gameEl.setAttribute('aria-hidden', 'false');
-    $app.classList.add('in-game');
+    $('#app').classList.add('in-game');
     document.title = g.title + ' · Тапыши';
-    if (!opts.noHist) { try { history.pushState({ tab: 'games', game: id }, '', '#game-' + id); } catch (e) {} }
+    if (!opts.noHist) {
+      try { history.pushState({ tab: 'games', game: id }, '', '#game-' + id); } catch (e) {}
+    }
   }
+
   function destroyFrame() {
     if (frame) { try { frame.src = 'about:blank'; } catch (e) {} frame.remove(); frame = null; }
   }
+
   function closeGame(fromPop) {
-    if (!openId) return;
+    if (!openId) {
+      hideFulls();
+      closeSheet();
+      sheetId = null; sheetView = null;
+      return;
+    }
     openId = null;
+    var gameEl = $('#game');
     gameEl.classList.remove('open');
     gameEl.setAttribute('aria-hidden', 'true');
-    $app.classList.remove('in-game');
+    $('#app').classList.remove('in-game');
     document.title = 'Тапыши · макет игротеки';
     if (frame) frame.classList.remove('ready');
-    closeT = setTimeout(destroyFrame, 480);
+    closeT = setTimeout(destroyFrame, 400);
+    hideFulls();
     if (!fromPop) {
       try {
         if (history.state && history.state.game) history.back();
         else history.replaceState({ tab: 'games' }, '', '#games');
       } catch (e) {}
     }
+    showScreen('games', true);
+  }
+
+  /* ---------- Clan ---------- */
+  function renderClan() {
+    $$('#clan .cview').forEach(function (v) { v.classList.remove('on'); });
+    var map = { in: 'cv-in', none: 'cv-none', list: 'cv-list', top: 'cv-top' };
+    var id = map[clanView] || 'cv-in';
+    var el = document.getElementById(id);
+    if (el) el.classList.add('on');
+    var emb = $('#cv-in [data-slot="clan-emblem"]');
+    if (emb) { emb.classList.add('filled'); emb.innerHTML = petHtml('raccoon', { mood: 'happy' }); }
+    var noneEmb = $('#cv-none [data-slot="clan-emblem"]');
+    if (noneEmb) { noneEmb.classList.add('filled'); noneEmb.innerHTML = petHtml('capybara', { mood: 'neutral' }); }
+    var members = $('#members');
+    if (members) {
+      members.innerHTML = CLAN_MEMBERS.map(function (m, i) {
+        return '<div class="member' + (m.me ? ' me' : '') + '"><span class="rk">' + (i + 1) + '</span>' +
+          '<div class="slot avatar filled">' + petHtml(m.pet, { mood: m.me ? 'happy' : 'neutral' }) + '</div>' +
+          '<div class="who">' + m.name + '<small>' + m.role + '</small></div>' +
+          '<div class="pts">' + fmt(m.pts) + '</div></div>';
+      }).join('');
+    }
+    var prev = $('#top-preview');
+    if (prev) {
+      prev.innerHTML = CLANS.slice().sort(function (a, b) { return b.pts - a.pts; }).slice(0, 3).map(function (c, i) {
+        return '<div class="member"><span class="rk">' + (i + 1) + '</span><div class="slot avatar filled">' + petHtml(c.pet, { mood: 'happy' }) + '</div>' +
+          '<div class="who">' + c.name + '<small>' + c.n + ' участников</small></div><div class="pts">' + fmt(c.pts) + '</div></div>';
+      }).join('');
+    }
+    renderClanList();
+    renderClanTop();
+  }
+
+  function renderClanList(state) {
+    var box = $('#clan-results'); if (!box) return;
+    if (state === 'loading') {
+      box.innerHTML = '<div class="sk-row"><div class="sk av"></div><div class="lines"><div class="sk line"></div><div class="sk line" style="width:40%"></div></div></div>'.repeat(3);
+      return;
+    }
+    if (state === 'empty') {
+      box.innerHTML = '<div class="empty"><div class="empty-ic"><svg><use href="#i-search"/></svg></div><div class="empty-t">Никого не нашли</div><div class="muted">Попробуйте другое название</div></div>';
+      return;
+    }
+    var q = (($('#clan-q') || {}).value || '').toLowerCase();
+    var list = CLANS.filter(function (c) { return !q || c.name.toLowerCase().indexOf(q) >= 0; });
+    if (!list.length) { renderClanList('empty'); return; }
+    box.innerHTML = list.map(function (c) {
+      return '<div class="member"><div class="slot avatar filled">' + petHtml(c.pet, { mood: 'happy' }) + '</div>' +
+        '<div class="who">' + c.name + '<small>' + c.n + ' участников · ' + fmt(c.pts) + '</small></div>' +
+        (c.mine ? '<span class="mini done">Ваш</span>' : '<button class="mini" data-join="' + c.name + '">Вступить</button>') +
+        '</div>';
+    }).join('');
+  }
+
+  function renderClanTop() {
+    var sorted = CLANS.slice().sort(function (a, b) { return b.pts - a.pts; });
+    var podium = $('#podium');
+    if (podium) {
+      var order = [sorted[1], sorted[0], sorted[2]];
+      var cls = ['p2', 'p1', 'p3'];
+      podium.innerHTML = order.map(function (c, i) {
+        if (!c) return '<div class="pod"></div>';
+        return '<div class="pod ' + cls[i] + '"><div class="slot filled">' + petHtml(c.pet, { mood: 'happy' }) + '</div>' +
+          '<div class="pod-n">' + c.name + '</div><div class="pod-pts">' + fmt(c.pts) + '</div><div class="pod-b">' + (i === 1 ? '1' : i === 0 ? '2' : '3') + '</div></div>';
+      }).join('');
+    }
+    var rest = $('#top-list');
+    if (rest) {
+      rest.innerHTML = sorted.slice(3).map(function (c, i) {
+        return '<div class="member"><span class="rk">' + (i + 4) + '</span><div class="slot avatar filled">' + petHtml(c.pet) + '</div>' +
+          '<div class="who">' + c.name + '<small>' + c.n + ' участников</small></div><div class="pts">' + fmt(c.pts) + '</div></div>';
+      }).join('') || '<div class="muted center" style="padding:12px">Это весь топ</div>';
+    }
+  }
+
+  function fillCreateEmblems() {
+    var box = $('[data-slot="clan-emblem-picker"]');
+    if (!box) return;
+    box.classList.add('filled', 'emb-pick');
+    var kinds = ['raccoon', 'goose', 'dragon', 'capybara'];
+    box.innerHTML = kinds.map(function (k) {
+      return '<button type="button" data-emb="' + k + '" class="' + (createEmblem === k ? 'on' : '') + '">' + petHtml(k, { mood: 'happy' }) + '</button>';
+    }).join('');
+  }
+
+  /* ---------- Shop ---------- */
+  function allItems() { return SHOP.t1.concat(SHOP.t2, SHOP.t3); }
+  function findItem(id) {
+    var all = allItems();
+    for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
+  }
+
+  function itemPreview(it) {
+    if (it.pet) return '<span style="filter:' + (it.filter || 'none') + ';display:block;width:100%;height:100%">' + petHtml(it.pet, { mood: 'happy' }) + '</span>';
+    return '<span class="item-illu" style="background:' + (it.color || 'var(--accent)') + '"></span>';
+  }
+
+  function renderShop(loading) {
+    var shop = $('#shop');
+    if (loading) { shop.classList.add('loading'); renderShopSkel(); return; }
+    shop.classList.remove('loading');
+    ['t1', 't2', 't3'].forEach(function (t) {
+      var box = $('#' + t + ' .items');
+      if (!box) return;
+      box.innerHTML = SHOP[t].map(function (it) {
+        var state = equipped === it.id ? 'equipped' : owned[it.id] ? 'owned' : '';
+        var label = state === 'equipped' ? 'Надето' : state === 'owned' ? 'Надеть' : '<span class="coin"></span>' + fmt(it.price);
+        return '<div class="item" data-item="' + it.id + '"><div class="slot filled" style="background:#F4F7FF">' + itemPreview(it) + '</div>' +
+          '<div class="name">' + it.name + '</div>' +
+          '<button class="price ' + state + '" data-buy="' + it.id + '">' + label + '</button></div>';
+      }).join('');
+    });
+  }
+
+  function renderShopSkel() {
+    var box = $('#shop-skel');
+    if (!box) return;
+    box.innerHTML = '<div class="sk-card"><div class="sk sq"></div><div class="sk line"></div></div>'.repeat(4);
+  }
+
+  function tryBuy(id) {
+    var it = findItem(id); if (!it) return;
+    if (owned[id]) {
+      equipped = (equipped === id) ? equipped : id;
+      renderShop();
+      toast(it.name + ' надет');
+      return;
+    }
+    if (ME.coins < it.price) {
+      var need = it.price - ME.coins;
+      $('#nc-text').textContent = 'Нужно ещё ' + fmt(need) + ' — сыграйте в игры или выполните задания';
+      $('#nc-val').textContent = fmt(ME.coins) + ' / ' + fmt(it.price);
+      $('#nc-fill').style.width = Math.max(4, Math.round(ME.coins / it.price * 100)) + '%';
+      openOverlay('m-nocoins');
+      return;
+    }
+    pendingBuy = it;
+    $('#buy-name').textContent = it.name;
+    $('#buy-cat').textContent = it.cat;
+    $('#buy-price').textContent = fmt(it.price);
+    $('#buy-left').textContent = fmt(ME.coins - it.price);
+    var prev = $('[data-slot="item"]');
+    if (prev) { prev.classList.add('filled'); prev.innerHTML = itemPreview(it); }
+    openOverlay('m-buy');
+  }
+
+  function confirmBuy() {
+    if (!pendingBuy) return;
+    ME.coins -= pendingBuy.price;
+    owned[pendingBuy.id] = true;
+    if (pendingBuy.cat === 'Скины') equipped = pendingBuy.id;
+    setBalances();
+    bumpBal();
+    var name = pendingBuy.name;
+    pendingBuy = null;
+    closeAllPop();
+    renderShop();
+    toast(name + ' куплен', 'coin');
+  }
+
+  /* ---------- Profile / results ---------- */
+  function fillAvatars(root) {
+    $$((root || document).querySelectorAll ? (root || document) === document ? '[data-slot="player-avatar"], [data-slot="opponent-avatar"]' : '[data-slot="player-avatar"], [data-slot="opponent-avatar"]' : 'xxx').forEach(function (el) {
+      var slot = el.getAttribute('data-slot');
+      el.classList.add('filled');
+      el.innerHTML = petHtml(slot === 'opponent-avatar' ? 'goose' : 'raccoon', { mood: slot === 'opponent-avatar' ? 'neutral' : 'happy' });
+    });
+  }
+
+  function openProfile() {
+    fillAvatars($('#f-profile'));
+    openFull('f-profile');
+  }
+
+  function showResult(win) {
+    var el = $('#f-result');
+    $('#res-title').textContent = win ? 'Победа!' : 'Поражение';
+    $('#res-sub').textContent = win ? 'Вы обыграли соперника' : 'В этот раз не повезло';
+    $('#res-pill').innerHTML = '<span class="coin"></span><span>' + (win ? '+' : '−') + fmt(stake) + '</span>';
+    var ic = $('#res-ic');
+    ic.className = 'big-ic ' + (win ? 'sun' : 'peach') + ' pop res-pet';
+    ic.innerHTML = petHtml('raccoon', { mood: win ? 'happy' : 'sad' });
+    var conf = $('#confetti');
+    if (conf) conf.style.display = win ? '' : 'none';
+    hideOtherSheets();
+    openFull('f-result');
+  }
+
+  function closeAllPop() {
+    $$('.sheet.on, .modal.on').forEach(function (el) { el.classList.remove('on'); });
+    $('#scrim').classList.remove('on');
+    overlayOpen = null;
+  }
+
+  /* ---------- Hash demo states (for shots) ---------- */
+  function applyState(name) {
+    closeAllPop();
+    hideFulls();
+    if (openId) { /* don't destroy mid-test unless requested */ }
+    var st = name || '';
+    function goTab(t) { showScreen(t, true); }
+    if (st === 'tasks' || st === 'tasks-empty') { goTab('pet'); openTasks(st === 'tasks-empty'); }
+    else if (st === 'daily' || st === 'daily-reward') { goTab('pet'); openDaily(); }
+    else if (st === 'toast' || st === 'toasts') { goTab('pet'); toast('Монеты начислены', 'coin'); setTimeout(function () { toast('Задание выполнено'); }, 400); }
+    else if (st === 'games' || st === 'games-badges') { goTab('games'); gamesLoaded = true; renderGames(); }
+    else if (st === 'games-loading') { goTab('games'); $('#games').classList.add('loading'); }
+    else if (st === 'duel' || st === 'duel-sheet') { goTab('games'); openSheet('tictactoe'); }
+    else if (st === 'search') { goTab('games'); sheetId = 'tictactoe'; stake = 150; startSearch('tictactoe'); clearTimeout(searchT); }
+    else if (st === 'link') { goTab('games'); renderInvite('tictactoe'); }
+    else if (st === 'win') { showResult(true); }
+    else if (st === 'lose') { showResult(false); }
+    else if (st === 'clan-in') { inClan = true; clanView = 'in'; goTab('clan'); }
+    else if (st === 'clan-none') { inClan = false; clanView = 'none'; goTab('clan'); }
+    else if (st === 'clan-list') { clanView = 'list'; goTab('clan'); renderClanList(); }
+    else if (st === 'clan-list-loading') { clanView = 'list'; goTab('clan'); renderClanList('loading'); }
+    else if (st === 'clan-list-empty' || st === 'clan-empty') { clanView = 'list'; goTab('clan'); renderClanList('empty'); }
+    else if (st === 'clan-create') { goTab('clan'); fillCreateEmblems(); openOverlay('m-create'); }
+    else if (st === 'clan-top') { clanView = 'top'; goTab('clan'); }
+    else if (st === 'clan-leave') { clanView = 'in'; goTab('clan'); openOverlay('m-confirm'); }
+    else if (st === 'shop') { goTab('shop'); renderShop(); }
+    else if (st === 'shop-loading') { goTab('shop'); renderShop(true); }
+    else if (st === 'shop-confirm') { goTab('shop'); tryBuy('peach'); }
+    else if (st === 'shop-bought' || st === 'shop-equipped') {
+      goTab('shop'); owned.mint = true; equipped = 'mint'; renderShop();
+    }
+    else if (st === 'no-coins') { goTab('shop'); tryBuy('crown'); }
+    else if (st === 'profile') { goTab('pet'); openProfile(); }
+    else if (st === 'game') {
+      goTab('games');
+      fillAvatars($('#f-game'));
+      $('#f-game').classList.add('demo', 'on');
+      $('#game-title').textContent = 'Крестики-нолики';
+    }
+  }
+
+  /* ---------- Events ---------- */
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    var nav = t.closest && t.closest('#tabs [data-tab]');
+    if (nav) { showScreen(nav.getAttribute('data-tab')); return; }
+
+    if (t.closest && t.closest('[data-open-profile]')) { openProfile(); return; }
+    if (t.id === 'prof-back' || (t.closest && t.closest('#prof-back'))) { hideFulls(); return; }
+
+    if (t.id === 'open-tasks' || (t.closest && t.closest('#open-tasks'))) { openTasks(false); return; }
+    if (t.id === 'open-daily' || (t.closest && t.closest('#open-daily'))) { openDaily(); return; }
+    if (t.id === 'upb' || (t.closest && t.closest('#upb'))) { toast('Макет: улучшение пока ничего не списывает', 'info'); return; }
+
+    var claim = t.closest && t.closest('[data-claim]');
+    if (claim) {
+      var tid = claim.getAttribute('data-claim');
+      TASKS.forEach(function (x) { if (x.id === tid) { x.ready = false; ME.coins += x.reward; } });
+      setBalances(); bumpBal(); renderTasks(false); toast('Награда получена', 'coin');
+      var dot = $('#tasks-dot'); if (dot && !TASKS.some(function (x) { return x.ready; })) dot.style.display = 'none';
+      return;
+    }
+
+    if (t.id === 'daily-claim' || (t.closest && t.closest('#daily-claim'))) {
+      if (dailyClaimed) return;
+      dailyClaimed = true;
+      ME.coins += 50;
+      setBalances(); bumpBal();
+      var ddot = $('#daily-dot'); if (ddot) ddot.style.display = 'none';
+      closeAllPop();
+      toast('Ежедневная награда +50', 'coin');
+      return;
+    }
+
+    var card = t.closest && t.closest('.hcard[data-id]');
+    if (card) { onCard(card.getAttribute('data-id')); return; }
+
+    if (t.id === 'next' || (t.closest && t.closest('#next'))) { goPage(curPage + 1); return; }
+    if (t.id === 'prev' || (t.closest && t.closest('#prev'))) { goPage(curPage - 1); return; }
+    var dot = t.closest && t.closest('#dots .dot');
+    if (dot) { goPage(+dot.getAttribute('data-page') || 0); return; }
+
+    var stk = t.closest && t.closest('#stakes [data-stake]');
+    if (stk) {
+      stake = +stk.getAttribute('data-stake');
+      $$('#stakes [data-stake]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-stake') === stake); });
+      return;
+    }
+
+    if (t.id === 'psRnd' || (t.closest && t.closest('#psRnd'))) { startSearch(sheetId); return; }
+    if (t.id === 'psBot' || (t.closest && t.closest('#psBot'))) {
+      var bid = sheetId; closeSheet(); hideFulls(); openGame(bid, { mode: 'bot' }); return;
+    }
+    if (t.id === 'psFriend' || (t.closest && t.closest('#psFriend'))) { renderInvite(sheetId); return; }
+    if (t.id === 'psInviteCancel' || (t.closest && t.closest('#psInviteCancel'))) { cancelInvite(); return; }
+    if (t.id === 'search-cancel' || (t.closest && t.closest('#search-cancel'))) { cancelSearch(); return; }
+    if (t.id === 'link-copy' || (t.closest && t.closest('#link-copy'))) {
+      try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(INVITE).catch(function () {}); } catch (err) {}
+      toast('Ссылка скопирована — отправь в MAX', 'info');
+      return;
+    }
+
+    if (t.closest && t.closest('[data-clan-back]')) { clanView = inClan ? 'in' : 'none'; renderClan(); return; }
+    if (t.id === 'nc-create' || (t.closest && t.closest('#nc-create'))) { fillCreateEmblems(); openOverlay('m-create'); return; }
+    if (t.id === 'contribute' || (t.closest && t.closest('#contribute'))) { toast('Вклад внесён', 'coin'); return; }
+    if (t.id === 'leave-clan' || (t.closest && t.closest('#leave-clan'))) { openOverlay('m-confirm'); return; }
+    if (t.id === 'leave-ok' || (t.closest && t.closest('#leave-ok'))) { inClan = false; clanView = 'none'; closeAllPop(); renderClan(); toast('Вы вышли из клана', 'warn'); return; }
+    var cv = t.closest && t.closest('[data-clan-view]');
+    if (cv) { clanView = cv.getAttribute('data-clan-view'); renderClan(); return; }
+    var join = t.closest && t.closest('[data-join]');
+    if (join) { inClan = true; clanView = 'in'; $('#my-clan-name').textContent = join.getAttribute('data-join'); renderClan(); toast('Вы в клане ' + join.getAttribute('data-join')); return; }
+    var emb = t.closest && t.closest('[data-emb]');
+    if (emb) { createEmblem = emb.getAttribute('data-emb'); fillCreateEmblems(); return; }
+    if (t.id === 'create-ok' || (t.closest && t.closest('#create-ok'))) {
+      var nm = ($('#clan-name-in') || {}).value || 'Новый клан';
+      inClan = true; clanView = 'in';
+      $('#my-clan-name').textContent = nm;
+      closeAllPop(); renderClan(); toast('Клан «' + nm + '» создан');
+      return;
+    }
+
+    var shopTabBtn = t.closest && t.closest('.tabs .tab[data-tab]');
+    if (shopTabBtn) {
+      shopTab = shopTabBtn.getAttribute('data-tab');
+      $$('.tabs .tab').forEach(function (b) { b.classList.toggle('on', b === shopTabBtn); });
+      $$('.tab-panel').forEach(function (p) { p.classList.toggle('on', p.id === shopTab); });
+      return;
+    }
+    var buy = t.closest && t.closest('[data-buy]');
+    if (buy) { tryBuy(buy.getAttribute('data-buy')); return; }
+    if (t.id === 'buy-ok' || (t.closest && t.closest('#buy-ok'))) { confirmBuy(); return; }
+    if (t.id === 'nc-games' || (t.closest && t.closest('#nc-games'))) { closeAllPop(); showScreen('games'); return; }
+
+    if (t.id === 'sw-sound' || (t.closest && t.closest('#sw-sound'))) {
+      soundOn = !soundOn;
+      $('#sw-sound').classList.toggle('on', soundOn);
+      return;
+    }
+
+    if (t.id === 'g-win' || (t.closest && t.closest('#g-win'))) { hideFulls(); showResult(true); return; }
+    if (t.id === 'g-lose' || (t.closest && t.closest('#g-lose'))) { hideFulls(); showResult(false); return; }
+    if (t.id === 'res-again' || (t.closest && t.closest('#res-again'))) { hideFulls(); if (sheetId || openId) { /* replay last */ } showScreen('games'); return; }
+    if (t.id === 'res-menu' || (t.closest && t.closest('#res-menu'))) { hideFulls(); showScreen('games'); return; }
+    if (t.id === 'game-exit' || (t.closest && t.closest('#game-exit'))) { hideFulls(); showScreen('games'); return; }
+
+    if (t.closest && t.closest('[data-close]')) { closeAllPop(); return; }
+    if (t.id === 'scrim' || (t.closest && t.closest('.ps-dim'))) {
+      if ($('#playSheet').classList.contains('on')) { closeSheet(); sheetId = null; sheetView = null; }
+      closeAllPop();
+      return;
+    }
+  });
+
+  var stage = $('#pet-stage');
+  if (stage) stage.addEventListener('pointerdown', onHomeTap);
+
+  var clanQ = $('#clan-q');
+  if (clanQ) clanQ.addEventListener('input', function () { renderClanList(); });
+  var clanName = $('#clan-name-in');
+  if (clanName) {
+    clanName.addEventListener('input', function () {
+      var n = clanName.value.length;
+      var c = $('#clan-name-cnt'); if (c) c.textContent = n + '/20';
+      var ok = $('#create-ok'); if (ok) ok.disabled = n < 2;
+    });
   }
 
   window.addEventListener('popstate', function (e) {
     var st = e.state || {};
     var hid = (location.hash || '').replace(/^#/, '');
+    if (hid.indexOf('state=') === 0) { applyState(hid.slice(6)); return; }
     var gid = st.game || (hid.indexOf('game-') === 0 ? hid.slice(5) : (byId(hid) ? hid : null));
-    if (gid && byId(gid)) { if (tab !== 'games') go('games', true); openGame(gid, null, true); return; }
-    if (openId) closeGame(true);
-    var t = st.tab || (hid === 'clan' || hid === 'games' || hid === 'shop' ? hid : 'pet');
-    if (t !== tab) go(t, true);
-  });
-  window.addEventListener('message', function (e) { if (e.data && e.data.hub === 'back') closeGame(false); });
-
-  // ---------- общий нижний шит для игр 1 на 1 ----------
-  var sheetEl = q('#playSheet'), sheetId = null, sheetView = null, searchT = 0, sheetCloseT = 0;
-  var IC_RND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M19 5l1.5-3M5 5L3.5 2"/></svg>';
-  var IC_BOT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="4"/><path d="M12 8V5M9 13h.01M15 13h.01M9.5 17h5"/></svg>';
-  var IC_FRIEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3.5 19c.4-3.6 3.4-5.5 5.5-5.5s5.1 1.9 5.5 5.5M14.5 13.6c1.7-.3 3.7.8 4.5 3.4"/></svg>';
-  var IC_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.4 13.2l7.2 3.6M15.6 7.2l-7.2 3.6"/></svg>';
-  var IC_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="#1FA86A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"/></svg>';
-
-  function metaOf(id) { return META[id] || {}; }
-
-  function renderModes(id) {
-    var g = byId(id), m = metaOf(id);
-    var pet = (window.TAPYSHI && TAPYSHI.petHero) ? TAPYSHI.petHero(g.pet, { mood: 'happy', pose: 'happy' }) : petArt(g.pet, { mood: 'happy', cls: 'happy' });
-    q('#psModes').innerHTML =
-      '<div class="ps-hero"><div class="ps-pet">' + pet + '</div><div class="ps-titles"><h2 id="psTitle">' + g.title + '</h2><p>' + (m.rule || g.tag) + '</p></div></div>' +
-      '<div class="ps-stake">' + IC.coin + 'Ставка ' + (m.stake || 150) + '</div>' +
-      '<div class="ps-acts">' +
-        '<button type="button" class="ps-btn rnd" id="psRnd" data-act="rnd">' + IC_RND + 'Случайный соперник</button>' +
-        '<button type="button" class="ps-btn bot" id="psBot" data-act="bot">' + IC_BOT + 'С ботом</button>' +
-        '<button type="button" class="ps-btn friend" id="psFriend" data-act="friend">' + IC_FRIEND + 'С другом</button>' +
-      '</div>';
-    q('#psRnd').onclick = function () { startSearch(id); };
-    q('#psBot').onclick = function () { playFromSheet(id, { mode: 'bot' }); };
-    q('#psFriend').onclick = function () { renderInvite(id); };
-  }
-
-  function renderSearch(id) {
-    var g = byId(id);
-    q('#psSearch').innerHTML =
-      '<div class="ps-orbit"><div class="bob">' + petArt(g.pet, { mood: 'happy', cls: 'happy' }) + '</div></div>' +
-      '<h3>Ищем соперника…</h3><p>Подбираем игрока похожего уровня</p>' +
-      '<div class="ps-dots" aria-hidden="true"><i></i><i></i><i></i></div>' +
-      '<button type="button" class="ps-cancel" id="psSearchCancel">Отмена</button>';
-    q('#psSearchCancel').onclick = function () { cancelSearch(); showSheetView('modes'); };
-  }
-
-  function renderInvite(id) {
-    q('#psInvite').innerHTML =
-      '<div class="ps-ok" aria-hidden="true">' + IC_OK + '</div>' +
-      '<h3>Ссылка скопирована</h3>' +
-      '<p>Отправь другу в MAX — как только примет, начнёте партию</p>' +
-      '<button type="button" class="ps-btn rnd" id="psShare">' + IC_SHARE + 'Поделиться</button>' +
-      '<button type="button" class="ps-cancel" id="psInviteCancel">Отмена</button>';
-    q('#psShare').onclick = function () { toast('Это макет — без настоящей отправки'); };
-    q('#psInviteCancel').onclick = function () { showSheetView('modes'); };
-    showSheetView('invite');
-  }
-
-  function showSheetView(name) {
-    sheetView = name;
-    qa('#playSheet .ps-view').forEach(function (v) {
-      var on = v.getAttribute('data-view') === name;
-      v.hidden = !on;
-    });
-  }
-
-  function openSheet(id, fromEl) {
-    var g = byId(id); if (!g || isSolo(id)) return;
-    if (openId) closeGame(true);
-    clearTimeout(searchT); clearTimeout(sheetCloseT);
-    sheetId = id;
-    renderModes(id); renderSearch(id); renderInvite(id);
-    showSheetView('modes');
-    sheetEl.classList.remove('closing');
-    void sheetEl.offsetWidth;
-    sheetEl.classList.add('on');
-    sheetEl.setAttribute('aria-hidden', 'false');
-  }
-
-  function closeSheet(immediate) {
-    clearTimeout(searchT); clearTimeout(sheetCloseT);
-    if (!sheetEl.classList.contains('on') && !sheetEl.classList.contains('closing')) {
-      sheetId = null; sheetView = null; return;
-    }
-    sheetEl.classList.remove('on');
-    if (immediate) {
-      sheetEl.classList.remove('closing');
-      sheetEl.setAttribute('aria-hidden', 'true');
-      sheetId = null; sheetView = null;
+    if (gid && byId(gid)) {
+      if (tab !== 'games') showScreen('games', true);
+      if (!openId) {
+        if (isSolo(gid)) openGame(gid, { noHist: true, hint: true, mode: 'solo' });
+        else openSheet(gid);
+      }
       return;
     }
-    sheetEl.classList.add('closing');
-    sheetCloseT = setTimeout(function () {
-      sheetEl.classList.remove('closing');
-      sheetEl.setAttribute('aria-hidden', 'true');
-      sheetId = null; sheetView = null;
-    }, 360);
-  }
-
-  function playFromSheet(id, opts) {
-    closeSheet(false);
-    setTimeout(function () { openGame(id, cardEl(id), opts); }, 180);
-  }
-
-  function startSearch(id) {
-    showSheetView('search');
-    clearTimeout(searchT);
-    searchT = setTimeout(function () {
-      if (sheetId !== id || sheetView !== 'search') return;
-      playFromSheet(id, { mode: 'random', rival: pick(RIVALS), foe: pick(FOES) });
-    }, 1600);
-  }
-  function cancelSearch() { clearTimeout(searchT); }
-
-  q('.ps-dim', sheetEl).addEventListener('click', function () { closeSheet(false); });
-
-  (function bindSwipe() {
-    var card = q('.ps-card', sheetEl);
-    var sy = 0, dy = 0, dragging = false, lastY = 0, lastT = 0, vel = 0;
-    function onDown(e) {
-      if (e.target.closest('button')) return;
-      dragging = true; dy = 0;
-      sy = (e.touches ? e.touches[0].clientY : e.clientY);
-      lastY = sy; lastT = Date.now(); vel = 0;
-      card.classList.add('dragging');
-    }
-    function onMove(e) {
-      if (!dragging) return;
-      var y = (e.touches ? e.touches[0].clientY : e.clientY);
-      dy = Math.max(0, y - sy);
-      var now = Date.now(), dt = Math.max(1, now - lastT);
-      vel = (y - lastY) / dt;
-      lastY = y; lastT = now;
-      card.style.transform = 'translateY(' + dy + 'px)';
-      if (e.cancelable) e.preventDefault();
-    }
-    function onUp() {
-      if (!dragging) return;
-      dragging = false; card.classList.remove('dragging');
-      card.style.transform = '';
-      if (dy > 80 || vel > 0.7) closeSheet(false);
-    }
-    card.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove, { passive: false });
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
-  })();
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && (sheetEl.classList.contains('on'))) closeSheet(false);
+    if (openId) closeGame(true);
+    hideFulls();
+    closeAllPop();
+    sheetId = null; sheetView = null;
+    var t = st.tab || (hid === 'clan' || hid === 'games' || hid === 'shop' ? hid : 'pet');
+    if (t !== tab) showScreen(t, true);
   });
 
+  window.addEventListener('hashchange', function () {
+    var hid = (location.hash || '').replace(/^#/, '');
+    if (hid.indexOf('state=') === 0) applyState(decodeURIComponent(hid.slice(6)));
+  });
 
+  window.addEventListener('message', function (e) { if (e.data && e.data.hub === 'back') closeGame(false); });
 
-  // ---------- старт ----------
-  if (A.globalDefs) {
-    var hold = document.createElement('div');
-    hold.innerHTML = A.globalDefs;
-    $app.insertBefore(hold.firstChild, $app.firstChild);
-  }
-  drawHome();
-  if (window.TAPYSHI && TAPYSHI.preloadLive) TAPYSHI.preloadLive('raccoon');
-  drawClan();
-  drawShop();
-  buildHub();
-  renderTabs();
+  /* boot */
+  setBalances();
+  mountHomePet();
+  renderGames();
+  renderClan();
+  renderShop();
+  renderTasks(false);
+  renderDays();
+  fillAvatars(document);
+  fillCreateEmblems();
+  bindPagerSwipe();
 
   var startHash = (location.hash || '').replace(/^#/, '');
-  if (startHash.indexOf('game-') === 0 && byId(startHash.slice(5))) {
+  if (startHash.indexOf('state=') === 0) {
+    applyState(decodeURIComponent(startHash.slice(6)));
+  } else if (startHash.indexOf('game-') === 0 && byId(startHash.slice(5))) {
     var sid = startHash.slice(5);
-    go('games', true);
-    if (isSolo(sid)) openGame(sid, null, { noHist: true, start: true, hint: true });
+    showScreen('games', true);
+    if (isSolo(sid)) openGame(sid, { noHist: true, start: true, hint: true, mode: 'solo' });
     else openSheet(sid);
   } else if (byId(startHash)) {
-    go('games', true);
-    if (isSolo(startHash)) openGame(startHash, null, { noHist: true, start: true, hint: true });
+    showScreen('games', true);
+    if (isSolo(startHash)) openGame(startHash, { noHist: true, start: true, hint: true, mode: 'solo' });
     else openSheet(startHash);
   } else if (startHash === 'clan' || startHash === 'games' || startHash === 'shop') {
-    go(startHash, true);
+    showScreen(startHash, true);
   }
 
   window.HUB = {
-    open: function (id, opts) { onCard(id, cardEl(id)); },
-    play: function (id, opts) { opts = opts || {}; closeSheet(true); openGame(id, cardEl(id), opts); },
+    open: function (id) { onCard(id); },
+    play: function (id, opts) { closeSheet(); hideFulls(); openGame(id, opts || {}); },
     sheet: function (id) { openSheet(id); },
-    closeSheet: function () { closeSheet(false); },
-    close: function () { closeSheet(true); closeGame(false); },
+    closeSheet: function () { closeSheet(); sheetId = null; sheetView = null; },
+    close: function () { closeSheet(); hideFulls(); sheetId = null; sheetView = null; closeGame(false); },
     go: goPage,
-    goTab: go,
+    goTab: showScreen,
+    applyState: applyState,
     get page() { return curPage; },
     get game() { return openId; },
     get tab() { return tab; },

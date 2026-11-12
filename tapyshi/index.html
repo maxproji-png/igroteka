@@ -3,73 +3,331 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#5a3cf0">
+  <meta name="theme-color" content="#7C9CFF">
   <title>Тапыши · макет игротеки</title>
   <link rel="icon" href="shared/img/icon.svg" type="image/svg+xml">
-  <link rel="preload" href="shared/fonts/Unbounded.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="shared/fonts/Nunito.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="shared/css/style.css">
-  <link rel="stylesheet" href="shared/css/game.css">
-  <link rel="stylesheet" href="shared/css/tasks.css">
-  <link rel="stylesheet" href="shared/css/growth.css">
-  <link rel="stylesheet" href="shared/css/boost.css">
-  <link rel="stylesheet" href="shared/css/calm.css">
-  <link rel="stylesheet" href="shared/css/skins.css">
-  <link rel="stylesheet" href="shared/css/ttt.css">
-  <link rel="stylesheet" href="shared/css/v22.css">
-  <link rel="stylesheet" href="shared/css/v24.css">
-  <link rel="stylesheet" href="shared/css/v26.css">
-  <link rel="stylesheet" href="shared/css/port.css">
+  <link rel="stylesheet" href="shared/css/shell.css">
   <link rel="stylesheet" href="home/home.css">
 </head>
 <body>
-  <div id="app">
-    <div class="bg-deco" aria-hidden="true"><i></i><i></i><i></i></div>
-    <main id="screen">
-      <section class="scr home on" id="scr-pet" data-tab="pet"></section>
-      <section class="scr scroll clanscr" id="scr-clan" data-tab="clan"></section>
-      <section class="scr gamescr" id="scr-games" data-tab="games">
-        <div class="games-head">
-          <h1>Игры <span class="proto">макет</span></h1>
-          <div class="games-bal" id="gamesBal"></div>
-        </div>
-        <div id="hub">
-          <div class="hub-top">
-            <div class="hero">
-              <div class="txt"><b>8 игр с&nbsp;питомцами</b><span>Енот, гусь, дракон и&nbsp;капибара уже ждут</span></div>
-              <div class="squad" id="squad"></div>
-            </div>
-            <div class="pagebar">
-              <h2 id="pageTitle">Страница 1<em>из 2</em></h2>
-              <div class="arrows">
-                <button class="arrow" id="prev" aria-label="Назад"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" stroke="#2A2D4B" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                <button class="arrow" id="next" aria-label="Вперёд"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" stroke="#2A2D4B" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-              </div>
-            </div>
-          </div>
-          <div class="pages" id="pages"></div>
-          <div class="dots" id="dots"></div>
-          <div class="foot">Листай влево-вправо</div>
-        </div>
-      </section>
-      <section class="scr scroll shopscr" id="scr-shop" data-tab="shop"></section>
-    </main>
-    <nav id="tabs" class="v2"></nav>
-    <div id="layer"></div>
-    <section id="game" class="glayer" aria-hidden="true">
-      <div class="gwrap" id="gwrap"><div class="loader" id="loader"></div></div>
-    </section>
-    <div id="toast" role="status"></div>
-    <div id="playSheet" class="psheet" aria-hidden="true">
-      <div class="ps-dim" data-ps="dim"></div>
-      <div class="ps-card" role="dialog" aria-modal="true" aria-labelledby="psTitle">
-        <div class="ps-handle" data-ps="handle"><i></i></div>
-        <div class="ps-view" data-view="modes" id="psModes"></div>
-        <div class="ps-view ps-search" data-view="search" id="psSearch" hidden></div>
-        <div class="ps-view ps-invite" data-view="invite" id="psInvite" hidden></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M10 6.5h10M10 12h10M10 17.5h10"/><path d="M3.5 6.5l1.3 1.3L7.3 5.3M3.5 12l1.3 1.3 2.5-2.5M3.5 17.5l1.3 1.3 2.5-2.5"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="4.5" rx="1.5"/><path d="M5 12.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5M12 8v12.5"/><path d="M12 8C10.5 4.5 7 4.3 7 6.3S10 8 12 8zM12 8c1.5-3.5 5-3.7 5-1.7S14 8 12 8z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 2 4.5 13.5h6.5l-1 8.5 9-11.5h-6.5z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5.5a4 4 0 0 1-8 0z"/><path d="M8 6H5.2a3 3 0 0 0 3 4.3M16 6h2.8a3 3 0 0 1-3 4.3M12 13.5V17M9.5 17h5v3.5h-5z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="3"/><path d="M15.5 8.5v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 13.6c2.8.2 5 2 5 4.9"/></symbol>
+  <symbol id="i-sad" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 16.2c1-1.3 2.2-2 3.5-2s2.5.7 3.5 2"/><path d="M9 10h.01M15 10h.01" stroke-width="3"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 11v5.5M12 7.5h.01"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.5 3.5 5.5 3.5 8.5s-1.1 6-3.5 8.5c-2.4-2.5-3.5-5.5-3.5-8.5s1.1-6 3.5-8.5z"/></symbol>
+</svg>
+
+<div class="app" id="app">
+
+  <!-- Питомец -->
+  <section class="screen active" id="scr-pet" data-screen="pet">
+    <div class="topbar">
+      <div class="title">Питомец</div>
+      <div class="topbar-r">
+        <div class="balance"><span class="coin"></span><span class="bal-val" id="bal">12 000</span></div>
+        <button class="icon-btn" data-open-profile aria-label="Профиль и настройки"><svg><use href="#i-gear"/></svg></button>
       </div>
     </div>
+    <div class="pet-actions">
+      <button class="chip" id="open-tasks"><span class="ci"><svg><use href="#i-list"/></svg></span>Задания<span class="reddot" id="tasks-dot"></span></button>
+      <button class="chip" id="open-daily"><span class="ci sun"><svg><use href="#i-gift"/></svg></span>Награда<span class="reddot" id="daily-dot"></span></button>
+    </div>
+    <div class="slot pet-stage" data-slot="pet-model" id="pet-stage">Место под модельку питомца</div>
+    <div class="card energy">
+      <div class="row">
+        <div class="en-l"><span class="bolt"><svg viewBox="0 0 24 24"><use href="#i-bolt"/></svg></span><span id="en-val">330 / 330</span></div>
+        <span class="per-tap">1 за тап</span>
+      </div>
+      <div class="progress sun"><span id="en-bar" style="width:100%"></span></div>
+    </div>
+    <div class="card pet-card">
+      <div class="pet-name">Булочка</div>
+      <div class="muted pet-level">Подросток · уровень 7</div>
+      <div class="row"><span class="muted">Прогресс</span><span class="muted" id="xp-val">7 / 10</span></div>
+      <div class="progress"><span id="xp-bar" style="width:40%"></span></div>
+      <button class="btn" id="upb">Улучшить</button>
+    </div>
+  </section>
+
+  <!-- Клан -->
+  <section class="screen" id="clan">
+    <div class="cview" id="cv-in">
+      <div class="topbar">
+        <div class="title">Клан</div>
+        <div class="topbar-r">
+          <button class="icon-btn" data-clan-view="top" aria-label="Топ кланов"><svg><use href="#i-trophy"/></svg></button>
+          <button class="icon-btn" data-open-profile aria-label="Профиль и настройки"><svg><use href="#i-gear"/></svg></button>
+        </div>
+      </div>
+      <div class="card clan-card">
+        <div class="clan-head">
+          <div class="slot clan-emblem" data-slot="clan-emblem">Герб</div>
+          <div>
+            <div class="clan-name" id="my-clan-name">Пончики</div>
+            <div class="muted" id="my-clan-count">4 участника</div>
+          </div>
+        </div>
+        <div class="row"><span class="muted">Цель клана</span><span class="muted">7 / 10</span></div>
+        <div class="progress mint"><span style="width:70%"></span></div>
+      </div>
+      <div class="section-label">Участники</div>
+      <div class="members" id="members"></div>
+      <button class="btn mint" id="contribute">Внести вклад</button>
+      <button class="link-btn warn" id="leave-clan">Покинуть клан</button>
+    </div>
+
+    <div class="cview" id="cv-none">
+      <div class="topbar">
+        <div class="title">Клан</div>
+        <div class="topbar-r">
+          <button class="icon-btn" data-open-profile aria-label="Профиль и настройки"><svg><use href="#i-gear"/></svg></button>
+        </div>
+      </div>
+      <div class="card noclan">
+        <div class="slot" data-slot="clan-emblem">Герб</div>
+        <h3>Вы пока не в клане</h3>
+        <div class="muted">Вступите в клан или создайте свой, чтобы вместе выполнять цели</div>
+        <div class="stack">
+          <button class="btn" id="nc-create">Создать</button>
+          <button class="btn mint" data-clan-view="list">Найти</button>
+        </div>
+      </div>
+      <div class="section-label row"><span>Топ кланов</span><button class="more" data-clan-view="top">Все</button></div>
+      <div class="members" id="top-preview"></div>
+    </div>
+
+    <div class="cview" id="cv-list">
+      <div class="subhead"><button class="icon-btn" data-clan-back aria-label="Назад"><svg><use href="#i-back"/></svg></button><div class="title">Найти клан</div></div>
+      <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="clan-q" type="text" placeholder="Название клана" autocomplete="off"></label>
+      <div class="members" id="clan-results"></div>
+    </div>
+
+    <div class="cview" id="cv-top">
+      <div class="subhead"><button class="icon-btn" data-clan-back aria-label="Назад"><svg><use href="#i-back"/></svg></button><div class="title">Топ кланов</div></div>
+      <div class="podium" id="podium"></div>
+      <div class="members" id="top-list"></div>
+    </div>
+  </section>
+
+  <!-- Игры -->
+  <section class="screen" id="games">
+    <div class="topbar">
+      <div class="title">Игры</div>
+      <div class="topbar-r">
+        <div class="balance"><span class="coin"></span><span class="bal-val">12 000</span></div>
+        <div class="pagebar">
+          <button class="icon-btn" id="prev" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <button class="icon-btn" id="next" aria-label="Вперёд"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+        <button class="icon-btn" data-open-profile aria-label="Профиль и настройки"><svg><use href="#i-gear"/></svg></button>
+      </div>
+    </div>
+    <div class="pager" id="hub">
+      <div class="pages" id="pages"><div class="page"></div><div class="page"></div></div>
+    </div>
+    <div class="dots" id="dots"><button class="dot on" data-page="0" aria-label="Страница 1"></button><button class="dot" data-page="1" aria-label="Страница 2"></button></div>
+    <div class="skel-grid" id="games-skel"></div>
+  </section>
+
+  <!-- Магазин -->
+  <section class="screen" id="shop">
+    <div class="topbar">
+      <div class="title">Магазин</div>
+      <div class="topbar-r">
+        <div class="balance"><span class="coin"></span><span class="bal-val">12 000</span></div>
+        <button class="icon-btn" data-open-profile aria-label="Профиль и настройки"><svg><use href="#i-gear"/></svg></button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="t1">Скины</button>
+      <button class="tab" data-tab="t2">Еда</button>
+      <button class="tab" data-tab="t3">Бонусы</button>
+    </div>
+    <div class="tab-panel on" id="t1"><div class="items"></div></div>
+    <div class="tab-panel" id="t2"><div class="items"></div></div>
+    <div class="tab-panel" id="t3"><div class="items"></div></div>
+    <div class="shop-skel" id="shop-skel"></div>
+  </section>
+
+  <nav class="nav" id="tabs">
+    <button class="on" data-screen="pet" data-tab="pet">
+      <svg viewBox="0 0 24 24"><path d="M12 20c-4 0-7-2.2-7-5.2C5 12 8 10 12 10s7 2 7 4.8c0 3-3 5.2-7 5.2z"/><circle cx="6" cy="6.5" r="1.8"/><circle cx="10" cy="4.5" r="1.8"/><circle cx="14" cy="4.5" r="1.8"/><circle cx="18" cy="6.5" r="1.8"/></svg>
+      Питомец
+    </button>
+    <button data-screen="clan" data-tab="clan">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 13.6c2.8.2 5 2 5 4.9"/></svg>
+      Клан
+    </button>
+    <button data-screen="games" data-tab="games">
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 11v3M6 12.5h3"/><circle cx="15.5" cy="11.5" r=".6"/><circle cx="17.5" cy="13.5" r=".6"/></svg>
+      Игры
+    </button>
+    <button data-screen="shop" data-tab="shop">
+      <svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>
+      Магазин
+    </button>
+  </nav>
+
+  <!-- ===== Полноэкранные слои ===== -->
+  <section class="full" id="psSearch">
+    <div class="full-center">
+      <div class="radar"><i></i><i></i><i></i><div class="slot avatar" data-slot="player-avatar"></div></div>
+      <div class="f-title">Ищем соперника<span class="dots3"><b>.</b><b>.</b><b>.</b></span></div>
+      <div class="muted" id="search-sub">Игра 1 · ставка 50</div>
+      <div class="timer" id="search-timer">0:00</div>
+    </div>
+    <button class="btn soft" id="search-cancel">Отмена</button>
+  </section>
+
+  <section class="full" id="psInvite">
+    <div class="full-center">
+      <div class="big-ic mint pop"><svg><use href="#i-check"/></svg></div>
+      <div class="f-title">Ссылка скопирована</div>
+      <div class="muted">Отправь в MAX — игра начнётся, как только друг перейдёт по ссылке</div>
+      <div class="linkbox"><span id="link-text">https://max.ru/tapyshi_bot?startapp=duel_8F3K</span><button class="icon-btn sm" id="link-copy" aria-label="Скопировать"><svg><use href="#i-copy"/></svg></button></div>
+      <div class="waiting"><span class="spin"></span>Ждём друга…</div>
+    </div>
+    <button class="btn soft" id="psInviteCancel">Отмена</button>
+  </section>
+
+  <section class="full" id="f-game">
+    <div class="topbar">
+      <button class="icon-btn" id="game-exit" aria-label="Выйти"><svg><use href="#i-back"/></svg></button>
+      <div class="title sm" id="game-title">Игра 1</div>
+      <span class="pill rec" id="game-pill"><span class="coin"></span>50</span>
+    </div>
+    <div class="vs" id="game-vs">
+      <div class="pl"><div class="slot avatar" data-slot="player-avatar"></div>Вы</div>
+      <div class="vs-c">VS</div>
+      <div class="pl"><div class="slot avatar" data-slot="opponent-avatar"></div><span id="opp-name">Бот</span></div>
+    </div>
+    <div class="slot game-area" data-slot="game">Место под игру</div>
+    <div class="muted center demo-cap">Демо: выберите исход партии</div>
+    <div class="two demo-out"><button class="btn mint" id="g-win">Победа</button><button class="btn peach" id="g-lose">Поражение</button></div>
+  </section>
+
+  <section class="full" id="f-result">
+    <div class="confetti" id="confetti"></div>
+    <div class="full-center">
+      <div class="big-ic sun pop" id="res-ic"><svg><use href="#i-trophy"/></svg></div>
+      <div class="f-title big" id="res-title">Победа!</div>
+      <div class="muted" id="res-sub">Вы обыграли соперника</div>
+      <div class="res-pill" id="res-pill"><span class="coin"></span><span>+50</span></div>
+    </div>
+    <div class="stack"><button class="btn" id="res-again">Ещё раз</button><button class="btn soft" id="res-menu">В меню</button></div>
+  </section>
+
+  <section class="full" id="f-profile">
+    <div class="subhead"><button class="icon-btn" id="prof-back" aria-label="Назад"><svg><use href="#i-back"/></svg></button><div class="title">Профиль</div></div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="prof">
+        <div class="slot avatar" data-slot="player-avatar">Аватар</div>
+        <div><div class="prof-n">Булочка</div><div class="muted">ID 4815 1623</div></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b><span class="coin"></span><span class="bal-val">12 000</span></b><span>Монеты</span></div>
+        <div class="stat"><b id="st-wins">12</b><span>Побед</span></div>
+        <div class="stat"><b>7</b><span>Уровень</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px;padding:10px 20px">
+      <div class="set-row"><span class="set-ic"><svg><use href="#i-sound"/></svg></span><span class="set-l">Звук</span><button class="switch on" id="sw-sound" aria-label="Звук"></button></div>
+    </div>
+  </section>
+
+  <!-- ===== Шторки и окна ===== -->
+  <div class="scrim" id="scrim"></div>
+
+  <div class="sheet" id="s-tasks">
+    <div class="grabber"></div>
+    <div class="sheet-h"><div class="sheet-t">Задания</div><button class="x" data-close aria-label="Закрыть"><svg><use href="#i-x"/></svg></button></div>
+    <div class="task-list" id="task-list"></div>
   </div>
+
+  <div class="sheet" id="playSheet">
+    <div class="ps-dim" data-ps="dim"></div>
+    <div class="ps-card">
+    <div class="grabber"></div>
+    <div class="slot duel-prev filled" data-slot="game-preview" id="duel-prev">Превью игры</div>
+    <div class="row"><div class="duel-name" id="duel-name">Игра 1</div><span class="pill duo"><svg><use href="#i-users"/></svg>2 игрока</span></div>
+    <div class="muted" style="margin-top:4px" id="duel-rule">Правила игры</div>
+    <div class="label">Ставка</div>
+    <div class="stakes" id="stakes"></div>
+    <div class="duel-btns">
+      <button class="btn" id="psRnd">Случайный соперник</button>
+      <div class="two"><button class="btn soft" id="psBot">С ботом</button><button class="btn soft" id="psFriend">С другом</button></div>
+    </div>
+    </div>
+  </div>
+
+  <div class="modal" id="m-daily">
+    <button class="x" data-close aria-label="Закрыть"><svg><use href="#i-x"/></svg></button>
+    <div class="big-ic sun sm pop"><svg><use href="#i-gift"/></svg></div>
+    <div class="m-title">Ежедневная награда</div>
+    <div class="muted center">Заходите каждый день — награда растёт</div>
+    <div class="days" id="days"></div>
+    <button class="btn" id="daily-claim">Забрать</button>
+  </div>
+
+  <div class="modal" id="m-create">
+    <button class="x" data-close aria-label="Закрыть"><svg><use href="#i-x"/></svg></button>
+    <div class="m-title">Новый клан</div>
+    <div class="muted center">Придумайте название и выберите герб</div>
+    <div class="slot emb-pick" data-slot="clan-emblem-picker">Герб</div>
+    <div class="field-wrap"><input class="field" id="clan-name-in" maxlength="20" placeholder="Название клана" autocomplete="off"><span class="counter" id="clan-name-cnt">0/20</span></div>
+    <button class="btn" id="create-ok" disabled>Создать</button>
+  </div>
+
+  <div class="modal" id="m-confirm">
+    <div class="big-ic peach sm"><svg><use href="#i-sad"/></svg></div>
+    <div class="m-title">Покинуть клан?</div>
+    <div class="muted center">Ваш вклад останется в клане</div>
+    <div class="two"><button class="btn soft" data-close>Остаться</button><button class="btn peach" id="leave-ok">Выйти</button></div>
+  </div>
+
+  <div class="modal" id="m-buy">
+    <button class="x" data-close aria-label="Закрыть"><svg><use href="#i-x"/></svg></button>
+    <div class="slot buy-prev" data-slot="item">Превью</div>
+    <div class="m-title" id="buy-name">Предмет 1</div>
+    <div class="muted center" id="buy-cat">Скины</div>
+    <div style="margin-top:10px">
+      <div class="kv"><span class="muted">Цена</span><b><span class="coin"></span><span id="buy-price">300</span></b></div>
+      <div class="kv"><span class="muted">Останется</span><b><span class="coin"></span><span id="buy-left">950</span></b></div>
+    </div>
+    <div class="two"><button class="btn soft" data-close>Отмена</button><button class="btn" id="buy-ok">Купить</button></div>
+  </div>
+
+  <div class="modal" id="m-nocoins">
+    <button class="x" data-close aria-label="Закрыть"><svg><use href="#i-x"/></svg></button>
+    <div class="big-ic peach sm"><span class="coin"></span></div>
+    <div class="m-title">Не хватает монет</div>
+    <div class="muted center" id="nc-text">Нужно ещё 3 750 — сыграйте в игры или выполните задания</div>
+    <div class="nc-bar"><div class="row"><span class="muted">Баланс</span><span class="muted" id="nc-val">1 250 / 5 000</span></div><div class="progress peach"><span id="nc-fill" style="width:25%"></span></div></div>
+    <button class="btn" id="nc-games">Заработать в играх</button>
+  </div>
+
+
+  <section id="game" class="glayer" aria-hidden="true">
+    <div class="gwrap" id="gwrap"><div class="loader" id="loader"></div></div>
+  </section>
+
+  <div class="toasts" id="toasts"></div>
+</div>
+
+
   <script src="shared/js/art.js"></script>
   <script src="pets/pets-bridge.js"></script>
   <script src="shared/js/hub-data.js"></script>
