@@ -1,0 +1,25 @@
+/* v26: компактная шапка клана, «Выйти», простая карточка дуэли, глава 👑, меню игрока, «Клан засыпает» */
+.cn-head{align-items:center}.cn-head .cn-t{flex:1;min-width:0}.cn-head .crest{width:54px}
+.cn-head h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cn-leave{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:18px;border:0;background:rgba(20,8,70,.32);color:#fff;font:800 13px Nunito,sans-serif;flex:none}
+.cn-leave svg,.cn-leave-big svg{width:16px;height:16px}
+.cn-leave-big{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:18px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font:800 15px Nunito,sans-serif}
+.cxs .cxs-row{display:flex;align-items:center;justify-content:space-around;margin:10px 0 8px}
+.cxs .cxs-s{display:flex;flex-direction:column;align-items:center;width:42%}.cxs .cxs-s .crest{width:46px}
+.cxs .cxs-s .sc{font:800 30px Unbounded,sans-serif;line-height:1.1;margin-top:4px}.cxs.win .cxs-s:first-child .sc{color:#5cf2a6}.cxs.lose .cxs-s:last-child .sc{color:#ff8a8a}
+.cxs .cxs-s .nm{font-size:13px;font-weight:800;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.cxs .cxs-vs{font:800 14px Unbounded,sans-serif;opacity:.6}
+.cxs-st{text-align:center;font:800 18px Unbounded,sans-serif;margin:10px 0 12px}
+.cxs .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px}.cxs .btn svg{width:22px;height:22px}
+.cxs-pr{text-align:center;font-size:13px;font-weight:800;opacity:.8;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px}.cxs-pr svg{width:16px;height:16px}
+.cn-dots{margin-left:8px;width:34px;height:34px;flex:none;border-radius:17px;border:0;background:rgba(255,255,255,.14);color:#fff;font:900 18px Nunito,sans-serif;line-height:1}
+.tag.own{background:#ffd84a;color:#4a2a00}
+.cn-sheet{padding:8px 4px 4px}.cn-sheet .who{display:flex;align-items:center;gap:12px;margin:6px 0 16px}.cn-sheet .who b{font:800 18px Unbounded,sans-serif;color:#2a1a6e}
+.cn-sheet .cn-sub{color:#6b5fa8;font-weight:700;font-size:13px}
+.cn-sheet .row{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:0;border-radius:16px;background:#f1edff;margin-bottom:10px;font:800 15px Nunito,sans-serif;color:#2a1a6e;text-align:left}
+.cn-sheet .row.red{background:#ffe9ea;color:#d9304a}.cn-sheet .row[disabled]{opacity:.5}.cn-sheet .row small{display:block;font-weight:700;opacity:.65;font-size:12.5px}
+.namepop .later.danger{color:#ff6b6b}
+.cn-crown{font-size:54px;line-height:1}
+.cn-ban{margin:12px 14px 0;padding:12px 14px;border-radius:20px;background:linear-gradient(135deg,#ffd84a,#ffb21f);color:#4a2a00;display:flex;gap:12px;align-items:center;font-weight:800;font-size:14px;box-shadow:0 8px 20px rgba(20,8,70,.25)}
+.cn-ban .ic{font-size:28px}.cn-ban b{display:block;font:800 15px Unbounded,sans-serif}
+.cn-ban.warn{background:linear-gradient(135deg,#ff9a8a,#ff6b6b);color:#fff}
