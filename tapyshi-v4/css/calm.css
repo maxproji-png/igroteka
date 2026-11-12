@@ -1,0 +1,75 @@
+/* ===== Спокойный главный экран: меньше плашек ===== */
+.scr.home .top { position: relative; }
+/* задания — круглая кнопка справа от клана, красная цифра только когда есть что забрать */
+.taskbtn { position: absolute; right: 14px; top: 14px; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  background: rgba(20,8,70,.28); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.14); }
+.taskbtn svg { width: 21px; height: 21px; color: var(--gold1); filter: drop-shadow(0 1.5px 0 rgba(120,50,0,.35)); }
+.taskbtn .tb-badge { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--red); color: #fff;
+  font-style: normal; font-family: var(--display); font-weight: 800; font-size: 10.5px; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px #6a45f0; }
+/* имя и форма — одна тихая строка */
+.scr.home .balance .pname { margin-top: 4px; font-size: 14px; font-weight: 700; color: rgba(255,255,255,.7); letter-spacing: .01em; }
+/* декоративное кольцо — только во время серии */
+.scr.home .tapzone .ring { opacity: 0; transition: opacity .4s; }
+.scr.home .tapzone.s1 .ring, .scr.home .tapzone.s2 .ring { opacity: 1; }
+/* серия — маленький значок у питомца, только пока действует ×1,5/×2 */
+.schip { position: absolute; z-index: 6; top: 16%; right: 13%; display: inline-flex; align-items: center; gap: 3px; height: 32px; padding: 0 11px 0 7px; border-radius: 16px;
+  background: linear-gradient(180deg, #ffd06b, #ff9a1f); color: #5a2600; box-shadow: 0 3px 0 rgba(150,60,0,.35);
+  opacity: 0; transform: scale(.6); transition: opacity .35s, transform .35s cubic-bezier(.3,1.6,.5,1); pointer-events: none; }
+.schip.on { opacity: 1; transform: none; }
+.schip .fire { width: 18px; height: 18px; }
+.schip b { font-family: var(--display); font-weight: 900; font-size: 16px; }
+.schip.l2 { background: linear-gradient(180deg, #ffb35c, #ff4d2e); color: #fff; box-shadow: 0 3px 0 rgba(150,30,0,.4), 0 0 16px rgba(255,110,40,.6); }
+.schip.l2 .fire path:first-child { fill: #ffe066; }
+.schip.bump { animation: schipBump .35s ease-out; }
+@keyframes schipBump { 40% { transform: scale(1.25); } }
+/* энергия: только число и тихое «через N мин» */
+.scr.home .energy .row .regen { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6); }
+/* онлайн — в той же строке, маленькая зелёная точка */
+.scr.home .balance .pname { white-space: nowrap; }
+.scr.home .pname .onl { color: rgba(255,255,255,.6); }
+.scr.home .pname .onl b { font-weight: 800; color: rgba(255,255,255,.75); font-variant-numeric: tabular-nums; }
+.scr.home .pname .odot2 { display: inline-block; width: 7px; height: 7px; margin: 0 5px 0 1px; border-radius: 50%; background: #3ee08f; box-shadow: 0 0 0 2px rgba(62,224,143,.22); vertical-align: 1px; }
+
+/* вход в админку — только у владельца, тихая строка внизу вкладки «Клан» */
+.adm-link { display: block; margin: 22px auto 0; padding: 8px 14px; font-size: 12.5px; font-weight: 800; color: rgba(255,255,255,.55); }
+/* прокрутка вкладок: жест не «прилипает» к краю и не утаскивает весь webview */
+.scr.scroll { overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+
+/* ✕ у всех окон (вместо свайпа вниз — в MAX он закрывает мини-апп) */
+.lx { position: absolute; top: 12px; right: 12px; z-index: 3; width: 40px; height: 40px; border: 0; padding: 0; border-radius: 14px; display: grid; place-items: center; cursor: pointer; background: #efeaff; color: #6d4ff5; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.lx svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
+.lx:active { transform: scale(.92); }
+.lx::after { content: ''; position: absolute; inset: -8px; }
+.sheet { padding-top: 18px; overscroll-behavior: contain; }
+.sheet .grab { display: none; }
+.sheet .sh-h { padding-right: 48px; min-height: 40px; }
+.namepop { position: relative; }
+.namepop .lx, .modal > .lx { background: rgba(255,255,255,.18); color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.25); }
+.namepop .lx { top: 10px; right: 10px; }
+.modal > .lx { top: 14px; right: 14px; }
+
+/* ===== v21: чистый верх (d3) — баланс и под ним компактная «Задания»; имя питомца — на подиуме ===== */
+.scr.home .top { padding-top: 6px; }
+.scr.home .tp-slot { display: flex; justify-content: center; margin-top: 8px; min-height: 38px; }
+.scr.home .tp-slot:empty { min-height: 0; margin-top: 0; }
+.tasks-pill { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 15px 0 4px; border-radius: 19px; color: #fff;
+  background: rgba(20,8,70,.32); box-shadow: inset 0 0 0 1.5px rgba(255,224,102,.6); font-size: 14px; white-space: nowrap; animation: tpIn .35s ease-out; }
+.tasks-pill .ic { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #6a3500; background: linear-gradient(180deg, var(--gold1), var(--gold2)); box-shadow: 0 2px 0 var(--gold3); }
+.tasks-pill .ic svg { width: 17px; height: 17px; }
+.tasks-pill b { font-family: var(--display); font-weight: 800; }
+.tasks-pill .tb-badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--red); color: #fff;
+  font-style: normal; font-family: var(--display); font-weight: 800; font-size: 11px; line-height: 20px; text-align: center; box-shadow: 0 0 0 2.5px #6a45f0; }
+.tasks-pill:active { transform: scale(.96); }
+@keyframes tpIn { from { opacity: 0; transform: translateY(-4px) scale(.9); } }
+/* питомец и подпись — одним столбиком по центру; на низких экранах питомец ужимается по высоте зоны (container query), чтобы шапка не наезжала на «Задания» */
+.scr.home .tapzone { container-type: size; }
+.scr.home .pet-col { position: relative; display: flex; flex-direction: column; align-items: center; max-width: 100%; padding-top: var(--pet-top, 0px); }
+.scr.home .tapzone .pet-wrap { max-width: calc((100cqh - 44px) * var(--pet-k, .74)); }
+.scr.home .schip { top: 2px; right: 12px; }
+/* старшие стадии выше: голова и шапка выходят за рамку — даём им место сверху */
+.scr.home .pet-col[data-st="3"] { --pet-k: .72; padding-top: 6px; }
+.scr.home .pet-col[data-st="4"] { --pet-k: .68; padding-top: 18px; }
+.scr.home .pet-col[data-st="5"] { --pet-k: .66; padding-top: 26px; }
+.scr.home .pname.podium { position: relative; z-index: 4; max-width: 330px; overflow: hidden; text-overflow: ellipsis;
+  margin: -8px 0 0; padding: 5px 12px; border-radius: 13px; background: rgba(20,8,70,.28); color: rgba(255,255,255,.9); font-size: 12.5px; font-weight: 800; white-space: nowrap; pointer-events: none; }
+.scr.home .pname.podium:empty { display: none; }
