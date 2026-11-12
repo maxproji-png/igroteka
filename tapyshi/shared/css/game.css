@@ -1,0 +1,62 @@
+/* «Тапыши» MVP — дополнения к стилю концепта v2 (клан без клана, создание клана, друзья, ошибки) */
+.scr.boot { align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+.fatal { padding: 18px 18px 20px; max-width: 340px; }
+.fatal .f-pet { width: 150px; margin: 0 auto 6px; }
+.fatal p { color: rgba(255,255,255,.8); margin: 8px 0 16px; line-height: 1.35; }
+.invite-line .solo { padding: 6px 4px 6px 8px; }
+.clanline.noclan { padding-left: 12px; }
+.clanline.noclan svg { width: 22px; height: 22px; color: var(--gold1); }
+.balance .pname { margin-top: 2px; font-size: 14px; color: rgba(255,255,255,.82); }
+.noclan-card { padding: 18px 16px 16px; text-align: center; margin-top: 12px; }
+.noclan-card .nc-crests { display: flex; justify-content: center; gap: 4px; margin-bottom: 10px; }
+.noclan-card .nc-crests .crest { width: 52px; }
+.noclan-card .nc-crests .crest:nth-child(odd) { transform: translateY(6px) rotate(-6deg); }
+.noclan-card .nc-crests .crest:nth-child(even) { transform: rotate(6deg); }
+.noclan-card p { color: rgba(255,255,255,.82); font-size: 14px; line-height: 1.35; margin: 8px 0 16px; }
+.noclan-card .btn + .btn { margin-top: 12px; }
+.card.empty, .card.loading { padding: 16px; text-align: center; color: rgba(255,255,255,.8); font-size: 14px; }
+.pad .card.loading { margin-top: 14px; }
+.leave { display: block; margin: 22px auto 0; padding: 10px 16px; font-size: 13.5px; color: rgba(255,255,255,.6); font-weight: 800; }
+.dd-me { text-align: center; font-size: 13.5px; color: rgba(255,255,255,.85); margin: 2px 0 10px; }
+.dd-me b { color: var(--gold1); font-family: var(--display); }
+.tops .p.none { font-size: 12px; color: rgba(255,255,255,.7); line-height: 1.3; text-align: center; display: block; }
+.mkclan h2 { color: var(--ink); text-align: center; }
+.mkclan .sh-sub { text-align: center; margin-top: 4px; }
+.inp.light { display: flex; align-items: center; height: 56px; border-radius: 18px; background: #f1ecff; padding: 0 16px; margin-bottom: 12px; box-shadow: inset 0 -3px 0 #e2dafc; }
+.inp.light input { flex: 1; border: 0; outline: 0; background: none; color: var(--ink); font-family: var(--display); font-weight: 800; font-size: 18px; min-width: 0; }
+.inp.light input::placeholder { color: #b7acd8; }
+.inp.light .cnt { font-size: 12px; color: #a99dd0; }
+.chips.dark .chip { background: #ebe5ff; color: var(--ink); }
+.chips.dark .chip.on { background: var(--gold1); color: #4a2300; }
+.crest-pick { display: flex; justify-content: center; gap: 10px; margin: 0 0 16px; }
+.crest-pick .cp { width: 64px; height: 70px; border-radius: 18px; display: grid; place-items: center; background: #f1ecff; }
+.crest-pick .cp .crest { width: 48px; }
+.crest-pick .cp.on { background: #fff4c0; box-shadow: inset 0 0 0 3px var(--gold2); }
+.offer-crest { width: 80px; margin: 0 auto 6px; }
+.namepop p.muted { margin: 8px 0 16px; font-size: 14px; line-height: 1.35; }
+.namepop .btn.white + .later, .namepop .btn.green + .later { margin-top: 10px; }
+.btn[disabled] { opacity: .7; pointer-events: none; }
+
+/* ---- очередь при перегрузке: «Тапыши отдыхают» ---- */
+.queue { padding: 16px 18px 20px; max-width: 350px; width: 100%; }
+.queue h2 { font-size: 21px; line-height: 1.2; }
+.queue p { color: rgba(255,255,255,.82); margin: 8px 0 12px; line-height: 1.35; font-size: 14.5px; }
+.q-pets { position: relative; height: 128px; display: flex; justify-content: center; align-items: flex-end; margin-bottom: 4px; }
+.q-pet { width: 92px; animation: breathe 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
+.q-pet.b { width: 118px; margin: 0 -14px; z-index: 1; animation-delay: -1.1s; }
+.q-pet.a { rotate: -8deg; animation-delay: -.4s; } .q-pet.c { rotate: 8deg; animation-delay: -2s; }
+.zz { position: absolute; font-family: var(--display); font-weight: 900; color: #fff; opacity: 0; text-shadow: 0 2px 0 rgba(40,10,90,.35); animation: zz 3s ease-in infinite; }
+.zz.z1 { left: 58%; top: 18px; font-size: 16px; } .zz.z2 { left: 64%; top: 6px; font-size: 20px; animation-delay: 1s; } .zz.z3 { left: 71%; top: -6px; font-size: 26px; animation-delay: 2s; }
+@keyframes zz { 0% { opacity: 0; transform: translate(0, 10px) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(18px, -26px) scale(1.1); } }
+.q-pos { display: inline-flex; align-items: baseline; gap: 8px; padding: 7px 14px; border-radius: 14px; background: rgba(255,255,255,.14); margin-bottom: 12px; font-size: 13.5px; color: rgba(255,255,255,.85); }
+.q-pos b { font-family: var(--display); color: var(--gold1); font-size: 17px; }
+.q-ring { position: relative; width: 104px; height: 104px; margin: 0 auto 6px; }
+.q-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.q-ring circle { fill: none; stroke-width: 9; }
+.q-ring .bg { stroke: rgba(255,255,255,.16); }
+.q-ring .fg { stroke: var(--gold1); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.q-sec { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.q-sec b { font-family: var(--display); font-size: 30px; line-height: 1; }
+.q-sec span { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 2px; }
+.q-note { font-size: 13.5px; color: rgba(255,255,255,.78); margin-bottom: 14px; }
+.queue .btn[disabled] { opacity: .55; }

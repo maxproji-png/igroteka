@@ -1,0 +1,11 @@
+/* Главный экран: размер живой 3D-модели и дыхание. */
+.tapzone .pet-wrap { aspect-ratio: 1 / 1.06; height: auto; }
+.tapzone .pet-wrap .pet-idle,
+.tapzone .pet-wrap .pet-hero,
+.tapzone .pet-wrap .home-hero { width: 100%; height: 100%; display: block; }
+.tapzone .pet-wrap .pet-idle { height: 100%; }
+.ou-pet img, .ou-pet .pet-hero { width: 100%; height: 100%; display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .tapzone .pet-idle { animation: none !important; }
+}
+.tapzone .pet-idle:has(.is-live) { animation: none; }

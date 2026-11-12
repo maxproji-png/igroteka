@@ -1,0 +1,37 @@
+/* v24 концепт */
+/* (1) энергия кончилась — карточка вместо полоски */
+.enx { margin: 0 14px 12px; padding: 12px 14px 12px; border-radius: 20px; background: rgba(255,255,255,.96); color: var(--ink, #241a4a); box-shadow: 0 8px 24px rgba(30,10,90,.28); }
+.enx.bump { animation: enxb .35s; } @keyframes enxb { 40% { transform: scale(1.03); } }
+.enx-top { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.enx-top svg { width: 18px; height: 18px; color: #ffb21f; fill: #ffb21f; }
+.enx-top > b { font-family: var(--display); font-size: 14px; white-space: nowrap; }
+.enx-top span { white-space: nowrap; margin-left: auto; color: #7a6fa8; font-weight: 700; } .enx-top span b { color: #5a3cf0; font-family: var(--display); }
+.enx .bar { height: 10px; margin: 8px 0 10px; border-radius: 6px; background: #ece6ff; overflow: hidden; } .enx .bar i { display: block; height: 100%; background: linear-gradient(90deg,#ffe066,#ffb21f); border-radius: 6px; }
+.enx-btns { display: flex; gap: 8px; } .enx-btns .btn { flex: 1; min-height: 46px; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; position: relative; }
+.enx-btns .btn svg { width: 18px; height: 18px; } .enx-btns .tb-badge { position: static; margin-left: 4px; }
+.enx-sheet { text-align: center; padding: 6px 4px 4px; }
+.enx-bolt { width: 64px; height: 64px; margin: 4px auto 8px; border-radius: 20px; background: #fff3c4; display: grid; place-items: center; } .enx-bolt svg { width: 36px; height: 36px; fill: #ffb21f; color: #ffb21f; }
+.enx-sheet h2 { margin: 0 0 4px; } .enx-sheet .sub { color: #6b6290; font-weight: 700; margin-bottom: 14px; } .enx-sheet .sub b { color: #5a3cf0; }
+.enx-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px; margin-top: 10px; border: 0; border-radius: 18px; background: #f4f0ff; text-align: left; font: inherit; color: inherit; }
+.enx-row .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: #fff; flex: none; } .enx-row .ic.g { background: #22c38e; } .enx-row .ic.v { background: #6b4bf5; } .enx-row .ic svg { width: 24px; height: 24px; }
+.enx-row .t { flex: 1; display: flex; flex-direction: column; } .enx-row .t b { font-family: var(--display); font-size: 16px; } .enx-row .t small { color: #7a6fa8; font-weight: 700; font-size: 12.5px; }
+.enx-row .go { background: #5a3cf0; color: #fff; font-weight: 800; padding: 10px 14px; border-radius: 14px; }
+/* (3) без клана */
+.mk-link { display: block; margin: 12px auto 0; background: none; border: 0; color: rgba(255,255,255,.85); font: 800 14px var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.mk-lock { margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; color: rgba(255,255,255,.7); font: 700 13px var(--text); } .mk-lock svg { width: 14px; height: 14px; } .mk-lock span { opacity: .75; }
+/* (4) закрытые круги одной строкой */
+.tk-locked { display: flex; align-items: center; gap: 8px; margin: 14px 2px 4px; padding: 12px 14px; border-radius: 16px; background: #f4f0ff; color: #6b6290; font: 700 13.5px var(--text); }
+.tk-locked svg { width: 16px; height: 16px; flex: none; } .tk-locked b { color: #3b2f6e; } .tk-locked em { margin-left: auto; font-style: normal; color: #c07a00; font-weight: 800; white-space: nowrap; }
+/* (5) топ-5 игроков */
+.mem-all { width: 100%; padding: 14px; border: 0; background: none; color: #fff; font: 800 14px var(--text); opacity: .9; }
+.clan-head.v24 .sb .odot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3ee39a; margin: 0 4px 1px 2px; }
+/* (8) подпись в магазине */
+.shophead.v24 .note { display: none; }
+.note24 { margin: 8px 16px 0; text-align: center; color: rgba(255,255,255,.72); font: 700 12.5px var(--text); }
+.tab.locked small { display: inline-flex; align-items: center; gap: 2px; } .tab.locked small svg { width: 11px; height: 11px; }
+/* (9) поделиться победой */
+.zshare { display: flex; align-items: center; gap: 10px; margin: 10px auto 0; padding: 10px 16px; border: 0; border-radius: 16px; background: rgba(255,255,255,.16); color: #fff; font: inherit; text-align: left; }
+.zshare svg { width: 26px; height: 26px; } .zshare b { display: block; font-family: var(--display); font-size: 15px; } .zshare small { color: #ffe066; font-weight: 800; }
+
+/* v24: длинная подсказка переносится, а не уезжает за край */
+.coach { white-space: normal; max-width: min(320px, calc(100vw - 20px)); text-align: center; text-wrap: balance; }
