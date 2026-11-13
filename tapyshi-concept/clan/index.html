@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Тапыши · Мой клан · «Вклад каждого»</title>
-<link rel="stylesheet" href="../shared-clan/css/styles.css?v=tc11132310">
-<link rel="stylesheet" href="../shared-clan/css/v2.css?v=tc11132310">
-<link rel="stylesheet" href="../shared-clan/css/tokens.css?v=tc11132310">
-<link rel="stylesheet" href="../shared/components.css?v=tc11132310">
-<link rel="stylesheet" href="../shared-clan/css/clan3.css?v=tc11132310">
+<link rel="stylesheet" href="../shared-clan/css/styles.css?v=tc11132410">
+<link rel="stylesheet" href="../shared-clan/css/v2.css?v=tc11132410">
+<link rel="stylesheet" href="../shared-clan/css/tokens.css?v=tc11132410">
+<link rel="stylesheet" href="../shared/components.css?v=tc11132410">
+<link rel="stylesheet" href="../shared-clan/css/clan3.css?v=tc11132410">
 <style>
 /* «Мой клан» · Вклад каждого — финал. Шкала цели собрана из вкладов участников; список продолжает эту шкалу.
    Цвета — только токены из ../shared/css/tokens.css (= 2-games/shared/tokens.css). */
@@ -47,7 +47,7 @@
 /* приглашение через MAX */
 .inv{display:flex;align-items:center;gap:12px;width:100%;padding:12px 12px 12px 14px;margin-bottom:12px;border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-sm);text-align:left}
 .inv .max-ic{width:42px;height:42px;border-radius:50%;flex:none}.inv .max-ic svg{width:24px;height:24px}
-.inv .tx{flex:1;min-width:0}.inv small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inv b{display:block;font-size:15.5px;font-weight:1000}.inv small{display:block;margin-top:2px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.inv .tx{flex:1;min-width:0}.inv small{white-space:normal}.inv b{display:block;font-size:15.5px;font-weight:1000}.inv small{display:block;margin-top:2px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
 .inv .btn{flex:none}
 .sec{display:flex;align-items:baseline;justify-content:space-between;margin:4px 4px 8px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3)}
 .cbar{display:block;height:7px;margin-top:6px;border-radius:4px;background:var(--fill);overflow:hidden}
@@ -55,6 +55,55 @@
 .share{color:var(--ink-3)!important}
 .sheet .srow{font-weight:800}.sheet .srow b{margin-left:auto}
 .sheet .danger{color:var(--pink-edge);font-weight:900}
+/* сундуки на шкале цели */
+.ch-btn{flex:none;padding:0;border:0;background:none;cursor:pointer;border-radius:16px}
+.ch-btn .ch{display:block;pointer-events:none}
+.ch-btn.st-ready .ch{animation:bob 1.6s ease-in-out infinite}
+.ch-btn.st-locked .ch{filter:grayscale(.15) drop-shadow(0 6px 8px rgb(var(--shade) / .22))}
+.ms-rail{position:relative;height:74px;margin:4px 2px 0}
+.ms-track{position:absolute;left:8px;right:8px;top:0;bottom:18px}
+.ms-ch{position:absolute;top:0;transform:translateX(-50%);width:56px;padding:0;border:0;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ms-ch[style*="left:100%"]{transform:translateX(-85%)}
+.ms-ch[style*="left:33"]{transform:translateX(-30%)}
+.ms-ico{position:relative;width:48px;height:48px;display:grid;place-items:center}
+.ms-ico img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 4px 6px rgb(var(--shade) / .2));transition:transform .25s var(--spring,cubic-bezier(.34,1.56,.64,1))}
+.ms-ch:active .ms-ico img{transform:scale(.92)}
+.ms-ico i{position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 2px var(--white);background:var(--ink-3)}
+.ms-ch.st-locked .ms-ico img{filter:grayscale(.45) drop-shadow(0 4px 6px rgb(var(--shade) / .16));opacity:.85}
+.ms-ch.st-locked .ms-ico i{background:var(--ink-3);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='%23fff' d='M8 2.5A2.5 2.5 0 0 0 5.5 5v2h5V5A2.5 2.5 0 0 0 8 2.5z'/><rect x='4' y='7' width='8' height='6.5' rx='2' fill='%23fff'/></svg>");background-size:12px;background-repeat:no-repeat;background-position:center}
+.ms-ch.st-ready .ms-ico img{animation:chestPulse 1.8s ease-in-out infinite}
+.ms-ch.st-ready .ms-ico i{background:var(--green);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M4 8.2l2.6 2.6L12 5.4'/></svg>");background-size:11px;background-repeat:no-repeat;background-position:center}
+.ms-ch.st-claimed .ms-ico img{opacity:.75;filter:saturate(.8) drop-shadow(0 3px 5px rgb(var(--shade) / .14))}
+.ms-ch.st-claimed .ms-ico i{background:var(--violet);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M4 8.2l2.6 2.6L12 5.4'/></svg>");background-size:11px;background-repeat:no-repeat;background-position:center}
+.ms-ch small{font-size:10.5px;font-weight:900;color:var(--ink-3);white-space:nowrap}
+.ms-ch.st-ready small{color:var(--green-edge)}
+@keyframes chestPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) scale(1.06)}}
+.chest-sheet .cs-head{display:flex;align-items:center;gap:12px;margin:0 0 8px}
+.chest-sheet .cs-head img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 6px 8px rgb(var(--shade) / .2))}
+.chest-sheet h3{margin:0 0 6px;font-size:22px;font-weight:1000;letter-spacing:-.3px}
+.ch-st{display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:11px;font-size:12px;font-weight:900}
+.ch-st.locked{background:var(--fill);color:var(--ink-3)}
+.ch-st.ready{background:var(--green-soft);color:var(--green-edge)}
+.ch-st.claimed{background:var(--violet-soft);color:var(--violet)}
+.cs-demo{margin:0 0 12px;font-size:12px;font-weight:800;color:var(--ink-3)}
+.rw-list{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:8px}
+.rw{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:16px;background:var(--bg,var(--fill))}
+.rw b{font-weight:1000;font-size:15px}
+.rw-n{font-size:14.5px;font-weight:800}
+.rw-n em{font-style:normal;font-size:11.5px;font-weight:900;color:var(--sun-edge);display:block}
+.rw.is-rare{background:var(--sun-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--sun) 40%,var(--white))}
+.rw-ico,.rw img.rw-ico{width:32px;height:32px;object-fit:contain}
+.rw-svg{width:32px;height:32px;display:grid;place-items:center}
+.rw-svg svg{width:28px;height:28px}
+.cs-meta{display:flex;flex-direction:column;gap:10px;margin:0 0 16px}
+.cs-meta small{display:block;font-size:11.5px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-3)}
+.cs-meta b{display:block;font-size:14.5px;font-weight:1000;margin-top:2px}
+.cs-meta span{display:block;margin-top:2px;font-size:13px;font-weight:800;color:var(--ink-2)}
+.app .sheet:has(.chest-sheet){padding-bottom:calc(18px + var(--tabbar-space,72px))}
+.chest-sheet .btn{width:100%}
+.chest-sheet .btn[disabled]{opacity:.7}
+@media (max-width:370px){.ms-ico,.ms-ico img{width:42px;height:42px}.ms-ch{width:50px}.ms-rail{height:68px}}
+
 @media (max-width:370px){.prog{padding:16px 16px 14px}.prog .pc{font-size:40px}.prog .tx b{font-size:15.5px}.prog .tx small{font-size:12.5px}.prog .ch{width:48px;height:48px}
   .seg button{font-size:13.5px;gap:5px}.seg button svg{width:16px;height:16px}.inv b{font-size:15px}.inv .btn--s{padding:0 13px}.ch-h .t>b{font-size:20px}}
 </style>
@@ -68,7 +117,7 @@
       <button class="ibtn tap" id="more" aria-label="О клане"></button>
     </header>
     <section class="prog">
-      <div class="top"><span class="pc num">83<small>%</small></span><span class="tx"><b>до сундука клана</b><small>1 240 560 из 1,5 млн</small></span><img class="ch" src="../shared-clan/img/v2/chest-gold.png" alt=""></div>
+      <div class="top"><span class="pc num">83<small>%</small></span><span class="tx"><b>до сундука клана</b><small>1 240 560 из 1,5 млн</small></span><button type="button" class="ch-btn st-locked" data-chest="c15" aria-label="Сундук клана, закрыт"><img class="ch" src="../shared-clan/img/v2/chest-gold.png" alt=""></button></div>
       <div class="stack" id="stack"></div>
       <div class="legend"><span class="you"><i></i>Твой вклад <b>131 250</b></span><span class="chip chip--neutral" id="left"></span></div>
     </section>
@@ -81,11 +130,11 @@
   </div>
   </div>
 <script>window.T={ROOT:'../shared-clan/'}</script>
-<script src="../shared-clan/js/data.js?v=tc11132310"></script>
-<script src="../shared-clan/js/app.js?v=tc11132310"></script>
-<script src="../shared-clan/js/v2.js?v=tc11132310"></script>
-<script src="../shared-clan/js/nav3.js?v=tc11132310"></script>
-<script src="../shared-clan/js/clan3.js?v=tc11132356"></script>
+<script src="../shared-clan/js/data.js?v=tc11132410"></script>
+<script src="../shared-clan/js/app.js?v=tc11132410"></script>
+<script src="../shared-clan/js/v2.js?v=tc11132410"></script>
+<script src="../shared-clan/js/nav3.js?v=tc11132410"></script>
+<script src="../shared-clan/js/clan3.js?v=tc11132410"></script>
 <script>
 var C=T.c3;
 document.getElementById('more').innerHTML=T.IC.dots;
@@ -98,15 +147,17 @@ document.getElementById('t3').innerHTML='Чат<span class="tb-badge">3</span>';
 var st=document.getElementById('stack'),g=C.goal.goal,rest=C.goal.now;
 C.members.slice(0,5).forEach(function(m,i){rest-=m.t;st.insertAdjacentHTML('beforeend','<i class="'+(m.me?'me':'')+'" style="width:'+(m.t/g*100)+'%;background:'+C.colors[i]+';animation-delay:'+(i*.08)+'s"></i>')});
 st.insertAdjacentHTML('beforeend','<i style="width:'+(rest/g*100)+'%;background:'+C.rest+';animation-delay:.4s"></i>');
+C.paintMilestones();
 T.c3.tabs(document.getElementById('tabs'),{members:function(){
-  return '<button class="inv tap" data-invite><span class="max-ic">'+T.IC.max+'</span><span class="tx"><b>Позвать друга</b><small>+500 монет обоим</small></span><span class="btn btn--max btn--s">Через MAX</span></button>'+
+  return '<button class="inv tap" data-invite><span class="max-ic">'+T.IC.max+'</span><span class="tx"><b>Позвать друга</b><small>+5000 🪙 за первый вход</small></span><span class="btn btn--max btn--s">Через MAX</span></button>'+
     '<div class="sec"><span>Вклад за неделю</span><span>'+(C.members.length+(C.restN||0))+' '+pplWord(C.members.length+(C.restN||0))+'</span></div>'+C.members_({bars:1});}});
 function pplWord(n){var m=n%100,d=n%10;return (m>10&&m<20)||!d||d>4?'участников':d===1?'участник':'участника';}
 document.getElementById('more').addEventListener('click',function(){T.sheet('<h3>Дикий зоопарк</h3><div class="srow">Уровень клана<b>2</b></div><div class="srow">До 3-го уровня<b>64 из 100 побед</b></div><div class="srow">Мест занято<b>27 из 45</b></div><div class="srow danger" id="leave">Покинуть клан</div>');setTimeout(function(){var l=document.getElementById('leave');if(l)l.addEventListener('click',function(){location='?empty=1'})},0)});
 </script>
-<script src="../shared/nav.js?v=tc11132310"></script>
-<script src="../clan-create/shared.js?v=tc11132356"></script>
-<script src="../clan-create/apply.js?v=tc11132356"></script>
+<script src="../shared/invite.js?v=tc11132410"></script>
+<script src="../shared/nav.js?v=tc11132410"></script>
+<script src="../clan-create/shared.js?v=tc11132410"></script>
+<script src="../clan-create/apply.js?v=tc11132410"></script>
 
 </body>
 </html>

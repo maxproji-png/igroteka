@@ -26,7 +26,8 @@ var IC={
  check:'<svg viewBox="0 0 20 20"><path d="M5 10.5l3.2 3.2L15 6.8" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
  flag:'<svg viewBox="0 0 20 20"><path d="M5 17.5V3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 4h9l-2 3.5 2 3.5h-9z" fill="currentColor"/></svg>',
  redo:'<svg viewBox="0 0 20 20"><path d="M15.5 9.5a5.5 5.5 0 1 1-1.8-4.1M15.5 3.5v3.8h-3.8" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
- home:'<svg viewBox="0 0 20 20"><path d="M3.5 9.5L10 4l6.5 5.5V16a1 1 0 0 1-1 1h-3.5v-4.5h-4V17H4.5a1 1 0 0 1-1-1z" fill="currentColor"/></svg>'
+ home:'<svg viewBox="0 0 20 20"><path d="M3.5 9.5L10 4l6.5 5.5V16a1 1 0 0 1-1 1h-3.5v-4.5h-4V17H4.5a1 1 0 0 1-1-1z" fill="currentColor"/></svg>',
+ people:'<svg viewBox="0 0 20 20"><circle cx="7.2" cy="6.4" r="3.1" fill="currentColor"/><path d="M1.8 16.6c.5-3.4 2.8-5.1 5.4-5.1s4.9 1.7 5.4 5.1z" fill="currentColor"/><circle cx="14.2" cy="7" r="2.5" fill="currentColor" opacity=".95"/><path d="M12.2 16.6c.3-2.2 1.5-3.7 3.5-4.2 2 .7 3.3 2.3 3.6 4.2z" fill="currentColor" opacity=".95"/></svg>'
 };
 TAP.ICONS=IC;TAP.COIN=COIN;
 
@@ -42,7 +43,7 @@ function card(g,wide){
 function catalog(){
   var duo=G.filter(function(g){return g.mode==='duo'}),solo=G.filter(function(g){return g.mode==='solo'});
   return '<div class="bgdeco" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div><main class="page">'+
-  '<header class="top"><div class="ttl"><h1>Игры</h1><p>8 игр с питомцами</p></div><button class="invite spring" data-act="invite-any"><span class="ic"><svg viewBox="0 0 20 20"><circle cx="8" cy="6.5" r="3.3" fill="currentColor"/><path d="M2 17c.6-3.6 3-5.4 6-5.4s5.4 1.8 6 5.4z" fill="currentColor"/><path d="M16 5.5v6M13 8.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><span>Позвать<br>друга</span></button></header>'+
+  '<header class="top top--acts"><div class="ttl"><h1>Игры</h1><p>8 игр с питомцами</p></div><div class="top-acts"><button type="button" class="friends-btn spring" data-act="friends"><span class="ic">'+IC.people+'</span><span>Друзья</span></button><button class="invite spring" data-act="invite-any"><span class="ic"><svg viewBox="0 0 20 20"><circle cx="8" cy="6.5" r="3.3" fill="currentColor"/><path d="M2 17c.6-3.6 3-5.4 6-5.4s5.4 1.8 6 5.4z" fill="currentColor"/><path d="M16 5.5v6M13 8.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><span class="tx"><b>Позвать друга</b><em>+5000 🪙 за друга</em></span></button></div><small class="inv-hint">+5000 🪙, когда друг впервые откроет игру по ссылке · <button type="button" class="inv-demo" data-invite-demo>демо: друг зашёл</button></small></header>'+
   '<div class="seg"><button class="spring on" data-f="all">Все <em>8</em></button><button class="spring" data-f="duo">На двоих <em>5</em></button><button class="spring" data-f="solo">Соло <em>3</em></button></div>'+
   '<section class="sec" data-sec="duo"><div class="sech"><h2>На двоих</h2><span>с другом из MAX или с ботом</span></div><div class="grid">'+duo.map(function(g,i){return card(g,!i)}).join('')+'</div></section>'+
   '<section class="sec" data-sec="solo"><div class="sech"><h2>Соло</h2><span>головоломки на рекорд</span></div><div class="grid">'+solo.map(function(g,i){return card(g,!i)}).join('')+'</div></section>'+
@@ -52,7 +53,7 @@ function catalog(){
 /* ---------- шторка дуэли ---------- */
 function sheet(o){
   var g=game(o.game),m=o.mode||'random',st=o.stake||DEF;
-  var modes=[['random','globe','Случайный соперник','Найдём игрока за пару секунд'],['friend','max','С другом','Ссылка-приглашение в MAX'],['bot','bot','С ботом','Тренировка, без ставки']];
+  var modes=[['random','globe','Случайный соперник','Найдём игрока за пару секунд'],['friend','max','С другом','Приглашение в MAX · +5000 🪙 за первый вход'],['bot','bot','С ботом','Тренировка, без ставки']];
   var cta={random:'Найти соперника',friend:'Позвать друга',bot:'Играть с ботом'}[m];
   return '<div class="scrim" data-act="close"></div><section class="sheet" style="'+sty(g)+'" role="dialog" aria-label="'+g.title+'"><i class="grab"></i>'+
   '<button class="ibtn ibtn--round xbtn" data-act="close" aria-label="Закрыть">'+IC.x+'</button>'+
@@ -156,11 +157,101 @@ function result(o){
 }
 function btns(again){return '<div class="rbtns"><button class="btn btn--primary btn--l" data-act="again">'+IC.redo+again+'</button><button class="btn btn--secondary btn--m btn--wide" data-act="menu">'+IC.home+'В меню</button></div>';}
 
-var SCREENS={catalog:catalog,sheet:function(o){return catalog()+sheet(o)},search:search,invite:invite,wait:wait,shellDuo:shellDuo,shellSolo:shellSolo,result:result};
+
+/* ---------- друзья (демо-список из MAX) ---------- */
+var PET_KIND={raccoon:'Енот',capybara:'Капибара',dragon:'Дракон',goose:'Гусь'};
+var PET_STAGE={
+  raccoon:['Снежок','Иней','Льдинка','Морозко','Вьюжка','Снежная Звёздочка'],
+  capybara:['Росточек','Листик','Веточка','Бутончик','Цветик','Мандариновый Цвет'],
+  dragon:['Искорка','Уголёк','Огонёк','Пламенчик','Жарик','Солнечный Дракоша'],
+  goose:['Ветерок','Облачко','Пёрышко','Бриз','Небесный','Облачный Ангел']
+};
+function stageName(pet,st){var a=PET_STAGE[pet];return a?a[Math.max(0,Math.min(5,(st||1)-1))]:'';}
+var FRIENDS=[
+  {id:'sasha',name:'Саша',pet:'dragon',stage:5,lvl:22,on:1,seen:null},
+  {id:'kira',name:'Кира М.',pet:'goose',stage:3,lvl:12,on:1,seen:null},
+  {id:'tema',name:'tema.max',pet:'raccoon',stage:2,lvl:8,on:1,seen:null},
+  {id:'marina',name:'Марина',pet:'capybara',stage:4,lvl:16,on:0,seen:'была 2 ч назад'},
+  {id:'alina',name:'Алина ☀️',pet:'goose',stage:2,lvl:6,on:0,seen:'была вчера',invited:1,joined:1},
+  {id:'dima07',name:'Дмитрий_07',pet:null,stage:0,lvl:0,on:0,seen:null,invited:1,joined:0}
+];
+TAP.FRIENDS=FRIENDS;
+function frAva(f){
+  if(!f.pet) return '<span class="fr-ava empty"><b>'+f.name.replace(/[^A-Za-zА-Яа-яЁё]/g,'').slice(0,1)+'</b></span>';
+  return '<span class="fr-ava"><img src="'+pet(f.pet,'happy')+'" alt=""><i class="on-dot'+(f.on?' on':'')+'"></i></span>';
+}
+function frMeta(f){
+  if(!f.pet) return '<small class="off">ещё не открыл игру</small>';
+  return '<small>'+PET_KIND[f.pet]+' · ст. '+f.stage+' · ур. '+f.lvl+'</small>';
+}
+var ACC={'Саша':'Сашу','Кира М.':'Киру М.','Марина':'Марину','Алина ☀️':'Алину ☀️'};
+function frAcc(f){return ACC[f.name]||f.name;}
+function frStatus(f){
+  if(f.on) return '<em class="on">в сети</em>';
+  if(f.seen) return '<em class="off">'+f.seen+'</em>';
+  return '<em class="off">не в сети</em>';
+}
+function friends(o){
+  o=o||{};
+  var empty=!!o.empty, list=FRIENDS.slice().sort(function(a,b){return (b.on?1:0)-(a.on?1:0);});
+  var main=list.filter(function(f){return !f.invited;});
+  var invited=list.filter(function(f){return f.invited;});
+  var earned=invited.filter(function(f){return f.joined;}).length*5000;
+  var pending=invited.filter(function(f){return !f.joined;}).length;
+  var head='<header class="fr-top"><button type="button" class="ibtn ibtn--round" data-act="close" aria-label="Назад">'+IC.back+'</button><div class="ttl"><h1>Друзья</h1><p>из MAX · демо-список</p></div></header>';
+  var cta='<button type="button" class="invite invite--wide spring" data-act="invite-any"><span class="ic"><svg viewBox="0 0 20 20"><circle cx="8" cy="6.5" r="3.3" fill="currentColor"/><path d="M2 17c.6-3.6 3-5.4 6-5.4s5.4 1.8 6 5.4z" fill="currentColor"/><path d="M16 5.5v6M13 8.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><span class="tx"><b>Позвать друга</b><em>+5000 🪙 за друга</em></span></button>';
+  if(empty){
+    return '<main class="page fr-page">'+head+cta+
+      '<div class="fr-empty"><div class="fr-ghost">'+IC.people+'</div><h2>Пока нет друзей</h2><p>Позови друга из MAX — когда он впервые откроет игру по ссылке, тебе придёт <b>+5000 🪙</b>.</p>'+
+      '<button type="button" class="btn btn--primary btn--l" data-act="invite-any">Позвать друга</button>'+
+      '<button type="button" class="inv-demo" data-act="friends-demo">показать демо-список</button></div></main>'+(o.pick?pickSheet(o):'');
+  }
+  function row(f,inv){
+    var act='';
+    if(inv && f.joined) act='<span class="fr-got">зашёл · +5000 получено</span>';
+    else if(inv && !f.joined) act='<button type="button" class="btn btn--max-soft btn--s" data-act="friends-write" data-fid="'+f.id+'">'+IC.max+'Написать в MAX</button><span class="fr-wait">пока не зашёл</span>';
+    else if(f.on) act='<button type="button" class="btn btn--primary btn--s" data-act="friends-play" data-fid="'+f.id+'">Позвать играть</button>';
+    else act='<button type="button" class="btn btn--max-soft btn--s" data-act="friends-write" data-fid="'+f.id+'">'+IC.max+'Написать в MAX</button>';
+    return '<article class="fr-row'+(f.on?' is-on':'')+(inv?' is-inv':'')+'">'+frAva(f)+'<div class="fr-nm"><b>'+f.name+'</b>'+frMeta(f)+frStatus(f)+'</div><div class="fr-act">'+act+'</div></article>';
+  }
+  var body='<p class="fr-earn">С приглашений: <b>'+fmt(earned)+' 🪙</b> · '+invited.filter(function(f){return f.joined;}).length+' из '+invited.length+' зашли'+(pending?' · ещё '+pending+' не зашёл':'')+'</p>'+
+    '<section class="fr-sec"><div class="sech"><h2>Друзья</h2><span>'+main.filter(function(f){return f.on;}).length+' в сети сверху</span></div><div class="fr-list">'+main.map(function(f){return row(f,0);}).join('')+'</div></section>'+
+    '<section class="fr-sec" id="invited"><div class="sech"><h2>Приглашён тобой</h2><span class="fr-badge">'+invited.length+'</span></div><div class="fr-list">'+invited.map(function(f){return row(f,1);}).join('')+'</div></section>'+
+    '<button type="button" class="inv-demo fr-empty-link" data-act="friends-empty">показать пустой список (демо)</button>';
+  return '<main class="page fr-page">'+head+cta+body+'</main>'+(o.pick?pickSheet(o):'');
+}
+function pickSheet(o){
+  var fr=o.friend||FRIENDS[0], gid=o.game||'tictactoe', st=(o.stake==null?300:o.stake), write=!!o.write;
+  var duo=G.filter(function(g){return g.mode==='duo';});
+  var stakes=[[0,'Без ставки','играем на интерес'],[300,'300','банк 600'],[500,'500','банк 1 000']];
+  var cta=write?'Написать в MAX':'Позвать';
+  return '<div class="scrim" data-act="friends-back"></div><section class="sheet fr-pick" role="dialog" aria-label="Позвать играть">'+
+    '<i class="grab"></i><button class="ibtn ibtn--round xbtn" data-act="friends-back" aria-label="Закрыть">'+IC.x+'</button>'+
+    '<div class="sh-head"><div class="fr-ava lg">'+((fr.pet)?'<img src="'+pet(fr.pet,'happy')+'" alt="">':'')+'</div><div><h2>'+(write?'Написать ':'Позвать ')+frAcc(fr)+'</h2><p class="sh-sub">'+(write?'Откроем MAX с приглашением в игру':'Приглашение в партию · демо')+'</p></div></div>'+
+    '<h4 class="sh-h">Игра</h4><div class="opts g-opts">'+duo.map(function(g){
+      return '<button type="button" class="opt selectable spring'+(g.id===gid?' on':'')+'" data-fgame="'+g.id+'"><span class="oi" style="'+sty(g)+'">'+P[g.prop]+'</span><span class="ot"><b>'+g.title+'</b><small>'+g.desc+'</small></span><span class="radio"></span></button>';
+    }).join('')+'</div>'+
+    '<h4 class="sh-h">Ставка</h4><div class="stakes">'+stakes.map(function(s){
+      return '<button type="button" class="stk spring'+(s[0]===st?' on':'')+'" data-fstake="'+s[0]+'"><span class="sv"><b>'+s[1]+'</b><small>'+s[2]+'</small></span><span class="radio"></span></button>';
+    }).join('')+'</div>'+
+    '<button type="button" class="btn '+(write?'btn--max':'btn--primary')+' btn--l" data-act="pick-go">'+(write?IC.max:'')+cta+(st?('<span class="btn-tag">'+COIN+fmt(st)+'</span>'):'')+'</button></section>';
+}
+function waitFriend(o){
+  var g=game(o.game||'tictactoe'),st=o.stake||0,fr=o.friend||FRIENDS[0];
+  return '<main class="stage s-wait s-waitfr" style="'+sty(g)+'">'+stageTop(g,st?'ставка '+fmt(st):'без ставки')+
+    '<div class="stg-title"><h1>Ждём ответа<span class="dots3"><i>.</i><i>.</i><i>.</i></span></h1><p>Приглашение ушло '+fr.name+' · партия начнётся, как только друг примет</p></div>'+
+    '<div class="duo-pre big"><div class="slot mine"><img src="'+pet(ME.pet,'happy')+'" alt=""><b>'+ME.name+'</b></div><span class="vs-mini">VS</span><div class="slot pulse"><img src="'+pet(fr.pet||'raccoon','happy')+'" alt=""><b>'+fr.name+'</b></div></div>'+
+    (st?('<div class="stg-info">'+potChip(st)+'</div>'):'<div class="stg-info"><span class="chip chip--m chip--white">без ставки</span></div>')+
+    '<ul class="steps"><li class="ok"><span>'+IC.check+'</span>Приглашение отправлено</li><li class="now"><span><i class="spin"></i></span>Ждём, пока '+fr.name+' примет</li><li><span>3</span>Партия начнётся автоматически</li></ul>'+
+    '<div class="stg-actions"><button class="btn btn--secondary btn--m btn--wide" data-act="cancel">Отмена</button></div></main>';
+}
+
+var SCREENS={catalog:catalog,sheet:function(o){return catalog()+sheet(o)},search:search,invite:invite,wait:wait,waitFriend:waitFriend,friends:friends,shellDuo:shellDuo,shellSolo:shellSolo,result:result};
 TAP.render=function(o){
   var app=document.getElementById('app');app.innerHTML=SCREENS[o.screen](o);
-  document.body.className='scr-'+o.screen+(o.screen==='catalog'||o.screen==='sheet'?'':' no-tabs')+(o.screen==='sheet'?' has-sheet':'');
-  if(o.screen!=='sheet'&&o.screen!=='catalog')window.scrollTo(0,0);
+  var tabs=o.screen==='catalog'||o.screen==='sheet'||o.screen==='friends';
+  document.body.className='scr-'+o.screen+(tabs?'':' no-tabs')+(o.screen==='sheet'||o.pick?' has-sheet':'');
+  if(o.screen!=='sheet'&&o.screen!=='catalog'&&!(o.screen==='friends'&&o.pick))window.scrollTo(0,0);
 };
 TAP.game=game;TAP.OPP=OPP;
 })();

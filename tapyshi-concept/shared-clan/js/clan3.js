@@ -1,5 +1,5 @@
 /* Клан · раунд 3 — общие данные и списки (участники / топ кланов / чат) и вкладки.
-   Награды и вклад — заглушки макета; трофеи топ-3 = 60/40/20 и «+500 тебе и другу» — из game.js v28. */
+   Награды и вклад — заглушки макета; трофеи топ-3 = 60/40/20; приглашение друга в концепте — +5000 пригласившему за первый вход по ссылке. */
 (function(){
 var C = T.c3 = {};
 C.goal = { now: 1240560, goal: 1500000, left: '2 д 14 ч', place: 3,
@@ -33,7 +33,7 @@ var H = function(p){ return T.img('pets/'+p+'_happy_head.png'); };
 C.head = H;
 C.pct = function(){ return Math.round(C.goal.now / C.goal.goal * 100); };
 C.ava = function(p, cls){ return '<span class="ava '+p+' '+(cls||'')+'"><img src="'+H(p)+'" alt=""></span>'; };
-C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +500 тебе и другу</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
+C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +5000 🪙 за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
 C.members_ = function(o){ o=o||{}; var max=C.members[0].t;
   return '<div class="list">'+C.members.map(function(m,i){
     var bar = o.bars ? '<span class="cbar"><i style="width:'+(m.t/max*100).toFixed(1)+'%;background:'+(i<5?C.colors[i]:C.rest)+'"></i></span>' : '';
@@ -76,9 +76,133 @@ C.tabs = function(tabsEl, opts){ opts=opts||{}; var app=document.querySelector('
     if(anim){ panel.classList.remove('swap'); void panel.offsetWidth; panel.classList.add('swap'); }
     if(k==='chat' && sc) setTimeout(function(){ sc.scrollTop=sc.scrollHeight; },anim?30:0);
     bind(); }
-  function bind(){ [].forEach.call(document.querySelectorAll('[data-invite]'),function(b){ if(b._b) return; b._b=1; b.addEventListener('click',function(){ T.toast('Ссылка-приглашение открыта в MAX'); }); }); }
+  function clanShare(){
+    if(/empty=1/.test(location.search)) return {};
+    if(window.ClanCreate && /mine=1/.test(location.search)){
+      var c=ClanCreate.load();
+      if(c) return {clan:{id:'new',name:c.name}};
+    }
+    return {clan:{id:1,name:(T.clan&&T.clan.name)||'Дикий зоопарк'}};
+  }
+  function bind(){ [].forEach.call(document.querySelectorAll('[data-invite]'),function(b){ if(b._b) return; b._b=1; b.addEventListener('click',function(){
+    if(window.TapInvite) TapInvite.share(clanShare());
+    else T.toast('Ссылка-приглашение открыта в MAX');
+  }); }); }
   tabsEl.addEventListener('click',function(e){ var b=e.target.closest('[data-tab]'); if(b) go(b.dataset.tab,true); });
   var h=(location.hash||'').slice(1); go(R[h]?h:'members',false);
   app.insertAdjacentHTML('beforeend',C.chatbar());
+};
+
+/* Сундуки на шкале цели недели — каждый открывает свою шторку с наградами (демо). */
+C.chests = [
+  { id:'c500', at:500000, lbl:'500 тыс', title:'Сундук 500 000', img:'chest-wood.png',
+    cond:'Клан натапал 500 000',
+    who:'Каждому участнику, который внёс вклад на этой неделе',
+    defaultClaimed:1,
+    rewards:[{k:'coin',n:'Монеты',a:'+200'}] },
+  { id:'c1m', at:1000000, lbl:'1 млн', title:'Сундук 1 000 000', img:'chest-star.png',
+    cond:'Клан натапал 1 000 000',
+    who:'Каждому участнику, который внёс вклад на этой неделе',
+    rewards:[{k:'coin',n:'Монеты',a:'+500'}] },
+  { id:'c15', at:1500000, lbl:'1,5 млн', title:'Сундук клана', img:'chest-gold.png',
+    cond:'Клан натапал 1 500 000',
+    who:'Каждому, кто натапал не меньше 1 000 за эту неделю',
+    rewards:[
+      {k:'coin',n:'Монеты',a:'+2 000'},
+      {k:'bolt',n:'Энергия',a:'полная шкала'},
+      {k:'xp',n:'Опыт клана',a:'+50 XP'},
+      {k:'rare',n:'Цвет ника «Солнечный»',a:'1 шт'}
+    ] }
+];
+C._claimed = null;
+C.claimedMap = function(){
+  if(C._claimed) return C._claimed;
+  try{ C._claimed = JSON.parse(sessionStorage.getItem('tapyshi.clan.chests')||'{}'); }
+  catch(e){ C._claimed = {}; }
+  return C._claimed;
+};
+C.chestState = function(ch){
+  var m=C.claimedMap();
+  if(m[ch.id]==='claimed') return 'claimed';
+  if(m[ch.id]==='ready') return 'ready';
+  if(C.goal.now >= ch.at){
+    if(ch.defaultClaimed && m[ch.id]!=='ready') return 'claimed';
+    return 'ready';
+  }
+  return 'locked';
+};
+C.markClaimed = function(id){
+  var m=C.claimedMap(); m[id]='claimed'; C._claimed=m;
+  try{ sessionStorage.setItem('tapyshi.clan.chests', JSON.stringify(m)); }catch(e){}
+};
+function rwIcon(k){
+  if(k==='coin') return T.coin ? T.coin('rw-ico') : '<span class="rw-ph">🪙</span>';
+  if(k==='bolt') return '<span class="rw-svg bolt">'+T.IC.bolt+'</span>';
+  if(k==='xp') return '<span class="rw-svg xp">'+T.IC.shield+'</span>';
+  return '<span class="rw-svg rare"><svg viewBox="0 0 24 24"><path d="M12 3.5 L14.4 9.2 L20.5 10 L16 14.3 L17.2 20.4 L12 17.4 L6.8 20.4 L8 14.3 L3.5 10 L9.6 9.2Z" fill="#FFC93D" stroke="#E39200" stroke-width="1.4" stroke-linejoin="round"/></svg></span>';
+}
+function stLabel(s){ return s==='claimed'?'Получен':s==='ready'?'Можно забрать':'Закрыт'; }
+C.chestSheet = function(id){
+  var ch, i; for(i=0;i<C.chests.length;i++) if(C.chests[i].id===id) ch=C.chests[i];
+  if(!ch) return;
+  var st=C.chestState(ch), now=C.goal.now, need=ch.at, left=Math.max(0, need-now);
+  var chip='<span class="ch-st '+st+'">'+stLabel(st)+'</span>';
+  var rewards=ch.rewards.map(function(r){
+    return '<li class="rw'+(r.k==='rare'?' is-rare':'')+'">'+rwIcon(r.k)+'<span class="rw-n">'+r.n+(r.k==='rare'?' <em>редкая награда</em>':'')+'</span><b>'+(r.k==='rare'?'':'')+r.a+'</b></li>';
+  }).join('');
+  var cta='';
+  if(st==='ready') cta='<button type="button" class="btn btn--primary btn--l" data-claim="'+ch.id+'">Забрать</button>';
+  else if(st==='claimed') cta='<button type="button" class="btn btn--secondary btn--m btn--wide" disabled>Уже получен</button>';
+  else cta='<button type="button" class="btn btn--secondary btn--m btn--wide" disabled>Пока закрыт</button>';
+  var html='<div class="chest-sheet" data-chest-sheet="'+ch.id+'">'+
+    '<div class="cs-head"><img src="'+T.img('v2/'+ch.img)+'" alt=""><div><h3>'+ch.title+'</h3>'+chip+'</div></div>'+
+    '<p class="cs-demo">цифры и состав — демо макета</p>'+
+    '<ul class="rw-list">'+rewards+'</ul>'+
+    '<div class="cs-meta"><div><small>Как открыть</small><b>'+ch.cond+'</b><span>'+(st==='locked'?'Ещё '+T.fmt(left)+' тапов · сейчас '+T.fmt(now):'Цель выполнена: '+T.fmt(Math.min(now,need))+' / '+T.fmt(need))+'</span></div>'+
+    '<div><small>Кто получает</small><b>'+ch.who+'</b></div></div>'+cta+'</div>';
+  T.sheet(html);
+  setTimeout(function(){
+    var btn=document.querySelector('[data-claim="'+ch.id+'"]');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      C.markClaimed(ch.id);
+      C.paintMilestones();
+      if(T.toast) T.toast(ch.rewards[0].a+' — сундук получен');
+      C.chestSheet(ch.id);
+    });
+  }, 0);
+};
+C.paintMilestones = function(){
+  var host=document.getElementById('ms-rail');
+  if(!host){
+    var stack=document.getElementById('stack');
+    if(!stack) return;
+    host=document.createElement('div');
+    host.id='ms-rail';
+    host.className='ms-rail';
+    stack.parentNode.insertBefore(host, stack);
+  }
+  var goal=C.goal.goal||1500000;
+  host.innerHTML='<div class="ms-track">'+C.chests.map(function(ch){
+    var pct=Math.min(100, ch.at/goal*100), st=C.chestState(ch);
+    return '<button type="button" class="ms-ch st-'+st+'" style="left:'+pct+'%" data-chest="'+ch.id+'" aria-label="'+ch.title+', '+stLabel(st)+'">'+
+      '<span class="ms-ico"><img src="'+T.img('v2/'+ch.img)+'" alt=""><i></i></span>'+
+      '<small>'+ch.lbl+'</small></button>';
+  }).join('')+'</div>';
+  var big=document.querySelector('[data-chest-big], .ch-btn, .prog .ch');
+  if(big && !big.closest('[data-chest]')){
+    var wrap=big.closest('.ch-btn')||big;
+    wrap.setAttribute('data-chest','c15');
+    wrap.classList.add('ch-btn','st-'+C.chestState(C.chests[2]));
+  }
+  if(!C._chestBound){
+    C._chestBound=1;
+    document.addEventListener('click', function(e){
+      var b=e.target.closest('[data-chest]');
+      if(!b) return;
+      e.preventDefault();
+      C.chestSheet(b.getAttribute('data-chest'));
+    });
+  }
 };
 })();

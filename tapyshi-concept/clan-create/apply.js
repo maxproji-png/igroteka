@@ -59,6 +59,7 @@
     C.restT = 0;
     var st = document.getElementById('stack');
     if (st) st.innerHTML = '<i class="me" style="width:8px;min-width:8px;background:var(--sun)"></i>';
+    if (C.paintMilestones) C.paintMilestones();
 
     C.top.forEach(function (c) { c.me = 0; });
     C.top.push({ n: name, icon: clan.icon, color: clan.color, lvl: 1, m: 1, t: 12500, me: 1 });
