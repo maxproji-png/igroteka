@@ -515,3 +515,66 @@ html, body { height: 100%; background: var(--bg); }
 #f-result .full-center{padding-top:36px}
 #f-result #res-ic{margin-top:8px}
 #f-profile{scroll-behavior:auto}
+
+/* Pre-merge game covers: large icon (HUB_ICONS) + 3D pet, same layout as v4 / current-before-merge */
+#hub .hcard{
+  position:relative;display:flex;flex-direction:column;text-align:left;
+  overflow:hidden;padding:0 0 6px;isolation:isolate;color:var(--ink);
+}
+#hub .hcard .art{
+  position:relative;flex:1;min-height:70px;aspect-ratio:1/1;
+  background:var(--soft,#EEF3FF);margin:7px 7px 0;border-radius:22px;overflow:hidden;
+  border:none;
+}
+#hub .hcard .art::before{
+  content:"";position:absolute;width:140%;aspect-ratio:1;left:-20%;top:-95%;
+  border-radius:50%;background:rgba(255,255,255,.55);
+}
+#hub .hcard .icon{
+  position:absolute;left:10px;top:10px;width:46%;max-width:92px;aspect-ratio:1;
+  filter:drop-shadow(0 5px 6px rgba(40,30,90,.13));
+  z-index:1;
+}
+#hub .hcard .icon svg{width:100%;height:100%;display:block}
+#hub .hcard .pet{
+  position:absolute;right:-4px;bottom:-6px;height:74%;max-height:var(--petmax,120px);
+  aspect-ratio:200/206;transform-origin:70% 100%;z-index:1;
+}
+#hub .hcard .pet img,#hub .hcard .pet svg{
+  width:100%;height:100%;display:block;object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 4px 5px rgba(40,30,90,.15));
+}
+#hub .hcard .play{
+  position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;
+  background:var(--c,var(--accent));display:grid;place-items:center;
+  box-shadow:0 5px 12px -5px var(--c,var(--accent));z-index:2;
+}
+#hub .hcard .play svg{width:13px;height:13px;margin-left:2px;display:block}
+#hub .hcard .meta{display:block;padding:9px 12px 8px}
+#hub .hcard h3,#hub .hcard .name{
+  margin:0;padding:0;font-size:16.5px;font-weight:900;line-height:1.12;letter-spacing:-.1px;color:var(--ink);
+}
+#hub .hcard p{
+  margin:3px 0 0;font-size:12px;line-height:1.25;font-weight:700;color:var(--ink-soft);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+#hub .hcard .rec{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-top:6px;height:22px;padding:0 8px;border-radius:8px;
+  background:var(--soft,#F3F0FF);color:var(--ink);
+  font-size:11.5px;font-weight:800;letter-spacing:-.1px;
+}
+@media (hover:hover){
+  #hub .hcard:hover .pet{transform:rotate(-6deg) translateY(-3px)}
+  #hub .hcard:hover .icon{transform:rotate(-6deg) scale(1.05)}
+  #hub .hcard .pet,#hub .hcard .icon{transition:transform .4s cubic-bezier(.3,1.6,.5,1)}
+}
+@media (max-width:370px){
+  #hub .hcard h3,#hub .hcard .name{font-size:15.5px}
+  #hub .hcard p{font-size:11.5px}
+}
+@media (max-height:740px){
+  #hub .hcard p{-webkit-line-clamp:1}
+  #hub .hcard .rec{margin-top:4px}
+  #hub .hcard .art{aspect-ratio:1.08/1}
+}

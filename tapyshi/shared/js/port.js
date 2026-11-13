@@ -283,16 +283,14 @@
     updatePager();
   }
 
+  var PLAY = '<svg viewBox="0 0 12 12"><path d="M2.5 1.3v9.4a.6.6 0 0 0 .9.5l7.6-4.7a.6.6 0 0 0 0-1L3.4.8a.6.6 0 0 0-.9.5z" fill="#fff"/></svg>';
   function cardHtml(g) {
     var m = metaOf(g.id);
-    var rec = m.record ? '<span class="rec">' + m.record + '</span>' : (m.kind === 'versus' || !m.kind ? '<span class="muted" style="font-size:12px">2 игрока</span>' : '');
-    return '<button type="button" class="game hcard" data-id="' + g.id + '">' +
-      '<div class="slot filled preview" style="--soft:' + (g.soft || '#EEF3FF') + ';background:' + (g.soft || '#EEF3FF') + '">' +
-        petHtml(g.pet, { mood: 'happy' }) +
-        '<span class="gi">' + (ICONS[g.icon] || '') + '</span>' +
-      '</div>' +
-      '<h3 class="name">' + g.title + '</h3>' +
-      '<div class="meta">' + rec + '</div>' +
+    var rec = m.record ? '<span class="rec">' + m.record + '</span>' : '';
+    return '<button type="button" class="game hcard" data-id="' + g.id + '" style="--c:' + (g.color || '#7C9CFF') + ';--soft:' + (g.soft || '#EEF3FF') + '" aria-label="' + g.title + '. ' + (g.tag || '') + '">' +
+      '<div class="art"><div class="icon">' + (ICONS[g.icon] || '') + '</div><div class="pet">' + petHtml(g.pet) + '</div></div>' +
+      '<span class="play">' + PLAY + '</span>' +
+      '<div class="meta"><h3>' + g.title + '</h3><p>' + (g.tag || '') + '</p>' + rec + '</div>' +
     '</button>';
   }
 
