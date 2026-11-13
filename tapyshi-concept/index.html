@@ -1,113 +1,18 @@
 <!doctype html>
-<html lang="ru" data-root="./" data-tab="pet"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="ru" data-root="./" data-tab="pet"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
 <title>Тапыши · Питомец</title>
-<link rel="preload" href="shared/fonts/Nunito.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="shared/tokens.css?v228b">
-<link rel="stylesheet" href="shared/components.css?v228b">
-<link rel="stylesheet" href="pet/tap.css?v228b">
-<script type="importmap">{"imports":{"three":"./lib/three.module.min.js"}}</script>
-<style>
-.app{background:linear-gradient(180deg,var(--bg-tint) 0%,var(--bg) 42%,var(--white) 100%)}
-.rays{top:50%}
-.top{position:absolute;left:14px;right:14px;top:14px;display:flex;justify-content:space-between;align-items:flex-start}
-.pill{display:inline-flex;align-items:center;gap:7px;height:46px;padding:0 16px 0 7px;border-radius:23px;font-size:21px}
-.pill .ic{width:34px;height:34px}
-.enw{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.enw .pill{gap:5px;padding:0 14px 0 9px}.enw .pill .ic{width:26px;height:26px}
-.enw .bar{width:54px;height:8px;border-radius:4px;background:var(--fill);overflow:hidden}
-.enw .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,color-mix(in srgb,var(--green) 70%,var(--white)),var(--green))}
-.tm{height:24px;padding:0 10px;border-radius:12px;font-size:12px;color:var(--ink-2);display:inline-flex;align-items:center;background:rgb(var(--white-rgb) / .9)}
-.side{position:absolute;left:14px;top:76px;display:flex;flex-direction:column;gap:10px}
-.rb{position:relative;width:52px;height:52px;border-radius:18px;display:grid;place-items:center}
-.rb .ic{width:32px;height:32px}
-/* комбо над головой */
-.combo{position:absolute;left:0;top:0;z-index:7;pointer-events:none;display:flex;flex-direction:column;align-items:center;opacity:0;transform:translate(-50%,-100%) scale(.6);will-change:transform}
-.combo.on{opacity:1}
-.combo .row{display:flex;align-items:center;gap:4px}
-.combo .flame{width:34px;height:42px;margin-right:-2px;display:none;animation:flick .35s ease-in-out infinite}
-.combo.hot .flame{display:block}
-.combo .lab{font-size:15px;font-weight:1000;color:var(--white);letter-spacing:1.5px;text-transform:uppercase;-webkit-text-stroke:5px var(--c1,var(--violet));paint-order:stroke fill;margin-bottom:-6px}
-.combo .n{font-size:var(--fs,46px);line-height:1;font-weight:1000;color:var(--white);-webkit-text-stroke:calc(var(--fs,46px)*.16) var(--c1,var(--violet));paint-order:stroke fill;
-  text-shadow:0 6px 0 var(--c2,var(--violet-edge)),0 12px 22px rgb(var(--shade) / .3);font-variant-numeric:tabular-nums}
-.combo .mult{display:none;margin-left:6px;padding:3px 10px;border-radius:14px;color:var(--white);font-size:20px;font-weight:1000;background:linear-gradient(180deg,var(--c1),var(--c2));box-shadow:0 4px 0 rgb(var(--ink-rgb) / .12),0 8px 16px -6px var(--c2);transform:rotate(-6deg)}
-.combo.m .mult{display:block}
-.combo .timer{width:130px;height:9px;margin-top:8px;border-radius:5px;background:rgb(var(--white-rgb) / .85);box-shadow:0 2px 6px rgb(var(--shade) / .25);overflow:hidden}
-.combo .timer i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--c1),var(--c2));transform-origin:left}
-.combo.kick .n{animation:kick .22s var(--spring)}
-@keyframes kick{40%{transform:scale(1.22) rotate(-4deg)}}
-.combo.out{transition:opacity .45s ease, transform .45s ease}
-.tap-hint{transform:translate(-50%,0)}
-.tap-hint.gone{transform:translate(-50%,0) scale(.7)}
-.bottom{position:absolute;left:14px;right:14px;bottom:calc(var(--tabbar-space) + 12px);display:flex;align-items:center;justify-content:space-between;gap:10px}
-.lvl{display:flex;align-items:center;gap:8px;height:48px;padding:0 16px 0 6px;border-radius:24px;font-size:18px;font-weight:1000;white-space:nowrap}
-.lvl .st{position:relative;width:38px;height:38px;display:grid;place-items:center}
-.lvl .st svg{position:absolute;inset:0;width:38px;height:38px}
-.lvl .st b{position:relative;font-size:14px;color:var(--sun-edge);margin-top:3px}
-.lvl small{font-size:13px;color:var(--ink-2);font-weight:900}
-.up{height:54px;padding:0 20px 0 14px;border-radius:27px;display:flex;align-items:center;gap:7px;font-size:18px}
-.up .ic{width:22px;height:22px}
-@media (max-height:760px){.bottom{bottom:calc(var(--tabbar-space) + 10px)}.side{top:72px}.lvl{font-size:16px}.up{height:48px;font-size:16px}}
-</style></head>
+<link rel="preload" href="shared/fonts/Nunito.woff2?v=tc11132155" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="shared/tokens.css?v=tc11132155">
+<link rel="stylesheet" href="shared/components.css?v=tc11132155">
+<link rel="stylesheet" href="pet/tap.css?v=tc11132155">
+<script type="importmap">{"imports":{"three":"./lib/three.module.min.js?v=tc11132155"}}</script>
+</head>
 <body>
-<div class="app">
-  <div class="bg"><div class="rays"></div>
-    <i class="bokeh" style="left:-30px;top:120px;width:120px;height:120px;background:var(--white)"></i>
-    <i class="bokeh" style="right:-40px;top:300px;width:150px;height:150px;background:var(--white);animation-delay:-3s"></i>
-    <i class="bokeh" style="left:40px;top:560px;width:70px;height:70px;background:var(--violet-soft);animation-delay:-5s"></i></div>
-  <div class="tapring" id="ring"><b></b><i></i><i></i></div>
-  <div class="pet-wrap" id="petWrap"><canvas class="scene"></canvas></div>
-  <div class="hud">
-    <div class="top">
-      <div class="pill card pe spring" data-coin-target><svg class="ic"><use href="#i-coin"/></svg><span class="num" data-b="coins">12 000</span></div>
-      <div class="enw"><div class="pill card pe spring"><svg class="ic"><use href="#i-bolt"/></svg><span class="num" data-b="energy">330</span><span class="bar"><i data-w="energy"></i></span></div>
-        <div class="tm card" data-if="notfull">полная через&nbsp;<b data-b="entimer"></b></div></div>
-    </div>
-    <div class="side">
-      <button class="rb card pe spring" aria-label="Задания"><svg class="ic"><use href="#i-tasks"/></svg><span class="dot n">2</span></button>
-      <button class="rb card pe spring" aria-label="Награда"><svg class="ic"><use href="#i-gift"/></svg><span class="dot"></span></button>
-    </div>
-    <div class="combo" id="combo"><div class="lab">комбо</div><div class="row"><svg class="flame"><use href="#i-flame"/></svg><span class="n" id="cn">0</span><span class="mult" id="cm">×1,5</span></div><div class="timer"><i id="ct"></i></div></div>
-    <div class="tap-hint" id="hint"><svg class="ic"><use href="#i-tap"/></svg>Тапай!</div>
-    <div class="bottom">
-      <div class="lvl card pe spring"><span class="st"><svg><use href="#i-star"/></svg><b>7</b></span>Булочка <small>ур. 7</small></div>
-      <button class="up pe spring ready" type="button"><svg class="ic"><use href="#i-up"/></svg>Улучшить</button>
-    </div>
-  </div>
-</div>
-<script src="pet/icons.js?v228b"></script>
-<script src="shared/nav.js?v228b"></script>
-<script type="module">
-import { petStage } from './pet/stage.js?v228b';
-import { doTap, on, comboColor, fmtMult } from './pet/tap.js?v228b';
-const canvas = document.querySelector('canvas.scene');
-const st = await petStage({ canvas, f: .42, cy: .58, cx: .5, hop: .16, onTap: e => doTap(e.clientX, e.clientY) });
-const combo = document.getElementById('combo'), cn = document.getElementById('cn'), cm = document.getElementById('cm'), ct = document.getElementById('ct');
-const ring = document.getElementById('ring'), hint = document.getElementById('hint');
-let sc = .6, hx = 0, hy = 205;
-function placeCombo() {
-  combo.style.transform = `translate(${hx}px,${hy}px) translate(-50%,-100%) scale(${sc})`;
-}
-function layoutPetHUD() {
-  const h = st.headTop();
-  hx = h.x; hy = Math.max(h.y - 6, 205); placeCombo();
-  const f = st.toScreen(0, 0, 0), s2 = st.toScreen(.62, 0, 0), w = (s2.x - f.x) * 2.3;
-  ring.style.left = f.x + 'px'; ring.style.top = f.y + 'px'; ring.style.width = w + 'px'; ring.style.height = w * .36 + 'px';
-  const hp = st.toScreen(.62, .55, .2); hint.style.left = Math.max(70, Math.min(innerWidth - 66, hp.x)) + 'px'; hint.style.top = hp.y + 'px';
-}
-on('combo', c => {
-  if (!c.active) return;
-  combo.classList.remove('out'); combo.classList.add('on'); cn.textContent = c.n;
-  const [c1, c2] = comboColor(c.n); combo.style.setProperty('--c1', c1); combo.style.setProperty('--c2', c2);
-  combo.style.setProperty('--fs', (44 + Math.min(c.n, 60) * .55) + 'px');
-  combo.classList.toggle('hot', c.n >= 10); combo.classList.toggle('m', c.mult > 1); cm.textContent = fmtMult(c.mult);
-  ct.style.transform = 'scaleX(' + c.rem + ')'; sc = 1;
-  placeCombo();
-  if (c.tap) { combo.classList.remove('kick'); void combo.offsetWidth; combo.classList.add('kick'); }
-});
-on('end', () => { combo.classList.add('out'); combo.classList.remove('on'); sc = .6; placeCombo(); });
-layoutPetHUD();
-addEventListener('resize', layoutPetHUD);
-document.documentElement.dataset.ready = '1';
-</script>
+<div class="app"></div>
+<script src="pet/icons.js?v=tc11132155"></script>
+<script src="shared/nav.js?v=tc11132155"></script>
+<script type="module" src="pet/fx.js?v=tc11132155"></script>
 </body></html>

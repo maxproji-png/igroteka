@@ -1,79 +1,97 @@
-/* Тапыши · тапалка A. Цвета — только токены из shared/tokens.css */
+/* Тапыши · tap-feel · общая раскладка главного экрана (только токены из tokens.css).
+   Правило производительности: всё, что двигается на тап, — только transform/opacity
+   на заранее созданных слоях. Без box-shadow/filter/backdrop на анимируемых узлах. */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;height:100dvh;background:var(--bg);overflow:hidden}
-body{font-family:var(--font);color:var(--ink);font-weight:800;display:flex;justify-content:center;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+html,body{height:100%;height:100dvh;background:var(--bg);overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
+body{font-family:var(--font);color:var(--ink);font-weight:800;display:flex;justify-content:center;-webkit-font-smoothing:antialiased;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 svg.ic{display:block;flex:none}
-.app{position:relative;width:100vw;max-width:430px;height:100%;height:100dvh;overflow:hidden}
+.app{position:relative;width:100vw;max-width:430px;height:100%;height:100dvh;overflow:hidden;touch-action:manipulation;
+  background:linear-gradient(180deg,var(--bg-tint) 0%,var(--bg) 42%,var(--white) 100%)}
+/* фон статичный: лучи без вращения, боке — готовые мягкие градиенты без filter:blur */
 .bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.rays{position:absolute;left:50%;width:1400px;height:1400px;margin:-700px 0 0 -700px;border-radius:50%;
+.rays{position:absolute;left:50%;top:50%;width:1400px;height:1400px;margin:-700px 0 0 -700px;border-radius:50%;
   background:repeating-conic-gradient(rgb(var(--white-rgb) / .55) 0 9deg,rgb(var(--white-rgb) / 0) 9deg 22.5deg);
-  -webkit-mask:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 30%,transparent 70%);mask:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 30%,transparent 70%);
-  animation:spin 60s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.bokeh{position:absolute;border-radius:50%;filter:blur(6px);opacity:.55;animation:drift 9s ease-in-out infinite}
-@keyframes drift{50%{transform:translateY(-14px)}}
-.pet-wrap{position:absolute;inset:0;z-index:2;pointer-events:none;transform-origin:50% 68%}
-.pet-wrap.is-bounce{animation:pet-bounce .12s ease-out}
-@keyframes pet-bounce{0%{transform:scale(1,1)}35%{transform:scale(1.14,.84)}70%{transform:scale(.95,1.08)}100%{transform:scale(1,1)}}
+  -webkit-mask:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 30%,transparent 70%);mask:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 30%,transparent 70%)}
+.bokeh{position:absolute;border-radius:50%;opacity:.6;background:radial-gradient(closest-side,var(--c,var(--white)),transparent)}
+.pet-wrap{position:absolute;inset:0;z-index:2;pointer-events:none;will-change:transform}
 canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;pointer-events:auto}
 .hud{position:absolute;inset:0;pointer-events:none;z-index:5}
 .hud .pe{pointer-events:auto}
-.spring{transition:transform .38s var(--spring)}
-.spring.is-down{transform:scale(.9) translateY(2px);transition:transform .08s ease-out}
-@keyframes boing{0%{transform:scale(.9)}45%{transform:scale(1.08)}70%{transform:scale(.97)}100%{transform:scale(1)}}
-.spring.boing{animation:boing .42s var(--spring)}
-.bump{animation:bump .32s var(--spring)}
-@keyframes bump{35%{transform:scale(1.14) translateY(-2px)}}
-.num{font-variant-numeric:tabular-nums;font-weight:1000}
-.hide{display:none!important}
-.dot{position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:var(--pink);border:2.5px solid var(--white);box-shadow:0 2px 6px color-mix(in srgb,var(--pink) 60%,transparent);animation:dotp 1.6s ease-in-out infinite}
-.dot.n{width:auto;min-width:21px;height:21px;padding:0 5px;border-radius:11px;color:var(--white);font-size:12px;font-weight:1000;line-height:16px;text-align:center;top:-7px;right:-7px}
-@keyframes dotp{50%{transform:scale(1.15)}}
 .card{background:var(--white);box-shadow:var(--sh-md)}
-/* монетки в полёте — только transform/opacity, без теней и фильтров */
-.fcoin{position:absolute;left:0;top:0;z-index:40;pointer-events:none;display:none}
-.fcoin .coin-dot{display:block;width:28px;height:28px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#FFE9A0,var(--sun) 52%,var(--sun-edge))}
-.plus{position:absolute;left:0;top:0;z-index:41;pointer-events:none;display:none;margin-left:-20px;margin-top:-28px}
-.plus b{display:block;font-size:28px;font-weight:1000;color:var(--sun);letter-spacing:-.4px;line-height:1}
-.plus.x15 b{color:var(--violet);font-size:32px}.plus.x2 b{color:var(--pink);font-size:34px}
-.plus.go b{animation:plus .62s cubic-bezier(.2,.8,.3,1) both}
-@keyframes plus{0%{opacity:0;transform:translateY(0) scale(.5)}18%{opacity:1;transform:translateY(-18px) scale(1.12)}70%{opacity:1;transform:translateY(-36px) scale(1)}100%{opacity:0;transform:translateY(-64px) scale(.9)}}
-.spark{position:absolute;left:0;top:0;z-index:39;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--sun);pointer-events:none}
-.spark.alt{background:var(--violet)}
-/* вспышка порога — облегчённая, редкая */
-.flash{position:absolute;inset:0;z-index:45;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.flash::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgb(var(--white-rgb) / .7),transparent 62%);animation:flbg 1s ease-out forwards}
-.flash .big{position:relative;margin-top:-40px;font-size:72px;font-weight:1000;line-height:1;color:var(--violet);animation:fbig 1s var(--spring) forwards}
-.flash.x2 .big{color:var(--pink)}
-.flash .sub{position:relative;margin-top:6px;padding:6px 14px;border-radius:16px;background:var(--white);color:var(--ink);font-size:16px;font-weight:1000;animation:fsub 1s ease-out forwards}
-@keyframes flbg{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
-@keyframes burst{0%{transform:scale(.3) rotate(0);opacity:0}15%{opacity:1}100%{transform:scale(1.2) rotate(40deg);opacity:0}}
-@keyframes fbig{0%{transform:scale(.2) rotate(-12deg);opacity:0}25%{transform:scale(1.15) rotate(3deg);opacity:1}45%{transform:scale(1) rotate(0)}80%{opacity:1}100%{transform:scale(1.05) translateY(-30px);opacity:0}}
-@keyframes fsub{0%,15%{opacity:0;transform:translateY(10px)}30%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
-/* зона тапа */
-.tapring{position:absolute;z-index:1;pointer-events:none;transform:translate(-50%,-50%)}
-.tapring i{position:absolute;inset:0;border-radius:50%;border:4px solid color-mix(in srgb,var(--violet) 55%,transparent);box-shadow:0 0 0 3px rgb(var(--white-rgb) / .7),0 0 22px color-mix(in srgb,var(--violet) 45%,transparent),inset 0 0 16px color-mix(in srgb,var(--violet) 35%,transparent);animation:tring 2s ease-out infinite}
-.tapring i:nth-child(2){animation-delay:1s}
-.tapring b{position:absolute;inset:4%;border-radius:50%;background:radial-gradient(closest-side,rgb(var(--white-rgb) / .95),color-mix(in srgb,var(--violet-soft) 80%,transparent) 60%,transparent);animation:tglow 2s ease-in-out infinite}
-@keyframes tglow{50%{opacity:.6;transform:scale(.94)}}
-@keyframes tring{0%{transform:scale(.8);opacity:0}25%{opacity:1}100%{transform:scale(1.25);opacity:0}}
-.tap-hint{position:absolute;z-index:6;pointer-events:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 8px;border-radius:19px;background:var(--white);color:var(--violet-edge);font-size:15px;font-weight:1000;white-space:nowrap;
-  box-shadow:0 10px 24px -10px rgb(var(--shade) / .55);transition:opacity .3s,transform .3s var(--spring)}
-.tap-hint .ic{width:28px;height:28px;color:var(--violet);animation:tapme 1.1s ease-in-out infinite}
-@keyframes tapme{0%,100%{transform:translate(0,0)}45%{transform:translate(-3px,-5px) rotate(-8deg)}60%{transform:translate(0,1px) scale(.92)}}
-.tap-hint.gone{opacity:0;transform:scale(.7)}
-/* «Улучшить» — зелёная кнопка по токенам (как .btn--success) */
-.up{position:relative;overflow:hidden;color:var(--white);font-weight:1000;
+.num{font-variant-numeric:tabular-nums;font-weight:1000}
+.top{position:absolute;left:14px;right:14px;top:14px;display:flex;justify-content:space-between;align-items:flex-start}
+.pill{position:relative;display:inline-flex;align-items:center;gap:7px;height:46px;padding:0 16px 0 7px;border-radius:23px;font-size:21px}
+.pill .ic{width:34px;height:34px}
+/* баланс: фиксированная ширина числа + contain — смена цифр не трогает layout вокруг */
+.bal .num{display:inline-block;min-width:4.6em;contain:layout paint;white-space:nowrap}
+.bal .cico{position:relative;width:34px;height:34px;flex:none;will-change:transform}
+.bal .cico img{width:100%;height:100%;display:block}
+.enw{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.enw .pill{gap:5px;padding:0 14px 0 9px}.enw .pill .ic{width:26px;height:26px}
+.enw .pill .num{display:inline-block;min-width:2.6em;text-align:right;contain:layout paint}
+.enw .bar{width:54px;height:8px;border-radius:4px;background:var(--fill);overflow:hidden}
+.enw .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,color-mix(in srgb,var(--green) 70%,var(--white)),var(--green));transform-origin:left;will-change:transform}
+.side{position:absolute;left:14px;top:76px;display:flex;flex-direction:column;gap:10px}
+.rb{position:relative;width:52px;height:52px;border-radius:18px;display:grid;place-items:center}
+.rb .ic{width:32px;height:32px}
+.dot{position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:var(--violet);border:2.5px solid var(--white)}
+.dot.n{width:auto;min-width:21px;height:21px;padding:0 5px;border-radius:11px;color:var(--white);font-size:12px;font-weight:1000;line-height:16px;text-align:center;top:-7px;right:-7px}
+.bottom{position:absolute;left:14px;right:14px;bottom:calc(var(--tabbar-space) + 12px);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lvl{display:flex;align-items:center;gap:8px;height:48px;padding:0 16px 0 6px;border-radius:24px;font-size:18px;font-weight:1000;white-space:nowrap}
+.lvl .st{position:relative;width:38px;height:38px;display:grid;place-items:center}
+.lvl .st svg{position:absolute;inset:0;width:38px;height:38px}
+.lvl .st b{position:relative;font-size:14px;color:var(--sun-edge);margin-top:3px}
+.lvl small{font-size:13px;color:var(--ink-2);font-weight:900}
+.up{position:relative;overflow:hidden;height:54px;padding:0 20px 0 14px;border-radius:27px;display:flex;align-items:center;gap:7px;font-size:18px;color:var(--white);font-weight:1000;
   background:linear-gradient(180deg,color-mix(in srgb,var(--green) 82%,var(--white)),var(--green));
-  box-shadow:0 5px 0 var(--green-edge),0 14px 24px -10px color-mix(in srgb,var(--green) 70%,transparent),inset 0 2px 0 rgb(var(--white-rgb) / .45);text-shadow:0 1px 0 rgb(var(--ink-rgb) / .1)}
-.up .ic{color:var(--white)}
-.up.ready::after{content:"";position:absolute;top:-20%;bottom:-20%;width:38%;left:-60%;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgb(var(--white-rgb) / .75),transparent);animation:shine 2.6s ease-in-out infinite}
-@keyframes shine{0%,55%{left:-60%}85%,100%{left:130%}}
-.up.short{filter:saturate(.25) brightness(1.05);opacity:.85}
-.flame{display:inline-block;width:1em;height:1.2em}
-@keyframes flick{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.12,1.2) rotate(4deg)}}
-.tab .ic{width:28px;height:28px}
-/* нижнее меню не перехватывается hud */
+  box-shadow:0 5px 0 var(--green-edge),0 14px 24px -10px color-mix(in srgb,var(--green) 70%,transparent),inset 0 2px 0 rgb(var(--white-rgb) / .45)}
+.up .ic{width:22px;height:22px;color:var(--white)}
+.tap-hint{position:absolute;z-index:6;pointer-events:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 8px;border-radius:19px;background:var(--white);color:var(--violet-edge);font-size:15px;font-weight:1000;white-space:nowrap;
+  box-shadow:0 10px 24px -10px rgb(var(--shade) / .55);transform:translate(-50%,0);transition:opacity .3s,transform .3s var(--spring)}
+.tap-hint .ic{width:28px;height:28px;color:var(--violet)}
+.tap-hint.gone{opacity:0;transform:translate(-50%,0) scale(.7)}
 .tabbar{pointer-events:auto}
+.tab .ic{width:28px;height:28px}
+
+/* ---------- комбо над головой (вариант A концепта; та же форма, дешевле механика) ---------- */
+.combo{position:absolute;left:0;top:0;z-index:7;pointer-events:none;display:flex;flex-direction:column;align-items:center;opacity:0;will-change:transform,opacity;
+  --c1:var(--violet);--c2:var(--violet-edge);transition:opacity .2s ease}
+.combo.on{opacity:1}
+.combo.out{transition:opacity .45s ease}
+.combo.t2{--c1:var(--green);--c2:var(--green-edge)}
+.combo.t3{--c1:var(--sun-edge);--c2:var(--game-word-edge)}
+.combo .row{display:flex;align-items:center;gap:4px}
+.combo .flame{width:34px;height:42px;margin-right:-2px;display:none;color:var(--sun)}
+.combo.hot .flame{display:block}
+.combo .lab{font-size:15px;font-weight:1000;color:var(--white);letter-spacing:1.5px;text-transform:uppercase;-webkit-text-stroke:5px var(--c1);paint-order:stroke fill;margin-bottom:-6px}
+.combo .n{font-size:52px;line-height:1;font-weight:1000;color:var(--white);-webkit-text-stroke:8px var(--c1);paint-order:stroke fill;text-shadow:0 6px 0 var(--c2);
+  font-variant-numeric:tabular-nums;min-width:1.3em;text-align:center}
+.combo .mult{display:none;margin-left:6px;padding:3px 10px;border-radius:14px;color:var(--white);font-size:20px;font-weight:1000;background:linear-gradient(180deg,var(--c1),var(--c2));transform:rotate(-6deg)}
+.combo.m .mult{display:block}
+.combo .timer{width:130px;height:9px;margin-top:8px;border-radius:5px;background:rgb(var(--white-rgb) / .9);overflow:hidden}
+.combo .timer i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--c1),var(--c2));transform-origin:left;will-change:transform}
+/* мягкая подложка под комбо — статичная, заранее растеризована */
+.combo::before{content:"";position:absolute;left:50%;top:55%;width:220px;height:120px;margin:-60px 0 0 -110px;border-radius:50%;
+  background:radial-gradient(closest-side,rgb(var(--white-rgb) / .75),transparent);z-index:-1}
+
+/* вспышка порога ×1,5 / ×2 — заранее в DOM, анимируется через WAAPI (transform/opacity) */
+.flash{position:absolute;inset:0;z-index:45;pointer-events:none;will-change:opacity;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0}
+.flash .glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgb(var(--white-rgb) / .8),transparent 62%)}
+.flash .big{position:relative;margin-top:-40px;font-size:72px;font-weight:1000;line-height:1;color:var(--white);-webkit-text-stroke:10px var(--violet);paint-order:stroke fill;text-shadow:0 7px 0 var(--violet-edge)}
+.flash.x2 .big{-webkit-text-stroke-color:var(--green);text-shadow:0 7px 0 var(--green-edge)}
+.flash .sub{position:relative;margin-top:8px;padding:6px 14px;border-radius:16px;background:var(--white);color:var(--ink);font-size:16px;font-weight:1000}
+
+.sprite{position:absolute;left:0;top:0;pointer-events:none;opacity:0;will-change:transform,opacity;display:block}
+
+/* метка варианта (для макета) */
+.vtag{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 76px);transform:translateX(-50%);z-index:8;height:26px;padding:0 12px;border-radius:13px;display:flex;align-items:center;
+  background:rgb(var(--white-rgb) / .92);color:var(--ink-2);font-size:12px;font-weight:900;white-space:nowrap;pointer-events:none}
+.vtag b{color:var(--violet);margin-right:5px}
+
+@media (max-height:760px){.bottom{bottom:calc(var(--tabbar-space) + 10px)}.side{top:72px}.lvl{font-size:16px}.up{height:48px;font-size:16px}}
+/* «+1» битмапом (130×70, рисуется один раз на canvas) */
+.plus-img{position:absolute;left:0;top:0;z-index:41;width:130px;height:70px;margin:-35px 0 0 -65px;pointer-events:none;opacity:0;will-change:transform,opacity;display:block}
+/* зона тапа (вариант A): вся игровая середина; кнопки HUD (.pe, z-index выше) остаются кликабельными */
+.tapzone{position:absolute;left:0;right:0;top:64px;bottom:calc(var(--tabbar-space) + 74px);z-index:3;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
