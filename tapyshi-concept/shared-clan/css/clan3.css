@@ -1,0 +1,67 @@
+/* Клан · «Вклад каждого» — шапка, списки, топ, чат. Только токены из tokens.css, без сырых цветов. */
+.scroll{padding:0 16px calc(var(--nav-h) + 34px)}
+.app.is-chat .scroll{padding-bottom:calc(var(--nav-h) + 100px)}
+.app::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--nav-h) + 36px);background:linear-gradient(rgb(var(--white-rgb) / 0),color-mix(in srgb,var(--bg) 94%,transparent) 55%);z-index:35;pointer-events:none}
+/* шапка */
+.ch-h{display:flex;align-items:center;gap:12px;padding:16px 2px 14px}
+.emb{width:48px;height:48px;border-radius:17px;flex:none;display:grid;place-items:center;overflow:hidden;background:var(--violet-soft);box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--violet) 12%,transparent)}
+.emb img{width:88%;height:88%;object-fit:contain;margin-top:10%}
+.emb.sm{width:40px;height:40px;border-radius:14px}
+.e-dragon{background:var(--green-soft)}.e-goose,.e-raccoon{background:var(--violet-soft)}.e-capybara{background:var(--sun-soft)}
+.ch-h .t{flex:1;min-width:0}
+.ch-h .t>b{display:block;font-size:22px;font-weight:1000;letter-spacing:-.3px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-h .t small{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px;font-weight:800;color:var(--ink-2);white-space:nowrap}
+.gdot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+.ibtn{width:44px;height:44px;border-radius:16px;background:var(--white);box-shadow:var(--sh-sm);display:grid;place-items:center;color:var(--ink-2);flex:none}
+.ibtn svg{width:20px;height:20px}
+/* списки */
+.list{background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:4px 0;overflow:hidden}
+.row{position:relative;display:flex;align-items:center;gap:12px;padding:10px 14px;width:100%;text-align:left}
+.row+.row::before{content:"";position:absolute;left:14px;right:14px;top:0;height:1px;background:var(--line)}
+.row.me{background:linear-gradient(90deg,var(--sun-soft),var(--white))}
+.row.me+.row::before,.row.me::before{display:none}
+.avw{position:relative;flex:none;display:block}
+.ava{display:block}
+.ava.sm{width:42px;height:42px;border-radius:15px}
+.ava.xs{width:32px;height:32px;border-radius:12px}
+.ava img{object-fit:contain;padding-top:4px}
+.on-dot{position:absolute;right:-3px;bottom:-3px;width:11px;height:11px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2.5px var(--white)}
+.rk{width:24px;flex:none;text-align:center;font-size:15px;font-weight:900;color:var(--ink-3)}
+.rk.r1,.rk.r2,.rk.r3{height:24px;border-radius:50%;display:grid;place-items:center;font-size:12.5px}
+.rk.r1{background:var(--sun);color:var(--ink);box-shadow:0 2px 0 var(--sun-edge)}
+.rk.r2{background:var(--violet-soft);color:var(--violet)}
+.rk.r3{background:var(--fill);color:var(--ink-2)}
+.nm{flex:1;min-width:0}
+.nm b{display:block;font-size:16px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm b svg{display:inline-block;width:16px;height:16px;vertical-align:-2px;margin-left:2px}
+.nm small,.val small{display:block;font-size:12.5px;font-weight:800;color:var(--ink-3);margin-top:1px;white-space:nowrap}
+.val{text-align:right;flex:none}
+.val b{font-size:15.5px;font-weight:900;white-space:nowrap}
+.row.more .nm b{color:var(--violet);font-size:15px}
+.go{color:var(--ink-3);width:20px;height:20px;flex:none}.go svg{width:20px;height:20px}
+/* топ */
+.prize{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 2px 12px}
+.prize .cap{width:100%;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3);font-weight:900;margin:0 2px 4px}
+.foot{text-align:center;font-size:13px;font-weight:800;color:var(--ink-3);margin:14px 0 0}
+/* чат */
+.chat{display:flex;flex-direction:column;gap:10px;padding-top:2px}
+.sys{align-self:center;max-width:90%;font-size:12.5px;font-weight:800;color:var(--ink-2);background:rgb(var(--white-rgb) / .8);padding:6px 12px;border-radius:var(--r-sm);text-align:center;line-height:1.3}
+.day{align-self:center;font-size:12px;font-weight:900;color:var(--ink-3);text-transform:uppercase;letter-spacing:.6px;margin:2px 0}
+.msg{display:flex;align-items:flex-end;gap:8px;max-width:86%}
+.msg .bub{background:var(--white);border-radius:20px 20px 20px 6px;padding:9px 13px 8px;box-shadow:var(--sh-sm);font-size:15px;font-weight:700;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.msg .bub b{display:block;font-size:12.5px;font-weight:900;color:var(--violet);margin-bottom:1px}
+.msg .bub b svg{width:14px;height:14px;vertical-align:-2px;margin-left:3px}
+.msg time{display:inline-block;margin-left:8px;font-size:11px;font-weight:800;color:var(--ink-3);vertical-align:-1px}
+.msg.me{align-self:flex-end}
+.msg.me .bub{background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 82%,var(--white)),var(--violet));color:var(--white);border-radius:20px 20px 6px 20px;box-shadow:0 3px 0 var(--violet-edge)}
+.msg.me time{color:rgb(var(--white-rgb) / .75)}
+.chatbar{position:absolute;left:16px;right:16px;bottom:calc(var(--nav-h) + 24px);z-index:38;height:54px;border-radius:var(--r-pill);background:var(--white);box-shadow:var(--sh-md);display:none;align-items:center;padding:0 6px 0 18px;gap:8px}
+.app.is-chat .chatbar{display:flex}
+.chatbar input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:15px;font-weight:700;color:var(--ink);background:none}
+.chatbar input::placeholder{color:var(--ink-3)}
+.chatbar .snd{width:42px;height:42px;border-radius:50%;flex:none;color:var(--white);display:grid;place-items:center;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 82%,var(--white)),var(--violet));box-shadow:0 3px 0 var(--violet-edge)}
+.chatbar .snd svg{width:20px;height:20px}
+.tb-badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--pink);color:var(--white);font-size:11px;font-weight:900;display:inline-grid;place-items:center;margin-left:2px}
+#panel.swap{animation:swapIn .45s var(--out)}
+@keyframes swapIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}

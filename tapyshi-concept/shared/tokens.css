@@ -1,0 +1,56 @@
+/* ============================================================
+   Тапыши · дизайн-токены (единственное место с сырыми цветами UI)
+   Подключение: <link rel="stylesheet" href=".../shared/tokens.css">
+   затем components.css. Путь к шрифту — относительно этого файла.
+   ============================================================ */
+@font-face{font-family:'Nunito';src:url(fonts/Nunito.woff2) format('woff2');font-weight:200 1000;font-display:block}
+:root{
+  /* --- нейтральные --- */
+  --white:#FFFFFF;          /* поверхности: карточки, кнопки secondary, шторка */
+  --white-rgb:255 255 255;  /* для полупрозрачных бликов: rgb(var(--white-rgb) / .7) */
+  --bg:#F8F7FF;             /* фон экранов */
+  --bg-tint:#F4F0FF;        /* верх градиента фона */
+  --fill:#EDE8FB;           /* нейтральная подложка: сегмент-контрол, круглые кнопки-иконки, статистика */
+  --line:#EFEAF8;           /* обводки, разделители */
+  --ink:#3A3358;            /* основной текст, тёмные плашки (тост, демо) */
+  --ink-rgb:58 51 88;       /* затемнение под шторкой/итогами */
+  --ink-2:#7E789E;          /* второстепенный текст */
+  --ink-3:#B4AECB;          /* третичный текст, неактивные вкладки, пустые слоты */
+  --shade:80 62 160;        /* цвет всех теней: rgb(var(--shade) / .12) */
+
+  /* --- фиолетовый: primary --- */
+  --violet:#7C5CFF;  --violet-soft:#F1ECFF;  --violet-edge:#5E40DB;
+  /* --- зелёный: success (победа, «соло», бот, выполнено, таймер) --- */
+  --green:#26B880;   --green-soft:#EBFAF3;   --green-edge:#1C9B6A;
+  /* --- жёлтый: монеты, ставки, рекорды, акцент --- */
+  --sun:#FFC233;     --sun-soft:#FFF6DA;     --sun-edge:#E8A100;
+  /* --- синий: MAX (приглашение друга), ничья --- */
+  --blue:#3F86FF;    --blue-soft:#EEF5FF;    --blue-edge:#2A6AE6;
+  /* --- розовый: точки-уведомления, конфетти, декор --- */
+  --pink:#FF5E99;    --pink-soft:#FFE6F0;    --pink-edge:#E8417E;
+
+  /* --- акценты игр (обложки каталога, кнопка «Играть» в каталоге, иконка игры в чипе) --- */
+  --game-ttt:#8B6CFF;      --game-ttt-edge:#6E4FF0;      --game-ttt-soft:#F3EEFF;      --game-ttt-cover:#E4DAFF;
+  --game-c4:#3F86FF;       --game-c4-edge:#2A6AE6;       --game-c4-soft:#EEF5FF;       --game-c4-cover:#D8E8FF;
+  --game-ship:#18A9CE;     --game-ship-edge:#0F8FB2;     --game-ship-soft:#EAFAFF;     --game-ship-cover:#CDEFF8;
+  --game-checkers:#26B880; --game-checkers-edge:#1C9B6A; --game-checkers-soft:#EBFAF3; --game-checkers-cover:#D2F2E3;
+  --game-goroda:#FF7A2E;   --game-goroda-edge:#E9601A;   --game-goroda-soft:#FFF4EA;   --game-goroda-cover:#FFE2CB;
+  --game-blocks:#FF5E99;   --game-blocks-edge:#E8417E;   --game-blocks-soft:#FFF1F6;   --game-blocks-cover:#FFDCEA;
+  --game-2048:#FF8640;     --game-2048-edge:#EC6A22;     --game-2048-soft:#FFF4EC;     --game-2048-cover:#FFE2CF;
+  --game-word:#E89A00;     --game-word-edge:#C98300;     --game-word-soft:#FFF9E6;     --game-word-cover:#FFEDB8;
+
+  /* --- радиусы --- */
+  --r-xs:10px; --r-sm:14px; --r-md:20px; --r-lg:28px; --r-xl:34px; --r-pill:999px;
+  /* --- тени (один цвет --shade) --- */
+  --sh-sm:0 1px 2px rgb(var(--shade) / .06),0 4px 12px rgb(var(--shade) / .08);
+  --sh-md:0 2px 4px rgb(var(--shade) / .05),0 12px 30px rgb(var(--shade) / .13);
+  --sh-lg:0 6px 14px rgb(var(--shade) / .07),0 26px 60px rgb(var(--shade) / .20);
+  --sh-pet:drop-shadow(0 6px 8px rgb(var(--shade) / .18));
+  /* --- обводки --- */
+  --stroke:inset 0 0 0 2px var(--line);
+  --stroke-on:inset 0 0 0 2.5px var(--violet);
+  --scrim:rgb(var(--ink-rgb) / .42);
+  /* --- шрифт и движение --- */
+  --font:'Nunito',ui-rounded,system-ui,sans-serif;
+  --spring:cubic-bezier(.34,1.56,.64,1); --out:cubic-bezier(.22,1,.36,1);
+}

@@ -1,0 +1,112 @@
+/* ============================================================
+   Тапыши · компоненты (только токены из tokens.css, без сырых цветов)
+   Кнопки: .btn + цвет (--primary | --success | --max | --secondary | --ghost | --game) + размер (--l | --m | --s)
+   Плашки: .chip + цвет (--violet | --green | --sun | --blue | --neutral | --white) + размер (--s | --m)
+   Метки режима: .mode.duo / .mode.solo · Рекорд: .rec · Карточка: .surface
+   ============================================================ */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{font-family:var(--font);color:var(--ink);font-weight:700;-webkit-font-smoothing:antialiased;background:var(--bg);min-height:100vh;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+img{display:block}
+
+/* пружинка */
+.spring{transition:transform .38s var(--spring)}
+.spring:active{transform:scale(.94);transition-duration:.09s;transition-timing-function:ease-out}
+.boing{animation:boing .5s var(--spring)}
+@keyframes boing{0%{transform:scale(1)}30%{transform:scale(.92,.96)}60%{transform:scale(1.04,1.02)}100%{transform:scale(1)}}
+
+/* ---------- кнопки ---------- */
+.btn{--b:var(--violet);--be:var(--violet-edge);
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:var(--r-pill);font-weight:900;white-space:nowrap;
+  color:var(--white);background:linear-gradient(180deg,color-mix(in srgb,var(--b) 82%,var(--white)),var(--b));
+  box-shadow:0 3px 0 var(--be),0 8px 18px color-mix(in srgb,var(--b) 30%,transparent);text-shadow:0 1px 0 rgb(var(--ink-rgb) / .1);
+  transition:transform .38s var(--spring),box-shadow .2s}
+.btn:active{transform:translateY(2px) scale(.96);box-shadow:0 1px 0 var(--be),0 4px 10px color-mix(in srgb,var(--b) 25%,transparent);transition-duration:.09s}
+.btn svg{width:1.15em;height:1.15em;flex:none}
+.btn--primary{--b:var(--violet);--be:var(--violet-edge)}
+.btn--success{--b:var(--green);--be:var(--green-edge)}
+.btn--max{--b:var(--blue);--be:var(--blue-edge)}
+.btn--game{--b:var(--c);--be:var(--cd)}
+.btn--secondary{color:var(--ink);background:var(--white);text-shadow:none;box-shadow:var(--sh-sm),var(--stroke)}
+.btn--secondary:active{box-shadow:var(--sh-sm),var(--stroke)}
+.btn--ghost{color:var(--ink-2);background:transparent;text-shadow:none;box-shadow:none}
+.btn--ghost:active{box-shadow:none}
+.btn--max-soft{color:var(--blue-edge);background:var(--blue-soft);text-shadow:none;box-shadow:none}
+.btn--max-soft:active{box-shadow:none}
+.btn--l{height:58px;padding:0 24px;font-size:18px;font-weight:1000;width:100%}
+.btn--m{height:46px;padding:0 20px;font-size:16px}
+.btn--s{height:40px;padding:0 16px;font-size:15px}
+.btn--wide{width:100%}
+.btn .btn-tag{display:inline-flex;align-items:center;gap:4px;margin-left:4px;height:30px;padding:0 10px 0 6px;border-radius:var(--r-pill);background:rgb(var(--white-rgb) / .24);font-size:15px;font-weight:1000}
+.btn .btn-tag .coin{width:20px;height:20px}
+/* старое имя для каталога B */
+.play{--b:var(--c);--be:var(--cd)}
+.play:not(.btn){display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:var(--r-pill);color:var(--white);font-weight:900;font-size:15px;
+ background:linear-gradient(180deg,color-mix(in srgb,var(--b) 82%,var(--white)),var(--b));box-shadow:0 3px 0 var(--be),0 8px 18px color-mix(in srgb,var(--b) 30%,transparent)}
+.play svg{width:12px;height:12px}
+
+/* круглая кнопка-иконка */
+.ibtn{width:44px;height:44px;border-radius:16px;background:var(--white);box-shadow:var(--sh-sm);display:grid;place-items:center;color:var(--ink-2);transition:transform .38s var(--spring)}
+.ibtn:active{transform:scale(.92)}
+.ibtn svg{width:20px;height:20px}
+.ibtn--round{border-radius:50%;width:36px;height:36px;background:var(--fill);box-shadow:none}
+.ibtn--round svg{width:16px;height:16px}
+
+/* ---------- плашки ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:var(--r-pill);font-size:13px;font-weight:900;white-space:nowrap}
+.chip svg{width:16px;height:16px;flex:none}
+.chip .coin{width:20px;height:20px}
+.chip b{font-weight:1000}
+.chip--s{height:24px;padding:0 9px;font-size:11.5px;gap:4px}.chip--s svg{width:14px;height:14px}
+.chip--m{height:36px;padding:0 14px;font-size:14px}
+.chip--violet{background:var(--violet-soft);color:var(--violet)}
+.chip--green{background:var(--green-soft);color:var(--green-edge)}
+.chip--sun{background:var(--sun-soft);color:var(--ink-2);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--sun) 35%,var(--white))}
+.chip--sun b{color:var(--ink)}
+.chip--blue{background:var(--blue-soft);color:var(--blue-edge)}
+.chip--neutral{background:var(--fill);color:var(--ink-2)}
+.chip--white{background:var(--white);color:var(--ink);box-shadow:var(--sh-sm)}
+.chip--solid-violet{background:var(--violet);color:var(--white)}
+.chip--solid-green{color:var(--white);background:var(--green);box-shadow:0 3px 0 var(--green-edge)}
+.chip--solid-sun{color:var(--ink);background:var(--sun);box-shadow:0 3px 0 var(--sun-edge)}
+.chip--dark{background:var(--ink);color:var(--white)}
+
+/* метки режима и рекорд (каталог) */
+.mode{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px 0 7px;border-radius:var(--r-pill);font-size:11.5px;font-weight:900;letter-spacing:.1px;white-space:nowrap;background:var(--white);box-shadow:0 2px 6px rgb(var(--shade) / .14)}
+.mode svg{width:14px;height:14px}
+.mode.duo{color:var(--violet)}
+.mode.solo{color:var(--green-edge)}
+.rec{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2);font-weight:800;white-space:nowrap}
+.rec svg{width:15px;height:15px;flex:none}
+.rec b{color:var(--ink);font-weight:900}
+.coin{width:18px;height:18px;flex:none}
+.ico-sun{fill:var(--sun)}.ico-sun-edge{fill:var(--sun-edge)}.ico-white{fill:var(--white)}.ico-white-s{stroke:var(--white)}
+
+/* поверхность / карточка / выбор */
+.surface{background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md)}
+.selectable{box-shadow:var(--stroke)}
+.selectable.on{box-shadow:var(--stroke-on);background:color-mix(in srgb,var(--violet) 5%,var(--white))}
+.radio{flex:none;width:24px;height:24px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--line);background:var(--white)}
+.on>.radio{box-shadow:inset 0 0 0 7px var(--violet)}
+
+/* декоративная плашка на обложке */
+.xchip{position:absolute;z-index:2;display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:var(--r-pill);background:var(--white);color:var(--cd,var(--violet));font-size:12.5px;font-weight:1000;box-shadow:0 4px 12px rgb(var(--shade) / .12);transform:rotate(-4deg)}
+.xchip svg{width:16px;height:16px}
+
+/* ---------- нижнее меню ---------- */
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;width:calc(100% - 24px);max-width:420px;height:68px;display:flex;padding:6px;gap:4px;border-radius:26px;
+ background:rgb(var(--white-rgb) / .92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 10px 30px rgb(var(--shade) / .16),inset 0 1px 0 var(--white);z-index:50}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:20px;color:var(--ink-3);font-size:11.5px;font-weight:800}
+.tab svg{width:24px;height:24px}
+.tab .cut{fill:var(--white)}
+.tab.on{color:var(--white);background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 72%,var(--white)),var(--violet));box-shadow:0 3px 0 var(--violet-edge),0 8px 16px color-mix(in srgb,var(--violet) 32%,transparent)}
+.tab .dot{position:absolute;margin:-22px 0 0 22px;width:8px;height:8px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 2px var(--white)}
+
+/* дырки иконок на активной вкладке — цвет фона вкладки */
+.tab .cut-s{stroke:var(--white);fill:none}
+.tab.on .cut{fill:var(--violet)}
+.tab.on .cut-s{stroke:var(--violet)}
+.tab{text-decoration:none;color:inherit}
+.tabbar a.tab{color:var(--ink-3)}
+.tabbar a.tab.on{color:var(--white)}

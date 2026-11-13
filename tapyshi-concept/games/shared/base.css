@@ -1,0 +1,3 @@
+/* Совместимость: подключает токены и компоненты (используется каталогом B). */
+@import url(tokens.css);
+@import url(components.css);

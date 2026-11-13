@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru" data-root="../" data-tab="clan">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Тапыши · Мой клан · «Вклад каждого»</title>
+<link rel="stylesheet" href="../shared-clan/css/styles.css">
+<link rel="stylesheet" href="../shared-clan/css/v2.css">
+<link rel="stylesheet" href="../shared-clan/css/tokens.css">
+<link rel="stylesheet" href="../shared/components.css">
+<link rel="stylesheet" href="../shared-clan/css/clan3.css">
+<style>
+/* «Мой клан» · Вклад каждого — финал. Шкала цели собрана из вкладов участников; список продолжает эту шкалу.
+   Цвета — только токены из ../shared/css/tokens.css (= 2-games/shared/tokens.css). */
+.ch-h .chip{height:22px;padding:0 8px;font-size:12px}
+.prog{background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md);padding:18px 18px 16px}
+.prog .top{display:flex;align-items:center;gap:14px}
+.prog .pc{font-size:46px;font-weight:1000;letter-spacing:-1.5px;line-height:.95;color:var(--violet)}
+.prog .pc small{font-size:24px;letter-spacing:0}
+.prog .tx{flex:1;min-width:0}
+.prog .tx b{display:block;font-size:17px;font-weight:1000;line-height:1.15}
+.prog .tx small{display:block;margin-top:4px;font-size:13px;font-weight:800;color:var(--ink-2)}
+.prog .ch{width:58px;height:58px;flex:none;filter:drop-shadow(0 6px 8px rgb(var(--shade) / .22));animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-4px) rotate(3deg)}}
+.stack{display:flex;gap:3px;height:22px;margin:16px 0 12px;padding:3px;border-radius:12px;background:var(--fill)}
+.stack i{height:100%;border-radius:4px;transform-origin:left;animation:grow .9s var(--out) both}
+.stack i:first-child{border-radius:9px 4px 4px 9px}
+.stack i.me{box-shadow:inset 0 0 0 2px var(--white),0 0 0 2px var(--sun-edge)}
+@keyframes grow{from{transform:scaleX(0)}}
+.legend{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:800;color:var(--ink-2)}
+.legend b{color:var(--ink);font-weight:1000}
+.legend .you{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.legend .you i{width:10px;height:10px;border-radius:3px;background:var(--sun);box-shadow:0 0 0 1.5px var(--sun-edge)}
+.legend .chip{height:26px;padding:0 10px;font-size:12.5px}
+.legend .chip svg{width:14px;height:14px}
+/* вкладки — сегмент-контрол как в каталоге «Игр» */
+.seg{position:sticky;top:0;z-index:5;margin:14px -16px 2px;padding:8px 16px 12px;background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 96%,transparent) 75%,color-mix(in srgb,var(--bg) 0%,transparent))}
+.seg .in{display:flex;gap:4px;padding:5px;background:var(--fill);border-radius:20px}
+.seg button{flex:1;height:40px;border-radius:15px;font-size:14.5px;font-weight:900;color:var(--ink-2);display:flex;align-items:center;justify-content:center;gap:6px;transition:background .25s,color .25s}
+.seg button svg{width:18px;height:18px}
+.seg button em{font-style:normal;font-size:11.5px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;display:grid;place-items:center;background:rgb(var(--white-rgb) / .7);color:var(--ink-3)}
+.seg button.on{background:var(--white);color:var(--ink);box-shadow:var(--sh-sm)}
+.seg button.on em{background:var(--violet);color:var(--white)}
+.seg button.on svg{color:var(--violet)}
+.seg button.on .trophy,.seg button .trophy{color:inherit}
+.seg .tb-badge{margin-left:0}
+/* приглашение через MAX */
+.inv{display:flex;align-items:center;gap:12px;width:100%;padding:12px 12px 12px 14px;margin-bottom:12px;border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-sm);text-align:left}
+.inv .max-ic{width:42px;height:42px;border-radius:50%;flex:none}.inv .max-ic svg{width:24px;height:24px}
+.inv .tx{flex:1;min-width:0}.inv small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inv b{display:block;font-size:15.5px;font-weight:1000}.inv small{display:block;margin-top:2px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.inv .btn{flex:none}
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:4px 4px 8px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3)}
+.cbar{display:block;height:7px;margin-top:6px;border-radius:4px;background:var(--fill);overflow:hidden}
+.cbar i{display:block;height:100%;border-radius:4px}
+.share{color:var(--ink-3)!important}
+.sheet .srow{font-weight:800}.sheet .srow b{margin-left:auto}
+.sheet .danger{color:var(--pink-edge);font-weight:900}
+@media (max-width:370px){.prog{padding:16px 16px 14px}.prog .pc{font-size:40px}.prog .tx b{font-size:15.5px}.prog .tx small{font-size:12.5px}.prog .ch{width:48px;height:48px}
+  .seg button{font-size:13.5px;gap:5px}.seg button svg{width:16px;height:16px}.inv b{font-size:15px}.inv .btn--s{padding:0 13px}.ch-h .t>b{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scroll">
+    <header class="ch-h">
+      <span class="emb"><img src="../shared-clan/img/pets/raccoon_happy_head.png" alt=""></span>
+      <span class="t"><b>Дикий зоопарк</b><small><span class="chip chip--sun"><b>ур. 2</b></span>27 из 45 · <i class="gdot"></i> 6 онлайн</small></span>
+      <button class="ibtn tap" id="more" aria-label="О клане"></button>
+    </header>
+    <section class="prog">
+      <div class="top"><span class="pc num">83<small>%</small></span><span class="tx"><b>до сундука клана</b><small>1 240 560 из 1,5 млн</small></span><img class="ch" src="../shared-clan/img/v2/chest-gold.png" alt=""></div>
+      <div class="stack" id="stack"></div>
+      <div class="legend"><span class="you"><i></i>Твой вклад <b>131 250</b></span><span class="chip chip--neutral" id="left"></span></div>
+    </section>
+    <div class="seg" id="tabs"><div class="in">
+      <button data-tab="members" class="tap" id="t1"></button>
+      <button data-tab="top" class="tap" id="t2"></button>
+      <button data-tab="chat" class="tap" id="t3"></button>
+    </div></div>
+    <div id="panel"></div>
+  </div>
+  </div>
+<script>window.T={ROOT:'../shared-clan/'}</script>
+<script src="../shared-clan/js/data.js"></script>
+<script src="../shared-clan/js/app.js"></script>
+<script src="../shared-clan/js/v2.js"></script>
+<script src="../shared-clan/js/nav3.js"></script>
+<script src="../shared-clan/js/clan3.js"></script>
+<script>
+var C=T.c3;
+document.getElementById('more').innerHTML=T.IC.dots;
+document.getElementById('left').innerHTML=T.IC.clock+'2 д 14 ч';
+var ppl='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 19.5 Q3 13.5 9 13.5 Q15 13.5 15.5 19.5Z"/><circle cx="17" cy="9" r="2.8"/><path d="M15.8 13.6 Q21 13.4 21.5 19.5 H17.3 Q17.2 16 15.8 13.6Z"/></svg>';
+document.getElementById('t1').innerHTML='Участники<em>27</em>';
+document.getElementById('t2').innerHTML='Топ кланов';
+document.getElementById('t3').innerHTML='Чат<span class="tb-badge">3</span>';
+// шкала из вкладов: топ-5 оттенками палитры («ты» — жёлтым), остальные — одним сегментом
+var st=document.getElementById('stack'),g=C.goal.goal,rest=C.goal.now;
+C.members.slice(0,5).forEach(function(m,i){rest-=m.t;st.insertAdjacentHTML('beforeend','<i class="'+(m.me?'me':'')+'" style="width:'+(m.t/g*100)+'%;background:'+C.colors[i]+';animation-delay:'+(i*.08)+'s"></i>')});
+st.insertAdjacentHTML('beforeend','<i style="width:'+(rest/g*100)+'%;background:'+C.rest+';animation-delay:.4s"></i>');
+T.c3.tabs(document.getElementById('tabs'),{members:function(){
+  return '<button class="inv tap" data-invite><span class="max-ic">'+T.IC.max+'</span><span class="tx"><b>Позвать друга</b><small>+500 монет обоим</small></span><span class="btn btn--max btn--s">Через MAX</span></button>'+
+    '<div class="sec"><span>Вклад за неделю</span><span>27 участников</span></div>'+C.members_({bars:1});}});
+document.getElementById('more').addEventListener('click',function(){T.sheet('<h3>Дикий зоопарк</h3><div class="srow">Уровень клана<b>2</b></div><div class="srow">До 3-го уровня<b>64 из 100 побед</b></div><div class="srow">Мест занято<b>27 из 45</b></div><div class="srow danger">Покинуть клан</div>')});
+</script>
+<script src="../shared/nav.js"></script>
+</body>
+</html>

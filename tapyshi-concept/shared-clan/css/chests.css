@@ -1,0 +1,27 @@
+/* Магазин сундуков — общие стили */
+.app{background:var(--page)}
+.scroll{padding:0 16px calc(var(--nav-h) + 30px)}
+.app::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--nav-h) + 30px);background:linear-gradient(rgba(247,248,255,0),rgba(247,248,255,.92) 55%);z-index:35;pointer-events:none}
+.sh-head{display:flex;align-items:center;justify-content:space-between;padding:16px 2px 14px}
+.sh-head b{display:block;font-size:28px;font-weight:1000;letter-spacing:-.5px;line-height:1.05}
+.sh-head small{display:block;font-size:13.5px;font-weight:800;color:var(--ink2);margin-top:2px}
+.rar{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:8px;font-size:12px;font-weight:900}
+.rar.c{background:var(--seg);color:var(--seg-ink)}.rar.r{background:var(--lav-l);color:var(--lav-d)}.rar.l{background:var(--sun-l);color:var(--ink);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--sun) 55%,#fff)}
+.ch-img{filter:drop-shadow(0 12px 12px rgba(80,62,160,.2))}
+/* лист содержимого */
+.sh-ch{position:relative;height:150px;display:grid;place-items:center;margin-top:-4px}
+.sh-ch .disc{position:absolute;width:150px;height:150px;border-radius:50%}
+.sh-ch img{position:relative;width:150px;height:150px;filter:drop-shadow(0 12px 12px rgba(80,62,160,.22));animation:pop .5s var(--spring)}
+.sh-t{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+.sh-t b{font-size:22px;font-weight:1000}
+.sh-sub{margin:16px 2px 8px;font-size:12.5px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3)}
+.loot{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.lrow{display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;border-radius:18px;background:var(--bg)}
+.li{width:44px;height:44px;border-radius:14px;background:#fff;display:grid;place-items:center;flex:none}
+.li img{width:36px;height:36px;object-fit:contain}
+.ln{flex:1;font-size:15px;font-weight:900}
+.lp{font-size:15px;font-weight:1000;color:var(--vio-d)}
+.btn.lack{--c:var(--seg);--cd:color-mix(in srgb,var(--seg-ink) 30%,#fff);background:var(--seg);color:var(--seg-ink);text-shadow:none;box-shadow:0 3px 0 var(--cd)}
+.btn.lack img{filter:grayscale(1) opacity(.6)}
+.after{text-align:center;font-size:13px;font-weight:800;color:var(--ink3);margin-top:12px}
+.note{text-align:center;font-size:12px;font-weight:800;color:var(--ink3);margin:16px 0 0}

@@ -1,0 +1,95 @@
+/* ============================================================
+   Тапыши · Клан и Магазин — ЕДИНАЯ ПАЛИТРА.
+   ИСТОЧНИК: /workspace/tapyshi-redesign/2-games/shared/tokens.css (значения скопированы 1:1, файл не менялся)
+   и стиль компонентов из /workspace/tapyshi-redesign/2-games/shared/components.css (.btn, .chip, .tabbar).
+   Сырые цвета UI — ТОЛЬКО здесь. Подключать после styles.css; ниже — переопределение старых
+   компонентов styles.css/v2.css (кнопки, нижнее меню, аватары, MAX, тост) под эти токены.
+   ============================================================ */
+:root{
+  /* нейтральные */
+  --white:#FFFFFF; --white-rgb:255 255 255;
+  --bg:#F8F7FF; --bg-tint:#F4F0FF; --fill:#EDE8FB; --line:#EFEAF8;
+  --ink:#3A3358; --ink-rgb:58 51 88; --ink-2:#7E789E; --ink-3:#B4AECB; --shade:80 62 160;
+  /* фиолетовый — primary */
+  --violet:#7C5CFF; --violet-soft:#F1ECFF; --violet-edge:#5E40DB;
+  /* зелёный — success / онлайн / выполнено */
+  --green:#26B880; --green-soft:#EBFAF3; --green-edge:#1C9B6A;
+  /* жёлтый — монеты, награды, «ты» */
+  --sun:#FFC233; --sun-soft:#FFF6DA; --sun-edge:#E8A100;
+  /* синий — MAX (приглашение друга) */
+  --blue:#3F86FF; --blue-soft:#EEF5FF; --blue-edge:#2A6AE6;
+  /* розовый — точки-уведомления, опасное действие */
+  --pink:#FF5E99; --pink-soft:#FFE6F0; --pink-edge:#E8417E;
+  /* радиусы, тени — как в Играх */
+  --r-xs:10px; --r-sm:14px; --r-md:20px; --r-lg:28px; --r-xl:34px; --r-pill:999px;
+  --sh-sm:0 1px 2px rgb(var(--shade) / .06),0 4px 12px rgb(var(--shade) / .08);
+  --sh-md:0 2px 4px rgb(var(--shade) / .05),0 12px 30px rgb(var(--shade) / .13);
+  --sh-lg:0 6px 14px rgb(var(--shade) / .07),0 26px 60px rgb(var(--shade) / .20);
+  --stroke:inset 0 0 0 2px var(--line);
+  --scrim:rgb(var(--ink-rgb) / .42);
+  --page:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg) 100%);
+  --nav-h:68px;
+
+  /* старые имена (styles.css / v2.css) → токены Игр */
+  --ink2:var(--ink-2); --ink3:var(--ink-3); --card:var(--white); --soft:var(--fill);
+  --vio:var(--violet); --vio-d:var(--violet-edge); --vio-l:var(--violet-soft); --vio-ll:var(--violet-soft);
+  --lav:var(--violet); --lav-d:var(--violet-edge); --lav-l:var(--violet-soft);
+  --mint:var(--green); --mint-d:var(--green-edge); --mint-l:var(--green-soft);
+  --green-d:var(--green-edge); --green-l:var(--green-soft);
+  --sun-d:var(--sun-edge); --sun-l:var(--sun-soft); --sun-ink:var(--ink);
+  --coral:var(--pink); --dot:var(--pink);
+  --sky:var(--blue); --sky-l:var(--blue-soft); --peach:var(--sun); --peach-l:var(--sun-soft); --pink-l:var(--pink-soft);
+  --sh-1:var(--sh-sm); --sh-2:var(--sh-md); --sh-3:var(--sh-lg);
+  --r-sm:14px; --r-md:20px; --r-lg:28px; --r-xl:34px;
+}
+body{color:var(--ink);background:var(--bg)}
+.app{background:var(--page)}
+
+/* ---------- кнопки: как .btn в Играх ---------- */
+.btn{--b:var(--violet);--be:var(--violet-edge);border-radius:var(--r-pill);font-weight:900;color:var(--white);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--b) 82%,var(--white)),var(--b));
+  box-shadow:0 3px 0 var(--be),0 8px 18px color-mix(in srgb,var(--b) 30%,transparent);text-shadow:0 1px 0 rgb(var(--ink-rgb) / .1)}
+.btn::before{display:none}
+.btn.tap.is-down{transform:translateY(2px) scale(.96);box-shadow:0 1px 0 var(--be),0 4px 10px color-mix(in srgb,var(--b) 25%,transparent)}
+.btn--max{--b:var(--blue);--be:var(--blue-edge)}
+.btn--success{--b:var(--green);--be:var(--green-edge)}
+.btn--secondary{color:var(--ink);background:var(--white);text-shadow:none;box-shadow:var(--sh-sm),var(--stroke)}
+.btn--secondary.tap.is-down{box-shadow:var(--sh-sm),var(--stroke)}
+.btn--s{height:40px;padding:0 16px;font-size:15px}
+.btn--m{height:46px;padding:0 20px;font-size:16px}
+
+/* ---------- плашки: как .chip в Играх ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:var(--r-pill);font-size:13px;font-weight:900;white-space:nowrap}
+.chip svg{width:16px;height:16px;flex:none}
+.chip--s{height:24px;padding:0 9px;font-size:11.5px;gap:4px}
+.chip--violet{background:var(--violet-soft);color:var(--violet)}
+.chip--green{background:var(--green-soft);color:var(--green-edge)}
+.chip--sun{background:var(--sun-soft);color:var(--ink-2);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--sun) 35%,var(--white))}
+.chip--sun b{color:var(--ink);font-weight:1000}
+.chip--neutral{background:var(--fill);color:var(--ink-2)}
+
+/* ---------- нижнее меню: как .tabbar в Играх ---------- */
+.nav{left:12px;right:12px;bottom:12px;height:var(--nav-h);display:flex;gap:4px;padding:6px;border-radius:26px;
+  background:rgb(var(--white-rgb) / .92);box-shadow:0 10px 30px rgb(var(--shade) / .16),inset 0 1px 0 var(--white)}
+.nav a{flex:1;justify-content:center;gap:3px;border-radius:20px;color:var(--ink-3);font-size:11.5px;font-weight:800;padding-top:0}
+.nav .ic{width:auto;height:auto;border-radius:0;background:none;box-shadow:none}
+.nav .ic svg{width:24px;height:24px}
+.nav a.on{color:var(--white);background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 72%,var(--white)),var(--violet));
+  box-shadow:0 3px 0 var(--violet-edge),0 8px 16px color-mix(in srgb,var(--violet) 32%,transparent)}
+.nav a.on .ic{background:none;box-shadow:none;transform:none}
+.nav .nb{top:8px;right:calc(50% - 20px);width:8px;height:8px;background:var(--pink);box-shadow:0 0 0 2px var(--white)}
+
+/* ---------- прочее из styles.css / v2.css ---------- */
+.max-ic{background:linear-gradient(180deg,color-mix(in srgb,var(--blue) 82%,var(--white)),var(--blue));box-shadow:0 2px 0 var(--blue-edge)}
+.ava{background:var(--fill)}
+.ava.raccoon,.ava.goose{background:var(--violet-soft)}
+.ava.capybara{background:var(--sun-soft)}
+.ava.dragon{background:var(--green-soft)}
+.toast{background:var(--ink);color:var(--white);box-shadow:var(--sh-lg)}
+.sheet{background:var(--white);box-shadow:var(--sh-lg)}
+.sheet-bg{background:var(--scrim)}
+.sheet .grab{background:var(--fill)}
+.srow+.srow{border-top-color:var(--line)}
+.coins{background:var(--white);box-shadow:var(--sh-sm)}
+.cut{fill:var(--white)}.cut-s{stroke:var(--white);fill:none}
+.nav a.on .cut{fill:var(--violet)}.nav a.on .cut-s{stroke:var(--violet)}

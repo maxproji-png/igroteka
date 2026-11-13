@@ -1,0 +1,72 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Тапыши · Игры — палитра и токены</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../components.css">
+<style>
+body{background:var(--bg);padding:40px 44px;width:1400px;color:var(--ink)}
+h1{margin:0;font-size:34px;font-weight:1000}
+.sub{color:var(--ink-2);font-weight:700;margin:6px 0 26px}
+h2{font-size:20px;font-weight:1000;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.box{background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md);padding:24px}
+.fam{display:grid;grid-template-columns:120px repeat(3,1fr);gap:10px;align-items:center;margin-bottom:10px}
+.fam .nm{font-weight:900;font-size:14px}
+.fam .nm small{display:block;color:var(--ink-3);font-weight:700;font-size:11.5px}
+.sw{display:flex;align-items:center;gap:10px}
+.sw i{width:44px;height:44px;border-radius:var(--r-sm);box-shadow:var(--stroke);flex:none}
+.sw b{display:block;font-size:12.5px;font-weight:900}
+.sw span{font-size:12px;color:var(--ink-2);font-weight:700;font-family:ui-monospace,monospace}
+.games .fam{grid-template-columns:120px repeat(4,1fr)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}
+.lbl{width:100%;font-size:12px;color:var(--ink-3);font-weight:800;margin-bottom:-4px;text-transform:uppercase;letter-spacing:.6px}
+.btn--l{width:auto;padding:0 28px}
+.minis{display:flex;gap:14px}
+.r{width:60px;height:60px;background:var(--violet-soft);box-shadow:var(--stroke)}
+.sh{width:90px;height:60px;border-radius:var(--r-md);background:var(--white)}
+.x{font-size:11.5px;color:var(--ink-2);font-weight:800;text-align:center;margin-top:6px}
+</style></head><body>
+<h1>Палитра и токены · раздел «Игры»</h1>
+<div class="sub">shared/tokens.css — единственный источник цветов. У каждого цвета максимум три тона: base · soft · edge.</div>
+<div class="grid">
+ <div class="box" id="ui"><h2>UI-палитра</h2></div>
+ <div class="box games" id="gm"><h2>Акценты игр · --game-*</h2></div>
+ <div class="box"><h2>Кнопки · components.css</h2>
+  <div class="row"><div class="lbl">L · 58 px · главное действие</div>
+   <button class="btn btn--primary btn--l">Найти соперника <span class="btn-tag"><svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12.8" r="10" class="ico-sun-edge"/><circle cx="12" cy="11.6" r="10" class="ico-sun"/></svg>300</span></button>
+   <button class="btn btn--success btn--l">Играть соло</button></div>
+  <div class="row"><div class="lbl">M · 46 px</div>
+   <button class="btn btn--primary btn--m">Ещё раз</button><button class="btn btn--success btn--m">Готово</button><button class="btn btn--max btn--m">Отправить в MAX</button><button class="btn btn--secondary btn--m">В меню</button><button class="btn btn--ghost btn--m">Отмена</button></div>
+  <div class="row"><div class="lbl">S · 40 px · в карточках</div>
+   <button class="btn btn--primary btn--s">Играть</button><button class="btn btn--max-soft btn--s">Напомнить в MAX</button><button class="btn btn--secondary btn--s">Сдаться</button>
+   <span style="--c:var(--game-checkers);--cd:var(--game-checkers-edge)"><button class="btn btn--game btn--s">Играть · цвет игры</button></span>
+   <span style="--c:var(--game-2048);--cd:var(--game-2048-edge)"><button class="btn btn--game btn--s">Играть · цвет игры</button></span></div>
+  <div class="row"><div class="lbl">Иконки-кнопки</div>
+   <button class="ibtn"><svg viewBox="0 0 20 20"><rect x="5" y="4" width="3.5" height="12" rx="1.5" fill="currentColor"/><rect x="11.5" y="4" width="3.5" height="12" rx="1.5" fill="currentColor"/></svg></button>
+   <button class="ibtn ibtn--round"><svg viewBox="0 0 20 20"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
+ </div>
+ <div class="box"><h2>Плашки, метки, карточки</h2>
+  <div class="row"><div class="lbl">chip · soft</div>
+   <span class="chip chip--violet">Почти получилось</span><span class="chip chip--green">без ставки</span><span class="chip chip--sun">Банк <b>600</b></span><span class="chip chip--blue">Ничья</span><span class="chip chip--neutral">ставка 300</span><span class="chip chip--white">0:07</span></div>
+  <div class="row"><div class="lbl">chip · solid (бейджи)</div>
+   <span class="chip chip--solid-violet">Твой ход</span><span class="chip chip--solid-green">Победа!</span><span class="chip chip--solid-sun">Новый рекорд!</span><span class="chip chip--dark">Кира вышла из партии</span></div>
+  <div class="row"><div class="lbl">Метки режима · рекорд</div>
+   <span class="mode duo">на двоих</span><span class="mode solo">соло</span><span class="rec">Рекорд <b>7 побед</b></span></div>
+  <div class="row"><div class="lbl">Радиусы · тени · обводки</div>
+   <div class="minis" id="rad"></div></div>
+  <div class="row"><div class="minis">
+   <div><div class="sh" style="box-shadow:var(--sh-sm)"></div><div class="x">--sh-sm</div></div>
+   <div><div class="sh" style="box-shadow:var(--sh-md)"></div><div class="x">--sh-md</div></div>
+   <div><div class="sh" style="box-shadow:var(--sh-lg)"></div><div class="x">--sh-lg</div></div>
+   <div><div class="sh" style="box-shadow:var(--stroke)"></div><div class="x">--stroke</div></div>
+   <div><div class="sh" style="box-shadow:var(--stroke-on)"></div><div class="x">--stroke-on</div></div></div></div>
+ </div>
+</div>
+<script>
+var cs=getComputedStyle(document.documentElement);function v(n){var s=cs.getPropertyValue(n).trim();return s[0]=='#'?s.toUpperCase():s}
+function sw(n,t){return '<div class="sw"><i style="background:var('+n+')"></i><div><b>'+(t||n)+'</b><span>'+v(n)+'</span></div></div>'}
+var UI=[['Нейтральные','фон, поверхности',['--white','--bg','--bg-tint']],['','',['--fill','--line']],['Текст','',['--ink','--ink-2','--ink-3']],
+['Фиолетовый','действия, выбор',['--violet','--violet-soft','--violet-edge']],['Зелёный','победа, соло, бот',['--green','--green-soft','--green-edge']],
+['Жёлтый','монеты, ставки, рекорд',['--sun','--sun-soft','--sun-edge']],['Синий','MAX, ничья',['--blue','--blue-soft','--blue-edge']],['Розовый','уведомления, декор',['--pink','--pink-soft','--pink-edge']]];
+document.getElementById('ui').innerHTML+=UI.map(function(f){return '<div class="fam"><div class="nm">'+f[0]+'<small>'+f[1]+'</small></div>'+f[2].map(function(n){return sw(n)}).join('')+'</div>'}).join('');
+var G=[['ttt','Крестики-нолики'],['c4','4 в ряд'],['ship','Найди корабль'],['checkers','Шашки'],['goroda','Города'],['blocks','Сложи блоки'],['2048','2048'],['word','Слово']];
+document.getElementById('gm').innerHTML+=G.map(function(g){var p='--game-'+g[0];return '<div class="fam"><div class="nm">'+g[1]+'<small>'+p+'</small></div>'+sw(p,'base')+sw(p+'-edge','edge')+sw(p+'-soft','soft')+sw(p+'-cover','cover')+'</div>'}).join('');
+document.getElementById('rad').innerHTML=['xs','sm','md','lg','xl'].map(function(r){return '<div><div class="r" style="border-radius:var(--r-'+r+')"></div><div class="x">--r-'+r+' · '+v('--r-'+r)+'</div></div>'}).join('');
+</script></body></html>
