@@ -1,5 +1,5 @@
 // Эволюции питомцев: 4 стихии × 6 стадий. Пороги уровня и загрузка GLB (с кешем).
-import { GLTFLoader } from './../lib/addons/loaders/GLTFLoader.js?v=tc11132255';
+import { GLTFLoader } from './../lib/addons/loaders/GLTFLoader.js?v=tc11132270';
 
 export const PETS = {
   raccoon:  { id: 'raccoon',  label: 'Енот',     halo: [140, 200, 255],

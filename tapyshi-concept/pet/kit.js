@@ -1,7 +1,7 @@
 // Тапыши v2 · общий 3D-набор: рендер, свет, енот с характером, блочные пропсы
 import * as THREE from 'three';
-import { GLTFLoader } from './../lib/addons/loaders/GLTFLoader.js?v=tc11132255';
-import { RoundedBoxGeometry } from './../lib/addons/geometries/RoundedBoxGeometry.js?v=tc11132255';
+import { GLTFLoader } from './../lib/addons/loaders/GLTFLoader.js?v=tc11132270';
+import { RoundedBoxGeometry } from './../lib/addons/geometries/RoundedBoxGeometry.js?v=tc11132270';
 export { THREE };
 
 export const C = (hex) => new THREE.Color(hex);

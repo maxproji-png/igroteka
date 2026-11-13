@@ -1,7 +1,7 @@
 // Тапыши · сцена с эволюциями. 3D рендерится только по запросу: на тап WebGL не перерисовываем.
 // Сжатие на тап — CSS/WAAPI на обёртке. Смена модели — единственный повод для нового кадра.
-import { THREE, makeRenderer, blob } from './kit.js?v=tc11132255';
-import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11132255';
+import { THREE, makeRenderer, blob } from './kit.js?v=tc11132270';
+import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11132270';
 export { THREE };
 
 export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2 } = {}) {
@@ -11,7 +11,7 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
   scene.add(new THREE.HemisphereLight('#EAF4FF', '#FFF2E6', 1.35));
   const key = new THREE.DirectionalLight('#FFF1DE', 2.5); key.position.set(-1.2, 4.2, 3.6); key.castShadow = true;
   key.shadow.mapSize.set(512, 512); key.shadow.radius = 6; key.shadow.bias = -.0006; key.shadow.normalBias = .02;
-  Object.assign(key.shadow.camera, { left: -2, right: 2, top: 2.6, bottom: -1.2, near: .5, far: 14 }); scene.add(key);
+  Object.assign(key.shadow.camera, { left: -3.5, right: 3.5, top: 3.2, bottom: -2, near: .5, far: 18 }); scene.add(key);
   const rim = new THREE.DirectionalLight('#CFE6FF', 3.2); rim.position.set(2.4, 2.6, -3); scene.add(rim);
   const rim2 = new THREE.DirectionalLight('#FFFFFF', 1.2); rim2.position.set(-2.6, 1.8, -2.4); scene.add(rim2);
   const fill = new THREE.DirectionalLight('#FFFFFF', .6); fill.position.set(2, 1, 3); scene.add(fill);
@@ -91,11 +91,10 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
         o.updateWorldMatrix(true, false);
         const m = o.matrixWorld;
         const isRing = o.name && /_Ring$/.test(o.name);
-        const step = Math.max(1, Math.floor(pos.count / 500));
-        for (let i = 0; i < pos.count; i += step) {
+        for (let i = 0; i < pos.count; i++) {
           _v.fromBufferAttribute(pos, i).applyMatrix4(m);
           box.expandByPoint(_v);
-          if (!isRing) pts.push([_v.x, _v.y, _v.z]); // кольцо не отжимает камеру
+          if (!isRing) pts.push([_v.x, _v.y, _v.z]); // кольцо не отжимает камеру; все вершины, чтобы не пропустить кончик
         }
       });
     }
@@ -118,7 +117,7 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
   const REF = { w: 1.12, h: 1.20, d: .95 };
   const EYE = .16;
   const TARGET_H = 420; // целевая высота силуэта референса, css-пиксели
-  const TIP = 56;       // тонкие кончики крыльев могут чуть выйти за край экрана
+  const EDGE = 2;       // ни одна часть модели не должна выходить за край экрана
 
   function safeRect() {
     const app = host.closest('.app') || document.querySelector('.app') || host;
@@ -162,15 +161,15 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     }
     return { x0, y0, x1, y1 };
   }
-  function overflows(pts, S, { top, tip = TIP } = {}) {
+  function overflows(pts, S, { top, edges = true } = {}) {
     const T = top != null ? top : S.T;
     for (const [x, y, z] of pts) {
       const p = proj(x, y, z);
       // Жёстко: не под верхние чипы и не под плашку / «Улучшить».
       if (p.y < T - .5 || p.y > S.B + .5) return true;
-      // Кольцо у пола и тень не отжимают камеру. Крылья/хвост выше —
-      // могут чуть выйти за край и зайти за боковые кнопки.
-      if (y > .2 && (p.x < -tip - .5 || p.x > FW + tip + .5)) return true;
+      // Край экрана проверяем только у реальной модели, не у референсного ящика —
+      // иначе общий масштаб садится у всех.
+      if (edges && (p.x < EDGE || p.x > FW - EDGE)) return true;
     }
     return false;
   }
@@ -225,7 +224,7 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
       const d = (lo + hi) / 2;
       const lookY = plantBottom(d, 0, refPts, Sfit);
       setCam(d, 0, lookY);
-      if (!overflows(refPts, Sfit, { top: Sfit.T })) { bestD = d; bestY = lookY; hi = d; }
+      if (!overflows(refPts, Sfit, { top: Sfit.T, edges: false })) { bestD = d; bestY = lookY; hi = d; }
       else lo = d;
     }
     const lookX = 0; // ось вращения между ног — питомец не уезжает при спине
@@ -233,25 +232,37 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     const modelPts = sil.pts;
     bestY = plantFeet(bestD, lookX, S);
     setCam(bestD, lookX, bestY);
-    // Если рога лезут под чипы или крылья сильно вылезают за край — чуть отъезжаем.
-    // AABB не используем: пустые углы ящика ложно «выпирали» и мельчили дракона.
-    if (overflows(modelPts, S, { top: S.T, tip: TIP })) {
-      let d2 = bestD;
-      for (let k = 0; k < 10 && overflows(modelPts, S, { top: S.T, tip: TIP }); k++) {
-        d2 *= 1.04;
-        bestY = plantFeet(d2, lookX, S);
-        setCam(d2, lookX, bestY);
+    // Если рога лезут под чипы или крылья/хвост выходят за край экрана — отъезжаем
+    // только эту модель, остальные остаются крупными.
+    if (overflows(modelPts, S, { top: S.T })) {
+      let lo = bestD, hi = 14, d2 = bestD;
+      for (let k = 0; k < 16; k++) {
+        const d = (lo + hi) / 2;
+        const ly = plantFeet(d, lookX, S);
+        setCam(d, lookX, ly);
+        if (!overflows(modelPts, S, { top: S.T })) { d2 = d; hi = d; bestY = ly; }
+        else lo = d;
       }
       bestD = d2;
     }
     setCam(bestD, lookX, bestY);
     frame = { d: bestD, lookY: bestY, lookX, floorY: proj(0, 0, 0).y, safe: S };
 
-    // Кроп — по радиусу вращения, чтобы при повороте канвас не обрезал крылья.
+    // Кроп: модель во всех поворотах + пятно тени/ореола, чтобы тень не резалась канвасом.
+    // В камеру это не вмешивается — только размер WebGL-слоя, с обрезкой по экрану.
     const spin = current.object ? spinExtent(current.object) : { r: 1, y0: 0, y1: 1.3 };
-    const cropPts = boxPoints({ x: -spin.r, y: spin.y0, z: -spin.r }, { x: spin.r, y: spin.y1, z: spin.r }, 2);
+    const haloR = Math.max(
+      1.35 / 2,
+      (haloA.visible ? 2.1 * haloA.scale.x / 2 : 0),
+      (haloB.visible ? 3.1 * haloB.scale.x / 2 : 0)
+    );
+    const groundR = Math.max(spin.r + .15, 1.15, haloR);
+    const cropPts = [
+      ...boxPoints({ x: -spin.r, y: spin.y0, z: -spin.r }, { x: spin.r, y: spin.y1, z: spin.r }, 2),
+      ...boxPoints({ x: -groundR, y: 0, z: -groundR }, { x: groundR, y: 0.02, z: groundR }, 1)
+    ];
     const ext = screenExt(cropPts);
-    const m = 18;
+    const m = 28;
     let x0 = Math.max(0, Math.floor(ext.x0 - m)), y0 = Math.max(0, Math.floor(ext.y0 - m));
     let x1 = Math.min(FW, Math.ceil(ext.x1 + m)), y1 = Math.min(FH, Math.ceil(ext.y1 + m));
     crop = { x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) };
@@ -353,16 +364,23 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     const b = worldBox();
     const S = frame.safe, pts = [];
     if (!S) return null;
-    // project without view offset? current cam already has view offset; use toScreen via crop.
-    // Recompute from stored frame by temporarily... we report screen via current camera + view offset inverted.
     const ext = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 };
     const corners = [];
-    for (const X of [b.min.x, b.max.x]) for (const Y of [b.min.y, b.max.y]) for (const Z of [b.min.z, b.max.z]) {
-      const p = toScreen(X, Y, Z);
-      // toScreen is viewport CSS (includes crop)
-      ext.x0 = Math.min(ext.x0, p.x); ext.x1 = Math.max(ext.x1, p.x);
-      ext.y0 = Math.min(ext.y0, p.y); ext.y1 = Math.max(ext.y1, p.y);
-      corners.push([+p.x.toFixed(1), +p.y.toFixed(1)]);
+    const sil = current.object ? frontSilhouette(current.object).pts : null;
+    const src = sil && sil.length ? sil : null;
+    if (src) {
+      for (const [X, Y, Z] of src) {
+        const p = toScreen(X, Y, Z);
+        ext.x0 = Math.min(ext.x0, p.x); ext.x1 = Math.max(ext.x1, p.x);
+        ext.y0 = Math.min(ext.y0, p.y); ext.y1 = Math.max(ext.y1, p.y);
+      }
+    } else {
+      for (const X of [b.min.x, b.max.x]) for (const Y of [b.min.y, b.max.y]) for (const Z of [b.min.z, b.max.z]) {
+        const p = toScreen(X, Y, Z);
+        ext.x0 = Math.min(ext.x0, p.x); ext.x1 = Math.max(ext.x1, p.x);
+        ext.y0 = Math.min(ext.y0, p.y); ext.y1 = Math.max(ext.y1, p.y);
+        corners.push([+p.x.toFixed(1), +p.y.toFixed(1)]);
+      }
     }
     return {
       pet: current.pet, stage: current.stage,
