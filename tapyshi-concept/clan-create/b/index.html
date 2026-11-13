@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru" data-root="../../" data-tab="clan">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Тапыши · Создать клан · Б</title>
+<link rel="stylesheet" href="../../shared/tokens.css?v=tc11132325">
+<link rel="stylesheet" href="../../shared/components.css?v=tc11132325">
+<link rel="stylesheet" href="../shared.css?v=tc11132325">
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scroll">
+    <header class="top">
+      <a class="ibtn spring" href="../../clan/?empty=1" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></a>
+      <span class="ttl"><b>Создать клан</b></span>
+      <nav class="demo" aria-label="Варианты макета"><span>демо</span>
+        <a href="../a/">А</a><a href="../b/" class="on">Б</a><a href="../c/">В</a>
+      </nav>
+    </header>
+
+    <div class="steps" id="bars" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+    <div class="preview-row" id="row"></div>
+
+    <section class="pane on" data-step="0">
+      <div class="step-n"><b>1</b> Как назовём клан?</div>
+      <input class="field" id="name" type="text" maxlength="18" placeholder="Название клана" autocomplete="off" enterkeyhint="done">
+      <div class="hint" id="hint"></div>
+    </section>
+
+    <section class="pane" data-step="1">
+      <div class="step-n"><b>2</b> Выбери герб</div>
+      <div class="crest-grid" id="crests"></div>
+    </section>
+
+    <section class="pane" data-step="2">
+      <div class="step-n"><b>3</b> Выбери цвет</div>
+      <div class="color-grid" id="colors"></div>
+      <p class="hint" style="margin-top:14px">Предпросмотр вверху обновится сразу — так клан будут видеть все.</p>
+    </section>
+  </div>
+  <div class="dock">
+    <div class="navrow">
+      <button type="button" class="btn btn--secondary btn--l" id="back" hidden>Назад</button>
+      <button type="button" class="btn btn--primary btn--l" id="next">Далее</button>
+      <button type="button" class="btn btn--primary btn--l" id="create" hidden disabled>Создать</button>
+    </div>
+  </div>
+</div>
+<script src="../shared.js?v=tc11132325"></script>
+<script>
+var back = document.getElementById('back');
+var next = document.getElementById('next');
+var create = document.getElementById('create');
+var api = ClanCreate.init({
+  preview:[{el:'#row',kind:'row'}],
+  nameInput:'#name', crests:'#crests', colors:'#colors', create:'#create', hint:'#hint',
+  onChange: function(st){ next.disabled = (st.name||'').trim().length<2; }
+});
+var step = 0;
+var panes = [].slice.call(document.querySelectorAll('.pane'));
+var bars = [].slice.call(document.querySelectorAll('#bars i'));
+function go(n){
+  step = Math.max(0, Math.min(2, n));
+  panes.forEach(function(p,i){ p.classList.toggle('on', i===step); });
+  bars.forEach(function(b,i){ b.className = i<step ? 'done' : (i===step ? 'on' : ''); });
+  back.hidden = step===0;
+  next.hidden = step===2;
+  create.hidden = step!==2;
+}
+next.addEventListener('click', function(){
+  if(step===0 && (api.get().name||'').trim().length<2){
+    ClanCreate.toast('Сначала введи название');
+    document.getElementById('name').focus();
+    return;
+  }
+  go(step+1);
+});
+back.addEventListener('click', function(){ go(step-1); });
+go(0);
+</script>
+<script src="../../shared/nav.js?v=tc11132325"></script>
+</body>
+</html>

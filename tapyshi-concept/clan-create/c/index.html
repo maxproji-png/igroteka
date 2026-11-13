@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru" data-root="../../" data-tab="clan">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Тапыши · Создать клан · В</title>
+<link rel="stylesheet" href="../../shared/tokens.css?v=tc11132325">
+<link rel="stylesheet" href="../../shared/components.css?v=tc11132325">
+<link rel="stylesheet" href="../shared.css?v=tc11132325">
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scroll">
+    <header class="top">
+      <a class="ibtn spring" href="../../clan/?empty=1" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></a>
+      <span class="ttl"><b>Создать клан</b></span>
+      <nav class="demo" aria-label="Варианты макета"><span>демо</span>
+        <a href="../a/">А</a><a href="../b/">Б</a><a href="../c/" class="on">В</a>
+      </nav>
+    </header>
+
+    <div class="preview-card" id="card"></div>
+
+    <label class="lab" for="name">Название</label>
+    <input class="field" id="name" type="text" maxlength="18" placeholder="Название клана" autocomplete="off" enterkeyhint="done">
+    <div class="hint" id="hint"></div>
+
+    <div class="lab">Цвет</div>
+    <div class="color-row" id="colors"></div>
+
+    <div class="lab">Герб</div>
+    <div class="carousel" id="crests"></div>
+  </div>
+  <div class="dock"><button type="button" class="btn btn--primary btn--l" id="create" disabled>Создать</button></div>
+</div>
+<script src="../shared.js?v=tc11132325"></script>
+<script>
+var api = ClanCreate.init({
+  preview:[{el:'#card',kind:'card'}],
+  nameInput:'#name', crests:'#crests', colors:'#colors', create:'#create', hint:'#hint',
+  onChange: function(st){
+    var el = document.getElementById('crests');
+    var on = el && el.querySelector('[data-icon="'+st.icon+'"]');
+    if(on) on.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
+  }
+});
+</script>
+<script src="../../shared/nav.js?v=tc11132325"></script>
+</body>
+</html>

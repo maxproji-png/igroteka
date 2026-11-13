@@ -1,0 +1,148 @@
+/* Создать клан — общие стили трёх вариантов. Только токены. */
+html,body{height:100%;margin:0}
+body{display:flex;justify-content:center;background:var(--bg);overflow:hidden}
+.app{position:relative;width:100%;max-width:430px;height:100%;height:100dvh;overflow:hidden;isolation:isolate;
+  background:
+    radial-gradient(120% 60% at 0% 0%,color-mix(in srgb,var(--violet-soft) 80%,var(--white)) 0,transparent 60%),
+    radial-gradient(110% 50% at 100% 30%,color-mix(in srgb,var(--sun-soft) 70%,transparent) 0,transparent 55%),
+    var(--bg)}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:0 16px calc(var(--tabbar-space) + 96px);scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* верх: назад + заголовок */
+.top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 0 8px;position:relative}
+.top .ttl{flex:1;min-width:0}
+.top .ttl b{display:block;font-size:20px;font-weight:1000;letter-spacing:-.3px;line-height:1.15}
+.top .ttl small{display:block;margin-top:2px;font-size:12.5px;font-weight:800;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.demo{display:flex;align-items:center;gap:3px;height:32px;padding:3px;background:var(--fill);border-radius:var(--r-pill);flex:none}
+.demo span{font-size:10px;font-weight:900;color:var(--ink-3);padding:0 6px 0 8px;text-transform:uppercase;letter-spacing:.4px}
+.demo a{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:1000;color:var(--ink-2);text-decoration:none}
+.demo a.on{background:var(--white);color:var(--ink);box-shadow:var(--sh-sm)}
+
+.lab{display:block;margin:14px 2px 8px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3)}
+
+/* поле имени */
+.field{width:100%;height:52px;border:0;border-radius:var(--r-md);background:var(--white);box-shadow:var(--sh-sm),var(--stroke);
+  padding:0 16px;font-family:inherit;font-size:16px;font-weight:800;color:var(--ink);-webkit-user-select:text;user-select:text}
+.field::placeholder{color:var(--ink-3);font-weight:800}
+.field:focus{outline:none;box-shadow:var(--sh-sm),var(--stroke-on)}
+.hint{margin:6px 4px 0;font-size:12px;font-weight:800;color:var(--ink-3)}
+.hint.warn{color:var(--pink-edge)}
+
+/* живой предпросмотр — строка как в шапке клана */
+.preview-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md)}
+.preview-row .t{flex:1;min-width:0}
+.preview-row .t>b{display:block;font-size:18px;font-weight:1000;letter-spacing:-.2px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preview-row .t small{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.preview-row .t small .chip{height:22px;padding:0 8px;font-size:11.5px}
+
+/* большой герб */
+.preview-hero{text-align:center;padding:22px 16px 18px;background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md)}
+.preview-hero .badge{margin:0 auto}
+.preview-hero .nm{display:block;margin-top:14px;font-size:26px;font-weight:1000;letter-spacing:-.5px;line-height:1.1;word-break:break-word}
+.preview-hero .cap{display:block;margin-top:6px;font-size:13px;font-weight:800;color:var(--ink-2)}
+
+/* карточка клана (как в топе) */
+.preview-card{display:flex;align-items:center;gap:12px;padding:14px 14px;background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md)}
+.preview-card .meta{flex:1;min-width:0}
+.preview-card .meta b{display:block;font-size:17px;font-weight:1000;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preview-card .meta small{display:block;margin-top:3px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.preview-card .rank{font-size:13px;font-weight:900;color:var(--ink-3);flex:none}
+
+/* герб-бейдж */
+.badge{flex:none;display:grid;place-items:center;border-radius:18px;color:var(--white);
+  box-shadow:0 6px 14px color-mix(in srgb,var(--cc) 35%,transparent),inset 0 -3px 0 color-mix(in srgb,var(--ce) 55%,transparent);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cc) 82%,var(--white)),var(--cc))}
+.badge svg{width:58%;height:58%;display:block}
+.badge--lg{width:112px;height:112px;border-radius:32px}
+.badge--lg svg{width:56%;height:56%}
+.badge--md{width:64px;height:64px;border-radius:20px}
+.badge--sm{width:48px;height:48px;border-radius:16px}
+
+/* сетка гербов */
+.crest-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.crest{aspect-ratio:1;border-radius:20px;background:var(--white);box-shadow:var(--stroke);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--ink-2);transition:transform .2s var(--spring),box-shadow .2s}
+.crest svg{width:28px;height:28px}
+.crest em{font-style:normal;font-size:10px;font-weight:800;color:var(--ink-3);line-height:1}
+.crest.on{box-shadow:var(--stroke-on);color:var(--cc,var(--violet));background:color-mix(in srgb,var(--cc,var(--violet)) 8%,var(--white))}
+.crest.on em{color:var(--cc,var(--violet))}
+.crest:active{transform:scale(.94)}
+
+/* сетка / ряд цветов */
+.color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:12px 8px;max-width:320px;margin:0 auto}
+.color-grid .swatch{width:auto;height:56px;max-height:none;aspect-ratio:1;grid-column:span 2}
+.color-grid .swatch:nth-child(5){grid-column:2/span 2}
+.color-grid .swatch:nth-child(6){grid-column:4/span 2}
+.color-grid .swatch:nth-child(7){grid-column:6/span 2}
+.color-row{display:flex;justify-content:space-between;gap:8px}
+.swatch{width:100%;aspect-ratio:1;max-height:56px;border-radius:50%;background:var(--cc);box-shadow:0 3px 0 var(--ce),0 6px 12px color-mix(in srgb,var(--cc) 28%,transparent);position:relative;transition:transform .2s var(--spring)}
+.color-row .swatch{width:36px;height:36px;flex:none;aspect-ratio:auto}
+.swatch:active{transform:scale(.92)}
+.swatch.on{box-shadow:0 0 0 3px var(--white),0 0 0 6px var(--cc),0 6px 12px color-mix(in srgb,var(--cc) 28%,transparent)}
+.swatch.on::after{content:"";position:absolute;inset:0;margin:auto;width:10px;height:6px;border:2.5px solid var(--white);border-top:0;border-right:0;transform:rotate(-45deg) translate(0,-1px);filter:drop-shadow(0 1px 0 rgb(var(--ink-rgb)/.15))}
+.swatch[data-id="sun"].on::after{border-color:var(--ink)}
+
+/* карусель гербов */
+.carousel{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 4px 12px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+.carousel::-webkit-scrollbar{display:none}
+.carousel .crest{flex:none;width:72px;height:72px;scroll-snap-align:center;aspect-ratio:auto}
+.carousel .crest svg{width:30px;height:30px}
+
+[hidden]{display:none!important}
+
+/* нижняя кнопка */
+.dock{position:absolute;left:0;right:0;bottom:var(--tabbar-space);z-index:8;
+  padding:18px 16px 10px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 0%,transparent),var(--bg) 36%,var(--bg))}
+.btn[disabled],.dock .btn[disabled]{opacity:1;pointer-events:none;color:var(--ink-3);text-shadow:none;
+  background:var(--fill);box-shadow:none}
+
+/* шаги варианта B */
+.steps{display:flex;gap:6px;margin:4px 0 12px}
+.steps i{flex:1;height:6px;border-radius:4px;background:var(--fill)}
+.steps i.on{background:var(--violet)}
+.steps i.done{background:var(--green)}
+.step-n{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;font-weight:900;color:var(--ink-2)}
+.step-n b{width:24px;height:24px;border-radius:50%;background:var(--violet);color:var(--white);display:grid;place-items:center;font-size:13px;font-weight:1000}
+.pane{display:none}.pane.on{display:block}
+.navrow{display:flex;gap:8px}
+.navrow .btn{flex:1}
+
+/* тост */
+.toast{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 78px);transform:translateX(-50%) translateY(12px);z-index:20;
+  padding:10px 16px;border-radius:var(--r-pill);background:var(--ink);color:var(--white);font-size:14px;font-weight:900;
+  box-shadow:var(--sh-md);opacity:0;pointer-events:none;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;transition:opacity .25s,transform .25s var(--out)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* пустое / выбор вариантов */
+.chooser{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.pick{display:flex;align-items:center;gap:14px;padding:14px;background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md);text-align:left;text-decoration:none;color:inherit}
+.pick:active{transform:scale(.98)}
+.pick .mark{width:52px;height:52px;border-radius:18px;flex:none;display:grid;place-items:center;font-size:20px;font-weight:1000;color:var(--white);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 82%,var(--white)),var(--violet));box-shadow:0 3px 0 var(--violet-edge)}
+.pick b{display:block;font-size:16.5px;font-weight:1000}
+.pick small{display:block;margin-top:3px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.pick .go{margin-left:auto;color:var(--violet);font-size:22px;font-weight:1000}
+
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:36px 12px 20px}
+.empty .ghost{width:112px;height:112px;border-radius:32px;display:grid;place-items:center;background:var(--fill);color:var(--violet);margin-bottom:18px}
+.empty .ghost svg{width:56px;height:56px}
+.empty h1{margin:0;font-size:26px;font-weight:1000;letter-spacing:-.4px}
+.empty p{margin:8px 16px 24px;font-size:15px;font-weight:800;color:var(--ink-2);line-height:1.35}
+
+@media (max-width:370px){
+  .preview-hero{padding:16px 12px 14px}
+  .preview-hero .nm{font-size:22px}
+  .badge--lg{width:96px;height:96px;border-radius:28px}
+  .crest{border-radius:16px}
+  .crest svg{width:24px;height:24px}
+  .crest em{font-size:9px}
+  .top .ttl b{font-size:18px}
+}
+@media (max-height:760px){
+  .preview-hero{padding:16px 14px 14px}
+  .preview-hero .nm{font-size:22px;margin-top:10px}
+  .badge--lg{width:96px;height:96px;border-radius:28px}
+  .lab{margin:10px 2px 6px}
+  .scroll{padding-bottom:calc(var(--tabbar-space) + 92px)}
+}
