@@ -1,7 +1,7 @@
 // Тапыши · сцена с эволюциями. 3D рендерится только по запросу: на тап WebGL не перерисовываем.
 // Сжатие на тап — CSS/WAAPI на обёртке. Смена модели — единственный повод для нового кадра.
-import { THREE, makeRenderer, blob } from './kit.js?v=tc11132220';
-import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11132220';
+import { THREE, makeRenderer, blob } from './kit.js?v=tc11132240';
+import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11132240';
 export { THREE };
 
 export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2 } = {}) {
@@ -47,8 +47,6 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     if (stg < 3) { haloA.visible = false; haloB.visible = false; return; }
     tintHalo(rgb, stg >= 5 ? .62 : .42, haloA);
     tintHalo(rgb, stg >= 5 ? .36 : .18, haloB);
-    const s = stg >= 6 ? 1.2 : stg >= 5 ? 1.05 : stg >= 4 ? .85 : .7;
-    haloA.scale.setScalar(s); haloB.scale.setScalar(s * 1.15);
     haloA.visible = true;
     haloB.visible = stg >= 5;
   }
@@ -56,41 +54,156 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
   const host = canvas.parentElement;
   let crop = { x: 0, y: 0, w: 1, h: 1 }, FW = 1, FH = 1;
 
+  // Габарит, покрывающий любой поворот вокруг Y: радиус в XZ + высота.
+  const _v = new THREE.Vector3();
+  function spinExtent(root) {
+    if (root.userData.spinExtent) return root.userData.spinExtent;
+    let r = 0, y0 = 1e9, y1 = -1e9;
+    root.updateWorldMatrix(true, true);
+    root.traverse(o => {
+      if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+      const pos = o.geometry.attributes.position;
+      o.updateWorldMatrix(true, false);
+      const m = o.matrixWorld;
+      for (let i = 0; i < pos.count; i++) {
+        _v.fromBufferAttribute(pos, i).applyMatrix4(m);
+        r = Math.max(r, Math.hypot(_v.x, _v.z));
+        y0 = Math.min(y0, _v.y); y1 = Math.max(y1, _v.y);
+      }
+    });
+    if (!isFinite(r) || r < .4) r = .8;
+    return (root.userData.spinExtent = { r, y0: Math.min(0, y0), y1 });
+  }
   function worldBox() {
-    box.makeEmpty();
-    if (current.object) box.expandByObject(current.object);
-    if (box.isEmpty()) box.set(new THREE.Vector3(-.8, 0, -.8), new THREE.Vector3(.8, 1.2, .8));
+    if (current.object) {
+      const e = spinExtent(current.object);
+      box.set(new THREE.Vector3(-e.r, e.y0, -e.r), new THREE.Vector3(e.r, e.y1, e.r));
+      return box;
+    }
+    box.set(new THREE.Vector3(-.8, 0, -.8), new THREE.Vector3(.8, 1.2, .8));
     return box;
   }
 
-  function place() {
-    FW = host.clientWidth; FH = host.clientHeight; const a = FW / FH;
-    const t = Math.tan(cam.fov * Math.PI / 360), d = 1 / (f * 2 * t), Vh = 2 * d * t;
-    const ly = .55 + (cy - .5) * Vh, lx = -(cx - .5) * Vh * a;
-    cam.position.set(lx, ly + .16, d); cam.lookAt(lx, ly, 0);
-    cam.aspect = a; cam.clearViewOffset(); cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+  // Референс: цилиндр/квадрат, покрывающий все питомцы во всех поворотах
+  // (дракон: радиус ~1.13, капибара: высота 1.37). Один масштаб на все стадии.
+  const REF = { r: 1.20, h: 1.38 };
+  const EYE = .16;
 
-    // Кадрируем по реальному габариту модели (крылья, рога, кольцо, ореол), с запасом.
-    const b = worldBox();
-    const acc = () => { const sx = (pv.x * .5 + .5) * FW, sy = (-pv.y * .5 + .5) * FH; x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy); };
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const X of [b.min.x, b.max.x]) for (const Y of [b.min.y, b.max.y]) for (const Z of [b.min.z, b.max.z]) { pv.set(X, Y, Z).project(cam); acc(); }
-    const pad = current.stage >= 5 ? .85 : .4;
-    for (const X of [b.min.x - pad, b.max.x + pad]) for (const Z of [b.min.z - pad, b.max.z + pad]) { pv.set(X, 0, Z).project(cam); acc(); }
-    // Если макушка залезает под верхний HUD — чуть отодвигаем камеру (не больше 18%).
-    // Горизонтальный вылет крыльев не сжимает всю сцену: иначе питомец становится крошечным.
-    const safeTop = 88;
-    const overflowY = Math.max(0, safeTop - y0);
-    if (overflowY > 0) {
-      const extra = Math.min(.18, overflowY / FH * 1.3);
-      const d2 = d * (1 + extra);
-      cam.position.set(lx, ly + .16, d2); cam.lookAt(lx, ly, 0);
-      cam.updateMatrixWorld();
-      x0 = 1e9; y0 = 1e9; x1 = -1e9; y1 = -1e9;
-      for (const X of [b.min.x, b.max.x]) for (const Y of [b.min.y, b.max.y]) for (const Z of [b.min.z, b.max.z]) { pv.set(X, Y, Z).project(cam); acc(); }
-      for (const X of [b.min.x - pad, b.max.x + pad]) for (const Z of [b.min.z - pad, b.max.z + pad]) { pv.set(X, 0, Z).project(cam); acc(); }
+  function safeRect() {
+    const app = host.closest('.app') || document.querySelector('.app') || host;
+    const topEl = app.querySelector('.top');
+    const demo = app.querySelector('#demo');
+    const side = app.querySelector('.side');
+    const T = (topEl ? topEl.getBoundingClientRect().bottom : 60) + 14;
+    const B = (demo ? demo.getBoundingClientRect().top : FH * .76) - 14;
+    let sideBox = null;
+    if (side) {
+      const r = side.getBoundingClientRect();
+      const appR = app.getBoundingClientRect();
+      sideBox = { left: r.left - appR.left - 8, right: r.right - appR.left + 8, top: r.top - appR.top - 8, bottom: r.bottom - appR.top + 8 };
     }
-    const m = 22; x0 = Math.max(0, Math.floor(x0 - m)); y0 = Math.max(0, Math.floor(y0 - m)); x1 = Math.min(FW, Math.ceil(x1 + m)); y1 = Math.min(FH, Math.ceil(y1 + m));
+    return { L: 16, R: FW - 16, T, B, side: sideBox };
+  }
+
+  function setCam(d, lookX, lookY) {
+    cam.aspect = FW / FH;
+    cam.clearViewOffset();
+    cam.position.set(lookX, lookY + EYE, d);
+    cam.lookAt(lookX, lookY, 0);
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld();
+  }
+  function proj(x, y, z) {
+    pv.set(x, y, z).project(cam);
+    return { x: (pv.x * .5 + .5) * FW, y: (-pv.y * .5 + .5) * FH };
+  }
+  function boxPoints(min, max, step = 1) {
+    const pts = [];
+    for (let i = 0; i <= step; i++) for (let j = 0; j <= step; j++) for (let k = 0; k <= step; k++) {
+      pts.push([
+        min.x + (max.x - min.x) * i / step,
+        min.y + (max.y - min.y) * j / step,
+        min.z + (max.z - min.z) * k / step
+      ]);
+    }
+    return pts;
+  }
+  function screenExt(pts) {
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [x, y, z] of pts) {
+      const p = proj(x, y, z);
+      x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y);
+    }
+    return { x0, y0, x1, y1 };
+  }
+  function overflows(pts, S, { sides = false } = {}) {
+    for (const [x, y, z] of pts) {
+      const p = proj(x, y, z);
+      if (p.x < S.L - .5 || p.x > S.R + .5 || p.y < S.T - .5 || p.y > S.B + .5) return true;
+      // Референсный ящик имеет полную ширину на всей высоте, поэтому угол «рога+крыло»
+      // ложно задевает боковые кнопки и не даёт крупно посадить модель на высоком экране.
+      // Для реальной модели боковые кнопки проверяем.
+      if (sides && S.side && p.x < S.side.right && p.x > S.side.left && p.y > S.side.top && p.y < S.side.bottom) return true;
+    }
+    return false;
+  }
+  // lookY так, чтобы самая нижняя точка ящика села на S.B (над демо-чипом).
+  function plantBottom(d, lookX, pts, S) {
+    let lookY = .55;
+    for (let i = 0; i < 12; i++) {
+      setCam(d, lookX, lookY);
+      const ext = screenExt(pts);
+      const err = ext.y1 - (S.B - 1);
+      if (Math.abs(err) < .4) break;
+      const t = Math.tan(cam.fov * Math.PI / 360);
+      const px = FH / Math.max(1e-3, 2 * d * t);
+      lookY -= err / px;
+    }
+    return lookY;
+  }
+
+  let frame = { d: 6, lookY: .55, lookX: 0, floorY: 0, safe: null };
+
+  function place() {
+    FW = host.clientWidth; FH = host.clientHeight;
+    const S = safeRect();
+    const b = worldBox();
+    // Ореол чуть больше кольца/стопы, но не на весь экран — иначе свечение лезет под HUD.
+    const foot = Math.max(.45, Math.abs(b.min.x), Math.abs(b.max.x), Math.abs(b.min.z), Math.abs(b.max.z));
+    haloA.scale.setScalar((foot * 2.15) / 2.1);
+    haloB.scale.setScalar((foot * 2.7) / 3.1);
+
+    const refMin = { x: -REF.r, y: 0, z: -REF.r }, refMax = { x: REF.r, y: REF.h, z: REF.r };
+    const refPts = boxPoints(refMin, refMax, 2);
+
+    // Общий масштаб по референсному ящику (покрытие всех поворотов), ось — между ног.
+    let lo = 2.2, hi = 14, bestD = 8, bestY = .55;
+    for (let k = 0; k < 18; k++) {
+      const d = (lo + hi) / 2;
+      const lookY = plantBottom(d, 0, refPts, S);
+      setCam(d, 0, lookY);
+      if (!overflows(refPts, S, { sides: false })) { bestD = d; bestY = lookY; hi = d; }
+      else lo = d;
+    }
+    const lookX = 0;
+    const modelPts = boxPoints(b.min, b.max, 2);
+    setCam(bestD, lookX, bestY);
+    if (overflows(modelPts, S, { sides: false })) {
+      let d2 = bestD;
+      for (let k = 0; k < 8 && overflows(modelPts, S, { sides: false }); k++) {
+        d2 *= 1.06;
+        bestY = plantBottom(d2, lookX, modelPts, S);
+        setCam(d2, lookX, bestY);
+      }
+      bestD = d2;
+    }
+    setCam(bestD, lookX, bestY);
+    frame = { d: bestD, lookY: bestY, lookX, floorY: proj(0, 0, 0).y, safe: S };
+
+    const ext = screenExt(modelPts);
+    const m = 18;
+    let x0 = Math.max(0, Math.floor(ext.x0 - m)), y0 = Math.max(0, Math.floor(ext.y0 - m));
+    let x1 = Math.min(FW, Math.ceil(ext.x1 + m)), y1 = Math.min(FH, Math.ceil(ext.y1 + m));
     crop = { x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) };
     for (const c of host.querySelectorAll('canvas.scene')) Object.assign(c.style, { left: crop.x + 'px', top: crop.y + 'px', width: crop.w + 'px', height: crop.h + 'px', right: 'auto', bottom: 'auto' });
     cam.setViewOffset(FW, FH, crop.x, crop.y, crop.w, crop.h); cam.updateProjectionMatrix();
@@ -113,9 +226,39 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     return { x: rect.left + crop.x + (v.x * .5 + .5) * crop.w, y: rect.top + crop.y + (-v.y * .5 + .5) * crop.h };
   }
 
-  let raf = 0;
-  const draw = () => { raf = 0; R.render(scene, cam); };
+  let raf = 0, spinning = false, spinRaf = 0, userYaw = 0;
+  const BASE_YAW = yaw;
+  function applyYaw() { holder.rotation.y = BASE_YAW + userYaw; }
+  const draw = () => { raf = 0; if (spinning) R.shadowMap.needsUpdate = true; R.render(scene, cam); };
   const requestDraw = () => { if (!raf) raf = requestAnimationFrame(draw); };
+  const SPIN_K = .0085; // рад / пиксель: жест «потянул вправо — мордочка ушла вправо»
+  function spinBy(dxPx) {
+    userYaw += dxPx * SPIN_K;
+    applyYaw();
+    spinning = true;
+    requestDraw();
+  }
+  function spinEnd(vxPxPerMs, onSettle) {
+    let vel = (vxPxPerMs || 0) * SPIN_K; // рад / мс
+    if (Math.abs(vel) < .00025) {
+      spinning = false; requestDraw(); onSettle && onSettle(); return;
+    }
+    if (spinRaf) cancelAnimationFrame(spinRaf);
+    let last = performance.now();
+    const tick = now => {
+      spinRaf = 0;
+      const dt = Math.min(32, Math.max(0, now - last)); last = now;
+      userYaw += vel * dt;
+      vel *= Math.exp(-dt * .0085);
+      applyYaw();
+      spinning = true;
+      requestDraw();
+      if (Math.abs(vel) > .00005) spinRaf = requestAnimationFrame(tick);
+      else { spinning = false; requestDraw(); onSettle && onSettle(); }
+    };
+    spinRaf = requestAnimationFrame(tick);
+  }
+  let onSpinSettle = null;
 
   let hitE = null;
   function calcHit() {
@@ -133,6 +276,7 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     if (current.object && current.object !== obj) holder.remove(current.object);
     if (obj.parent !== holder) holder.add(obj);
     current = { pet: id, stage: n, object: obj };
+    applyYaw(); // угол, который выкрутили, сохраняется при смене стадии/питомца
     setHalo(id, n);
     place();
     rect = host.getBoundingClientRect();
@@ -156,8 +300,33 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
   // Фон: остальные стадии текущего питомца, чтобы листание демо было мгновенным.
   setTimeout(() => preloadEvo(current.pet), 500);
 
+  function measure() {
+    const b = worldBox();
+    const S = frame.safe, pts = [];
+    if (!S) return null;
+    // project without view offset? current cam already has view offset; use toScreen via crop.
+    // Recompute from stored frame by temporarily... we report screen via current camera + view offset inverted.
+    const ext = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 };
+    const corners = [];
+    for (const X of [b.min.x, b.max.x]) for (const Y of [b.min.y, b.max.y]) for (const Z of [b.min.z, b.max.z]) {
+      const p = toScreen(X, Y, Z);
+      // toScreen is viewport CSS (includes crop)
+      ext.x0 = Math.min(ext.x0, p.x); ext.x1 = Math.max(ext.x1, p.x);
+      ext.y0 = Math.min(ext.y0, p.y); ext.y1 = Math.max(ext.y1, p.y);
+      corners.push([+p.x.toFixed(1), +p.y.toFixed(1)]);
+    }
+    return {
+      pet: current.pet, stage: current.stage,
+      world: { min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] },
+      screen: ext, corners, frame, crop
+    };
+  }
+
   return {
-    cam, toScreen, headTop, requestDraw, setHappy, hit: () => hitE, show,
+    cam, toScreen, headTop, requestDraw, setHappy, hit: () => hitE, show, measure,
+    spinBy, spinEnd,
+    get yaw() { return userYaw; },
+    set onSpinSettle(fn) { onSpinSettle = fn; },
     get current() { return current; },
     preload(petId) { return preloadEvo(petId); }
   };

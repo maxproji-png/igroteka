@@ -1,7 +1,7 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
-import { petStage } from './stage.js?v=tc11132220';
-import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11132220';
+import { petStage } from './stage.js?v=tc11132240';
+import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11132240';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
@@ -167,18 +167,96 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   function bindZone() {
     const z = document.createElement('div'); z.className = 'tapzone'; app.appendChild(z);
     const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const pending = new Map(); // id -> {x,y,t,onPet,dead}
+    let rotating = false, rotId = null, lastX = 0, lastT = 0, vel = 0;
+    const onPet = (x, y) => {
+      const h = st.hit(); if (!h) return false;
+      const dx = (x - h.x) / h.rx, dy = (y - h.y) / h.ry;
+      return dx * dx + dy * dy <= 1.15; // чуть шире хитбокса, чтобы было проще крутить
+    };
+    const TAP_PX = 8, HOLD_MS = 180;
+    function startRot(id, x, now) {
+      rotating = true; rotId = id; lastX = x; lastT = now; vel = 0;
+      pending.forEach(p => { p.dead = true; });
+    }
+    function moveRot(x, now) {
+      const dx = x - lastX, dt = now - lastT;
+      st.spinBy(dx);
+      if (dt > 0) vel = vel * .6 + (dx / dt) * .4;
+      lastX = x; lastT = now;
+    }
+    function endRot() {
+      rotating = false; rotId = null;
+      st.spinEnd(vel, () => layout());
+      vel = 0;
+    }
+
     z.addEventListener('touchstart', e => {
       e.preventDefault();
+      const now = performance.now();
       const ts = e.changedTouches;
-      for (let i = 0; i < ts.length; i++) tap(ts[i].clientX, ts[i].clientY);
+      for (let i = 0; i < ts.length; i++) {
+        const tch = ts[i];
+        pending.set(tch.identifier, { x: tch.clientX, y: tch.clientY, t: now, onPet: onPet(tch.clientX, tch.clientY), dead: false });
+      }
     }, { passive: false });
-    const block = e => e.preventDefault();
-    z.addEventListener('touchmove', block, { passive: false });
-    z.addEventListener('touchend', block, { passive: false });
+
+    z.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const now = performance.now();
+      const ts = e.changedTouches;
+      for (let i = 0; i < ts.length; i++) {
+        const tch = ts[i], id = tch.identifier, x = tch.clientX, y = tch.clientY;
+        if (rotating && id === rotId) { moveRot(x, now); continue; }
+        if (rotating) continue;
+        const p = pending.get(id); if (!p) continue;
+        const dist = Math.hypot(x - p.x, y - p.y), dt = now - p.t;
+        if (p.onPet && (dist > TAP_PX || (dt > HOLD_MS && dist > 2))) {
+          startRot(id, p.x, p.t);
+          moveRot(x, now);
+        }
+      }
+    }, { passive: false });
+
+    const endTouch = e => {
+      e.preventDefault();
+      const ts = e.changedTouches;
+      for (let i = 0; i < ts.length; i++) {
+        const tch = ts[i], id = tch.identifier, p = pending.get(id);
+        if (rotating && id === rotId) endRot();
+        else if (p && !p.dead) tap(tch.clientX, tch.clientY);
+        pending.delete(id);
+      }
+    };
+    z.addEventListener('touchend', endTouch, { passive: false });
+    z.addEventListener('touchcancel', endTouch, { passive: false });
+
+    // Мышь / перо: тот же жест, без удвоения с touch.
+    let mouse = null;
     z.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'touch' && hasTouch) return;    // касание уже посчитано в touchstart
-      tap(e.clientX, e.clientY);
+      if (e.pointerType === 'touch' && hasTouch) return;
+      mouse = { x: e.clientX, y: e.clientY, t: performance.now(), onPet: onPet(e.clientX, e.clientY), dead: false, id: e.pointerId };
+      try { z.setPointerCapture(e.pointerId); } catch (err) {}
     });
+    z.addEventListener('pointermove', e => {
+      if (!mouse || e.pointerId !== mouse.id) return;
+      const now = performance.now();
+      if (rotating && rotId === mouse.id) { moveRot(e.clientX, now); return; }
+      const dist = Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y), dt = now - mouse.t;
+      if (mouse.onPet && (dist > TAP_PX || (dt > HOLD_MS && dist > 2))) {
+        startRot(mouse.id, mouse.x, mouse.t);
+        mouse.dead = true;
+        moveRot(e.clientX, now);
+      }
+    });
+    const endPtr = e => {
+      if (!mouse || e.pointerId !== mouse.id) return;
+      if (rotating && rotId === mouse.id) endRot();
+      else if (!mouse.dead) tap(e.clientX, e.clientY);
+      mouse = null;
+    };
+    z.addEventListener('pointerup', endPtr);
+    z.addEventListener('pointercancel', endPtr);
   }
 
   // геометрия, считается на старте/resize — не на тап
@@ -348,6 +426,9 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   window.__S = S;
   const ctx = { el, st, S, get balXY() { return balXY; }, get head() { return head; }, get appRect() { return appRect; }, tap };
   window.__petCenter = () => { const h = st.hit(); return { x: h.x, y: h.y }; };
+  window.__measure = () => st.measure();
+  window.__yaw = () => st.yaw;
+  st.onSpinSettle = () => layout();
   onReady && onReady(ctx);
   document.documentElement.dataset.ready = '1';
   return ctx;
