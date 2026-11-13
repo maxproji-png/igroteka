@@ -4,37 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Тапыши · Создать клан</title>
-<link rel="stylesheet" href="../shared/tokens.css?v=tc11132325">
-<link rel="stylesheet" href="../shared/components.css?v=tc11132325">
-<link rel="stylesheet" href="shared.css?v=tc11132325">
+<link rel="stylesheet" href="../shared/tokens.css?v=tc11132356">
+<link rel="stylesheet" href="../shared/components.css?v=tc11132356">
+<link rel="stylesheet" href="shared.css?v=tc11132356">
 </head>
 <body>
-<div class="app">
-  <div class="scroll" style="padding-bottom:calc(var(--tabbar-space) + 24px)">
+<div class="app" id="app">
+  <div class="scroll">
     <header class="top">
       <a class="ibtn spring" href="../clan/?empty=1" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></a>
-      <span class="ttl"><b>Создать клан</b><small>выбери вариант макета</small></span>
+      <span class="ttl"><b>Создать клан</b></span>
     </header>
-    <p style="margin:4px 2px 12px;font-size:14.5px;font-weight:800;color:var(--ink-2);line-height:1.35">Одинаковый набор: название, герб и цвет. Разная компоновка — сравни и выбери удобный.</p>
-    <div class="chooser">
-      <a class="pick spring" href="a/">
-        <span class="mark">А</span>
-        <span><b>Большой предпросмотр</b><small>Герб сверху, ниже сетки гербов и цветов</small></span>
-        <span class="go">›</span>
-      </a>
-      <a class="pick spring" href="b/">
-        <span class="mark">Б</span>
-        <span><b>Шаг за шагом</b><small>Сначала имя, потом герб, затем цвет</small></span>
-        <span class="go">›</span>
-      </a>
-      <a class="pick spring" href="c/">
-        <span class="mark">В</span>
-        <span><b>Всё на одном экране</b><small>Ряд цветов и карусель гербов</small></span>
-        <span class="go">›</span>
-      </a>
-    </div>
+
+    <div class="preview-hero" id="hero"></div>
+
+    <label class="lab" for="name">Название</label>
+    <input class="field" id="name" type="text" maxlength="18" placeholder="Название клана" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done">
+    <div class="hint" id="hint"></div>
+
+    <div class="lab">Герб</div>
+    <div class="crest-grid" id="crests"></div>
+
+    <div class="lab">Цвет клана</div>
+    <div class="color-grid" id="colors"></div>
   </div>
+  <div class="dock"><button type="button" class="btn btn--primary btn--l" id="create" disabled>Создать</button></div>
 </div>
-<script src="../shared/nav.js?v=tc11132325"></script>
+<script src="shared.js?v=tc11132356"></script>
+<script>
+ClanCreate.init({
+  preview:[{el:'#hero',kind:'hero'}],
+  nameInput:'#name', crests:'#crests', colors:'#colors', create:'#create', hint:'#hint',
+  afterCreate:'../clan/?mine=1'
+});
+</script>
+<script src="../shared/nav.js?v=tc11132356"></script>
 </body>
 </html>

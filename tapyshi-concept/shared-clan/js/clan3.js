@@ -42,16 +42,23 @@ C.members_ = function(o){ o=o||{}; var max=C.members[0].t;
       '<span class="avw">'+C.ava(m.pet,'sm')+(m.on?'<i class="on-dot"></i>':'')+'</span>'+
       '<span class="nm"><b>'+(m.me?'Ты':m.n)+(m.owner?' '+T.IC.crown:'')+'</b>'+(o.bars?bar:'<small>ур. '+m.lvl+(m.owner?' · глава':'')+'</small>')+'</span>'+
       '<span class="val"><b class="num">'+T.fmt(m.t)+'</b>'+(o.bars?share:'<small>тапов</small>')+'</span></div>';
-  }).join('')+'<div class="row more tap"><span class="nm"><b>Ещё '+C.restN+' участников</b><small>'+T.fmt(C.restT)+' тапов вместе</small></span><span class="go">'+T.IC.chev+'</span></div></div>';
+  }).join('')+(C.restN?'<div class="row more tap"><span class="nm"><b>Ещё '+C.restN+' участников</b><small>'+T.fmt(C.restT)+' тапов вместе</small></span><span class="go">'+T.IC.chev+'</span></div>':'')+'</div>';
+};
+var topEmb = function(c){
+  if (c.icon && window.ClanCreate) {
+    var col = ClanCreate.colorBy(c.color), ic = ClanCreate.iconBy(c.icon);
+    return '<span class="emb sm clan-badge" style="'+ClanCreate.badgeStyle(col)+'">'+ClanCreate.svg(ic)+'</span>';
+  }
+  return '<span class="emb sm e-'+c.pet+'"><img src="'+H(c.pet)+'" alt=""></span>';
 };
 C.top_ = function(){
   return '<div class="prize"><span class="cap">Трофеи недели</span><span class="chip chip--sun">'+T.IC.cup+'1 место — <b>60</b></span><span class="chip chip--sun">2 — <b>40</b></span><span class="chip chip--sun">3 — <b>20</b></span></div><div class="list">'+C.top.map(function(c,i){
-    return '<div class="row tap'+(c.me?' me':'')+'"><span class="rk r'+(i+1)+'">'+(i+1)+'</span><span class="emb sm e-'+c.pet+'"><img src="'+H(c.pet)+'" alt=""></span>'+
+    return '<div class="row tap'+(c.me?' me':'')+'"><span class="rk r'+(i+1)+'">'+(i+1)+'</span>'+topEmb(c)+''+
       '<span class="nm"><b>'+c.n+'</b><small>ур. '+c.lvl+' · '+c.m+' игроков</small></span><span class="val"><b class="num">'+T.short(c.t)+'</b><small>за неделю</small></span></div>';
   }).join('')+'</div><p class="foot">Неделя закончится через '+C.goal.left+'</p>';
 };
 C.chat_ = function(){
-  return '<div class="chat">'+C.chat.map(function(m){
+  return '<div class="chat">'+(C.chatHead||'')+C.chat.map(function(m){
     if(m.day) return '<div class="day">'+m.day+'</div>';
     if(m.sys) return '<div class="sys">'+m.sys+'</div>';
     if(m.me) return '<div class="msg me"><div class="bub">'+m.tx+'<time>'+m.tm+'</time></div></div>';

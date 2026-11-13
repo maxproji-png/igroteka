@@ -6,7 +6,7 @@ body{display:flex;justify-content:center;background:var(--bg);overflow:hidden}
     radial-gradient(120% 60% at 0% 0%,color-mix(in srgb,var(--violet-soft) 80%,var(--white)) 0,transparent 60%),
     radial-gradient(110% 50% at 100% 30%,color-mix(in srgb,var(--sun-soft) 70%,transparent) 0,transparent 55%),
     var(--bg)}
-.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:0 16px calc(var(--tabbar-space) + 96px);scrollbar-width:none}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:0 16px calc(var(--tabbar-space) + 136px + var(--kb,0px));scrollbar-width:none}
 .scroll::-webkit-scrollbar{display:none}
 
 /* верх: назад + заголовок */
@@ -50,7 +50,7 @@ body{display:flex;justify-content:center;background:var(--bg);overflow:hidden}
 .preview-card .rank{font-size:13px;font-weight:900;color:var(--ink-3);flex:none}
 
 /* герб-бейдж */
-.badge{flex:none;display:grid;place-items:center;border-radius:18px;color:var(--white);
+.badge{flex:none;display:grid;place-items:center;border-radius:18px;color:var(--badge-ink,var(--white));
   box-shadow:0 6px 14px color-mix(in srgb,var(--cc) 35%,transparent),inset 0 -3px 0 color-mix(in srgb,var(--ce) 55%,transparent);
   background:linear-gradient(180deg,color-mix(in srgb,var(--cc) 82%,var(--white)),var(--cc))}
 .badge svg{width:58%;height:58%;display:block}
@@ -91,7 +91,7 @@ body{display:flex;justify-content:center;background:var(--bg);overflow:hidden}
 [hidden]{display:none!important}
 
 /* нижняя кнопка */
-.dock{position:absolute;left:0;right:0;bottom:var(--tabbar-space);z-index:8;
+.dock{position:absolute;left:0;right:0;bottom:calc(var(--tabbar-space) + var(--kb,0px));z-index:8;
   padding:18px 16px 10px;
   background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 0%,transparent),var(--bg) 36%,var(--bg))}
 .btn[disabled],.dock .btn[disabled]{opacity:1;pointer-events:none;color:var(--ink-3);text-shadow:none;
@@ -144,5 +144,5 @@ body{display:flex;justify-content:center;background:var(--bg);overflow:hidden}
   .preview-hero .nm{font-size:22px;margin-top:10px}
   .badge--lg{width:96px;height:96px;border-radius:28px}
   .lab{margin:10px 2px 6px}
-  .scroll{padding-bottom:calc(var(--tabbar-space) + 92px)}
+  .scroll{padding-bottom:calc(var(--tabbar-space) + 136px + var(--kb,0px))}
 }
