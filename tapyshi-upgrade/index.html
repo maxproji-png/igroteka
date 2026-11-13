@@ -1,0 +1,23 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Тапыши · экран «Улучшить» · 3 концепта</title><link rel="stylesheet" href="common/tokens.css?v=up11140230">
+<style>body{margin:0;font-family:var(--font);background:var(--bg);color:var(--ink);font-weight:700}main{max-width:1180px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:28px;font-weight:1000;margin:0 0 6px}.sub{color:var(--ink-2);margin:0 0 22px;line-height:1.45}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.card{background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md);padding:16px}.shots{display:flex;gap:8px;justify-content:center}.shots img{width:48%;max-width:180px;border-radius:16px;box-shadow:var(--sh-sm)}
+h2{font-size:20px;font-weight:1000;margin:14px 0 6px;color:var(--violet-edge)}p{font-size:14px;line-height:1.45;margin:0 0 10px}.links a{color:var(--violet)}
+.btn{display:inline-block;padding:7px 14px;border-radius:999px;background:var(--violet);color:var(--white)!important;text-decoration:none;font-weight:900}
+.note{background:var(--white);border-radius:var(--r-md);padding:14px 16px;margin-top:20px;font-size:13.5px;line-height:1.5;box-shadow:var(--sh-sm)}</style></head><body><main>
+<h1>Тапыши · экран «Улучшить»</h1><p class="sub">Три разных подхода к странице улучшений. Что качаем: доход за тап, запас энергии, скорость восстановления, автотап. Цена в монетах, «сейчас → после», прогресс до следующей стадии эволюции Булочки. Каждая покупка = +1 уровень питомцу; на ур. 5/10/15/20/25 — новая стадия. Только макеты. Покупки работают (старт: 12 000 монет, ур. 7).</p>
+<div class="grid">
+<section class="card"><a class="shots" href="a/index.html?v=up11140230"><img src="a/shot-390x844-idle.png?v=up11140230" alt=""><img src="a/shot-390x844-bought.png?v=up11140230" alt=""></a>
+<h2>A · Список карточек</h2><p>Сверху карточка питомца: прогресс до стадии и полоска из 6 стадий. Ниже 4 карточки, в каждой «сейчас → после», уровень и кнопка с ценой. Всё видно сразу, листать почти не надо. Самый привычный и быстрый вариант.</p>
+<p class="links"><a class="btn" href="a/index.html?v=up11140230">Открыть макет</a> <a href="a/shot-360x740-idle.png?v=up11140230">360×740</a> · <a href="a/shot-360x740-bought.png?v=up11140230">360 после покупки</a> · <a href="a/shot-390x844-stageup.png?v=up11140230">новая стадия</a></p></section>
+<section class="card"><a class="shots" href="b/index.html?v=up11140230"><img src="b/shot-390x844-idle.png?v=up11140230" alt=""><img src="b/shot-390x844-bought.png?v=up11140230" alt=""></a>
+<h2>B · Питомец в центре</h2><p>Большая Булочка и лента из 6 стадий с аватарами. Улучшения — 4 «кольца» 2×2, заполненные по уровню. Выбранное раскрывается в панель «Сейчас / После» с одной большой кнопкой. Главное здесь — рост питомца.</p>
+<p class="links"><a class="btn" href="b/index.html?v=up11140230">Открыть макет</a> <a href="b/shot-360x740-idle.png?v=up11140230">360×740</a> · <a href="b/shot-360x740-bought.png?v=up11140230">360 после покупки</a> · <a href="b/shot-390x844-stageup.png?v=up11140230">новая стадия</a></p></section>
+<section class="card"><a class="shots" href="c/index.html?v=up11140230"><img src="c/shot-390x844-idle.png?v=up11140230" alt=""><img src="c/shot-390x844-bought.png?v=up11140230" alt=""></a>
+<h2>C · Одно улучшение в фокусе</h2><p>Карусель (свайп или чипсы): одно улучшение на экран. Крупное «СЕЙЧАС → ПОСЛЕ», бейдж «+25%», шкала уровней. Под ней «текущая стадия → следующая» и одна большая кнопка над меню. При покупке новое значение въезжает в «Сейчас».</p>
+<p class="links"><a class="btn" href="c/index.html?v=up11140230">Открыть макет</a> <a href="c/shot-360x740-idle.png?v=up11140230">360×740</a> · <a href="c/shot-360x740-bought.png?v=up11140230">360 после покупки</a> · <a href="c/shot-390x844-stageup.png?v=up11140230">новая стадия</a></p></section>
+</div>
+<div class="note"><b>Общее:</b> токены, кнопки, светлый фон и нижнее меню (Питомец · Игры · Клан · Магазин, safe-area) взяты из концепта главной. Монета та же, что на главной. Состояния: «Не хватает N» (серо-жёлтая кнопка, тряска и тост), «Максимальный уровень», окно «Новая стадия» при переходе порога. Анимации только на transform/opacity (WAAPI), баланс досчитывается твином.<br>
+<b>Питомец:</b> 3D-модели енота <code>raccoon_stage_1…6.glb</code> из концепта (models/evo/raccoon), отрендерены в three.js одной камерой в прозрачные <code>common/pet/raccoon_1…6.webp</code>. Стадии: Снежок (1–4) · Иней (5–9) · Льдинка (10–14) · Морозко (15–19) · Вьюжка (20–24) · Снежная Звёздочка (25+).</div>
+</main></body></html>

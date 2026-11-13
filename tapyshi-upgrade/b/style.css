@@ -1,0 +1,56 @@
+/* B · Питомец в центре: герой, линия 6 стадий, 4 «кольца силы», панель выбранного улучшения */
+.hero{position:relative;height:208px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;margin:-6px -14px 0}
+.hero .glow{position:absolute;left:50%;top:6px;width:220px;height:220px;margin-left:-110px;border-radius:50%;
+  background:radial-gradient(closest-side,rgb(var(--white-rgb) / .95),color-mix(in srgb,var(--violet-soft) 80%,transparent) 60%,transparent)}
+.hero .pet{position:absolute;left:50%;top:-4px;width:200px;height:200px;margin-left:-100px}
+.hero .pet img{position:absolute;inset:0;width:100%;height:100%;will-change:transform,opacity}
+.hero .tag{position:relative;display:flex;align-items:center;gap:8px;height:36px;padding:0 6px 0 14px;border-radius:18px;background:var(--white);box-shadow:var(--sh-md);font-size:16px;font-weight:1000;white-space:nowrap}
+.hero .tag em{font-style:normal;color:var(--violet)}
+.hero .tag b{height:26px;padding:0 10px;border-radius:13px;display:inline-flex;align-items:center;background:var(--sun-soft);color:var(--sun-edge);font-size:13px}
+/* линия стадий */
+.tl{position:relative;margin:12px 2px 4px;padding:0 4px}
+.tl .line{position:absolute;left:28px;right:28px;top:23px;height:6px;border-radius:3px;background:var(--fill);overflow:hidden}
+.tl .line i{position:absolute;inset:0;background:linear-gradient(90deg,var(--violet),color-mix(in srgb,var(--violet) 70%,var(--white)));transform-origin:left;transition:transform .7s var(--out);will-change:transform}
+.tl .pts{position:relative;display:flex;justify-content:space-between}
+.tl .pt{width:52px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tl .pt .av{width:52px;height:52px;border-radius:50%;background:var(--white);box-shadow:var(--sh-sm);overflow:hidden;position:relative}
+.tl .pt .av img{position:absolute;inset:-4px;width:60px;height:60px}
+.tl .pt small{font-size:11px;color:var(--ink-3);font-weight:900;white-space:nowrap}
+.tl .pt.done small{color:var(--ink-2)}
+.tl .pt.cur .av{box-shadow:0 0 0 3px var(--violet),var(--sh-md)}
+.tl .pt.cur small{color:var(--violet)}
+.tl .pt.lock .av img{opacity:.28}
+.tl .pt.lock .av::after{content:"";position:absolute;inset:0;background:radial-gradient(closest-side,transparent 60%,rgb(var(--white-rgb) / .5))}
+.tl .pt.next small{color:var(--sun-edge)}
+.tl-note{text-align:center;font-size:13px;color:var(--ink-2);font-weight:900;margin:2px 0 10px}
+.tl-note b{color:var(--violet)}
+/* кольца силы */
+.rings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.rg{position:relative;display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r-md);background:var(--white);box-shadow:var(--sh-sm);border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.rg.on{box-shadow:var(--sh-md),inset 0 0 0 2.5px var(--violet)}
+.rg .ring{--p:0;--c:var(--violet);position:relative;width:54px;height:54px;flex:none;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p) * 1%),var(--fill) 0);will-change:transform}
+.rg .ring::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--white)}
+.rg .ring svg{position:absolute;inset:11px;width:32px;height:32px}
+.rg.sun .ring{--c:var(--sun)}.rg.green .ring{--c:var(--green)}
+.rg .tx{min-width:0}
+.rg .tx small{display:block;font-size:11.5px;color:var(--ink-2);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg .tx b{display:block;font-size:19px;font-weight:1000;line-height:1.1;font-variant-numeric:tabular-nums;will-change:transform}
+.rg .tx i{font-style:normal;font-size:11px;color:var(--ink-3);font-weight:900}
+.rg .dot{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--green);display:none}
+.rg.can .dot{display:block}
+/* панель выбранного */
+.panel{position:sticky;bottom:0;z-index:5;padding:12px 12px 12px;box-shadow:var(--sh-lg)}
+.panel .ttl{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.panel .ttl b{font-size:17px;font-weight:1000}
+.panel .ttl span{font-size:12px;font-weight:1000;color:var(--ink-2);background:var(--fill);border-radius:10px;padding:3px 8px;white-space:nowrap}
+.panel p{font-size:12.5px;color:var(--ink-2);margin:2px 0 10px}
+.cmp{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
+.cmp .c{flex:1;border-radius:14px;padding:6px 6px;text-align:center;background:var(--bg)}
+.cmp .c small{display:block;font-size:11.5px;color:var(--ink-2);font-weight:900}
+.cmp .c b{display:block;font-size:22px;font-weight:1000;font-variant-numeric:tabular-nums;will-change:transform}
+.cmp .c.nx{background:var(--green-soft)}.cmp .c.nx b{color:var(--green-edge)}
+.cmp .c em{display:block;font-style:normal;font-size:11px;color:var(--ink-2);font-weight:800}
+.cmp svg{width:22px;height:22px;color:var(--ink-3);flex:none}
+.panel .btn{width:100%;height:52px}
+@media (max-height:760px){.hero{height:168px}.hero .pet{width:164px;height:164px;margin-left:-82px}.hero .glow{width:180px;height:180px;margin-left:-90px}.panel p{display:none}.cmp .c small{display:inline}.cmp .c em{display:none}.tl{margin-top:12px}.tl .pt,.tl .pt .av{width:46px}.tl .pt .av{height:46px}.tl .pt .av img{width:54px;height:54px}.tl .line{top:20px}.cmp .c b{font-size:21px}}
+@media (max-width:370px){.rg{gap:8px;padding:9px}.rg .ring{width:48px;height:48px}.rg .ring svg{inset:9px;width:30px;height:30px}.rg .tx b{font-size:17px}}

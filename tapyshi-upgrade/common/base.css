@@ -1,0 +1,49 @@
+/* Тапыши · «Улучшить» · общая оболочка (только токены). Анимации — transform/opacity. */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg)}
+body{font-family:var(--font);color:var(--ink);font-weight:800;display:flex;justify-content:center;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;overflow:hidden}
+.app{position:relative;width:100vw;max-width:430px;height:100%;height:100dvh;overflow:hidden;background:linear-gradient(180deg,var(--bg-tint) 0%,var(--bg) 40%,var(--white) 100%)}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:calc(env(safe-area-inset-top, 0px) + 70px) 14px calc(var(--tabbar-space) + 18px)}
+.scroll::-webkit-scrollbar{display:none}
+/* шапка */
+.hdr{position:absolute;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top, 0px) + 12px) 14px 10px;
+  background:linear-gradient(180deg,var(--bg-tint) 70%,rgb(244 240 255 / 0))}
+.back{width:42px;height:42px;border-radius:15px;display:grid;place-items:center;background:var(--white);box-shadow:var(--sh-sm);color:var(--ink);text-decoration:none;flex:none}
+.back svg{width:20px;height:20px}
+.hdr h1{flex:1;font-size:21px;font-weight:1000;letter-spacing:-.2px;white-space:nowrap}
+.bal{display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 14px 0 6px;border-radius:21px;background:var(--white);box-shadow:var(--sh-md);font-size:18px;font-weight:1000;flex:none}
+.bal img{width:30px;height:30px;will-change:transform}
+.bal .num{font-variant-numeric:tabular-nums;min-width:3.9em;contain:layout paint}
+.coin{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em}
+.num{font-variant-numeric:tabular-nums;font-weight:1000}
+.card{background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-md)}
+.ic{display:block;flex:none}
+/* кнопка «купить» = .btn концепта; недоступно / максимум */
+.btn .coin{width:20px;height:20px;vertical-align:-4px}
+.btn.is-short{--b:var(--ink-3);--be:#9C95B8;color:var(--white)}
+.btn.is-max{--b:var(--sun);--be:var(--sun-edge);color:var(--ink);text-shadow:none}
+.btn[disabled]{cursor:default}
+/* прогресс-полоски — scaleX */
+.bar{position:relative;height:10px;border-radius:5px;background:var(--fill);overflow:hidden}
+.bar>i{position:absolute;inset:0;border-radius:5px;background:linear-gradient(90deg,color-mix(in srgb,var(--violet) 70%,var(--white)),var(--violet));transform-origin:left;transform:scaleX(0);transition:transform .6s var(--out);will-change:transform}
+.bar.green>i{background:linear-gradient(90deg,color-mix(in srgb,var(--green) 70%,var(--white)),var(--green))}
+/* летящий «−1 000» и тост */
+.float{position:absolute;left:0;top:0;z-index:60;pointer-events:none;font-size:20px;font-weight:1000;color:var(--sun-edge);white-space:nowrap;opacity:0;will-change:transform,opacity;
+  -webkit-text-stroke:5px var(--white);paint-order:stroke fill}
+.toast{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 16px);z-index:70;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  padding:11px 16px;border-radius:16px;background:var(--ink);color:var(--white);font-size:14.5px;font-weight:900;white-space:nowrap;will-change:transform,opacity}
+/* момент новой стадии — общий оверлей */
+.evo{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;will-change:opacity}
+.evo.on{pointer-events:auto}
+.evo .bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,rgb(var(--white-rgb) / .97) 0,rgb(var(--white-rgb) / .9) 38%,color-mix(in srgb,var(--violet-soft) 92%,transparent) 100%)}
+.evo .rays{position:absolute;left:50%;top:42%;width:760px;height:760px;margin:-380px 0 0 -380px;border-radius:50%;
+  background:repeating-conic-gradient(color-mix(in srgb,var(--sun) 30%,transparent) 0 8deg,transparent 8deg 22.5deg);
+  -webkit-mask:radial-gradient(closest-side,#000 10%,transparent 70%);mask:radial-gradient(closest-side,#000 10%,transparent 70%);will-change:transform}
+.evo .lab{position:relative;padding:6px 14px;border-radius:14px;background:var(--violet);color:var(--white);font-size:14px;font-weight:1000;letter-spacing:1px;text-transform:uppercase}
+.evo .pets{position:relative;width:280px;height:280px;margin:6px 0}
+.evo .pets img{position:absolute;inset:0;width:100%;height:100%;will-change:transform,opacity}
+.evo h2{position:relative;font-size:30px;font-weight:1000;color:var(--ink);text-align:center}
+.evo p{position:relative;margin-top:6px;font-size:15px;color:var(--ink-2);text-align:center;max-width:300px;line-height:1.35}
+.evo .btn{position:relative;margin-top:18px;width:220px}
+@media (max-height:760px){.scroll{padding-top:calc(env(safe-area-inset-top, 0px) + 64px)}.hdr h1{font-size:19px}}

@@ -1,0 +1,34 @@
+/* A · Список карточек: питомец сверху, под ним 4 карточки «сейчас → после» */
+.petcard{display:flex;align-items:center;gap:12px;padding:12px 14px 14px 10px;margin-bottom:14px}
+.petcard .ph{position:relative;width:88px;height:88px;flex:none;border-radius:24px;background:radial-gradient(circle at 50% 60%,var(--violet-soft),var(--bg))}
+.petcard .ph img{position:absolute;inset:-6px;width:100px;height:100px;will-change:transform}
+.petcard .meta{flex:1;min-width:0}
+.petcard .nm{display:flex;align-items:baseline;gap:6px;font-size:18px;font-weight:1000;white-space:nowrap}
+.petcard .nm small{font-size:13px;color:var(--ink-2);font-weight:900}
+.petcard .lvl{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:12px;background:var(--sun-soft);color:var(--sun-edge);font-size:13px;font-weight:1000;margin:3px 0 8px}
+.petcard .bar{margin-bottom:6px}
+.petcard .to{font-size:12.5px;color:var(--ink-2);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.petcard .to b{color:var(--violet)}
+.stages{display:flex;gap:4px;margin-top:8px}
+.stages i{flex:1;height:5px;border-radius:3px;background:var(--fill)}
+.stages i.on{background:var(--violet)}.stages i.cur{background:var(--sun)}
+.sec{font-size:13px;font-weight:1000;color:var(--ink-2);letter-spacing:.6px;text-transform:uppercase;margin:4px 4px 10px}
+.list{display:flex;flex-direction:column;gap:10px}
+.up{display:grid;grid-template-columns:52px 1fr auto;grid-template-rows:auto auto;column-gap:12px;row-gap:8px;align-items:center;padding:12px 12px 12px 12px}
+.up .tile{grid-row:1/3;width:52px;height:52px;border-radius:17px;display:grid;place-items:center;background:var(--violet-soft);align-self:start}
+.up .tile.sun{background:var(--sun-soft)}.up .tile.green{background:var(--green-soft)}
+.up .tile svg{width:36px;height:36px}
+.up .t{min-width:0}
+.up .t b{display:block;font-size:16px;font-weight:1000;line-height:1.15}
+.up .t small{display:block;font-size:12px;color:var(--ink-2);font-weight:800;margin-top:2px}
+.up .lv{justify-self:end;align-self:start;font-size:12px;font-weight:1000;color:var(--ink-2);background:var(--fill);border-radius:10px;padding:3px 8px;white-space:nowrap}
+.up .row{grid-column:2/4;display:flex;align-items:center;gap:8px}
+.nn{flex:1;display:flex;align-items:center;gap:6px;min-width:0;font-size:15px;font-weight:1000;white-space:nowrap}
+.nn .now{color:var(--ink)}
+.nn .ar{width:16px;height:16px;color:var(--ink-3)}
+.nn .nx{color:var(--green-edge);will-change:transform;display:inline-block}
+.nn .u{font-size:11.5px;color:var(--ink-2);font-weight:800;overflow:hidden;text-overflow:ellipsis}
+.up .btn{height:40px;padding:0 14px;font-size:15.5px;flex:none;min-width:104px}
+.up .btn .coin{width:19px;height:19px}
+.up.maxed .nn .nx,.up.maxed .nn .ar{display:none}
+@media (max-width:370px){.up .btn{min-width:92px;padding:0 10px;font-size:14.5px}.nn{font-size:14px}.nn .u{display:none}.petcard .ph{width:76px;height:76px}.petcard .ph img{width:88px;height:88px}}

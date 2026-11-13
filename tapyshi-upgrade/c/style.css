@@ -1,0 +1,61 @@
+/* C · Одно улучшение в фокусе: карусель больших карточек «было → станет» и одна большая кнопка */
+.scroll{padding-left:0;padding-right:0;padding-bottom:calc(var(--tabbar-space) + 92px)}
+.prog{display:flex;align-items:center;gap:12px;margin:0 14px 12px;padding:10px 12px}
+.prog .av{--p:0;position:relative;width:64px;height:64px;flex:none;border-radius:50%;background:conic-gradient(var(--violet) calc(var(--p) * 1%),var(--fill) 0)}
+.prog .av::before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--violet-soft)}
+.prog .av img{position:absolute;inset:-2px;width:68px;height:68px;will-change:transform}
+.prog .tx{flex:1;min-width:0}
+.prog .tx b{display:block;font-size:16px;font-weight:1000;white-space:nowrap}
+.prog .tx b em{font-style:normal;color:var(--violet)}
+.prog .tx small{display:block;font-size:12.5px;color:var(--ink-2);font-weight:900;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog .nx{position:relative;width:52px;height:52px;flex:none;border-radius:16px;background:var(--bg);overflow:hidden}
+.prog .nx img{position:absolute;inset:-3px;width:58px;height:58px;opacity:.35}
+.prog .nx svg{position:absolute;right:4px;bottom:4px;width:16px;height:16px;color:var(--ink-3)}
+.chips{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:34px;padding:0 13px;border-radius:17px;border:0;background:var(--white);box-shadow:var(--sh-sm);font:inherit;font-size:13.5px;font-weight:900;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--violet);color:var(--white);box-shadow:0 3px 0 var(--violet-edge)}
+.track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 20px 14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.track::-webkit-scrollbar{display:none}
+.slide{flex:0 0 calc(100% - 40px);scroll-snap-align:center;border-radius:var(--r-xl);background:var(--white);box-shadow:var(--sh-md);overflow:hidden;contain:layout paint}
+.slide .band{position:relative;height:118px;display:flex;align-items:center;gap:12px;padding:0 18px;background:linear-gradient(160deg,var(--violet-soft),color-mix(in srgb,var(--violet) 22%,var(--white)))}
+.slide.sun .band{background:linear-gradient(160deg,var(--sun-soft),color-mix(in srgb,var(--sun) 40%,var(--white)))}
+.slide.green .band{background:linear-gradient(160deg,var(--green-soft),color-mix(in srgb,var(--green) 28%,var(--white)))}
+.slide .band .big{width:78px;height:78px;border-radius:26px;background:var(--white);display:grid;place-items:center;box-shadow:var(--sh-sm);flex:none;will-change:transform}
+.slide .band .big svg{width:56px;height:56px}
+.slide .band h2{font-size:20px;font-weight:1000;line-height:1.15}
+.slide .band small{display:block;font-size:12.5px;color:var(--ink-2);font-weight:900;margin-top:4px}
+.pips{display:flex;gap:4px;padding:14px 18px 0}
+.pips i{flex:1;height:7px;border-radius:4px;background:var(--fill);will-change:transform}
+.pips i.on{background:var(--violet)}.slide.sun .pips i.on{background:var(--sun)}.slide.green .pips i.on{background:var(--green)}
+.pips i.nx{background:color-mix(in srgb,var(--green) 35%,var(--white))}
+.vs{display:grid;grid-template-columns:1fr 34px 1fr;align-items:center;padding:16px 16px 6px}
+.vs .c{text-align:center;padding:12px 4px;border-radius:20px;background:var(--bg)}
+.vs .c.after{background:var(--green-soft)}
+.vs .c small{display:block;font-size:12px;color:var(--ink-2);font-weight:900;text-transform:uppercase;letter-spacing:.5px}
+.vs .c b{display:block;font-size:36px;font-weight:1000;line-height:1.1;font-variant-numeric:tabular-nums;will-change:transform}
+.vs .c.after b{color:var(--green-edge)}
+.vs .c em{display:block;font-style:normal;font-size:12px;color:var(--ink-2);font-weight:800}
+.vs svg{width:24px;height:24px;color:var(--ink-3);justify-self:center}
+.gain{display:flex;justify-content:center;padding:6px 0 18px}
+.gain span{height:28px;padding:0 12px;border-radius:14px;display:inline-flex;align-items:center;background:var(--green);color:var(--white);font-size:14px;font-weight:1000}
+.slide.maxed .gain span{background:var(--sun);color:var(--ink)}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:2px}
+.dots i{width:8px;height:8px;border-radius:4px;background:var(--ink-3);opacity:.35;transition:transform .25s var(--out),opacity .25s}
+.dots i.on{opacity:1;background:var(--violet);transform:scaleX(2.2)}
+/* следующая стадия питомца */
+.evo2{display:flex;align-items:center;gap:8px;margin:10px 14px 0;padding:8px 12px}
+.evo2 .pp{width:78px;flex:none;text-align:center}
+.evo2 .pp img{width:78px;height:78px;display:block;will-change:transform}
+.evo2 .pp.nx img{opacity:.55;filter:saturate(.6)}
+.evo2 .pp small{display:block;font-size:12px;font-weight:900;color:var(--ink-2);white-space:nowrap}
+.evo2 .mid{flex:1;min-width:0;text-align:center}
+.evo2 .mid b{display:block;white-space:nowrap;font-size:14.5px;font-weight:1000;margin-bottom:8px}
+.evo2 .mid small{display:block;font-size:11.5px;font-weight:800;color:var(--ink-2);margin-top:8px;line-height:1.25}
+.evo2 .bar{height:10px}
+.evo2 .bar i{background:var(--violet)}
+/* большая кнопка над нижним меню */
+.cta{position:absolute;left:0;right:0;bottom:var(--tabbar-space);z-index:30;padding:10px 14px 12px;background:linear-gradient(180deg,rgb(var(--white-rgb) / 0),var(--white) 34%)}
+.cta .btn{height:58px;font-size:18px}
+.cta .sub{display:block;text-align:center;font-size:12px;color:var(--ink-2);font-weight:900;margin-top:6px}
+@media (max-height:760px){.evo2{margin-top:10px;padding:6px 10px}.evo2 .pp,.evo2 .pp img{width:62px}.evo2 .pp img{height:62px}.evo2 .mid small{display:none}.slide .band{height:96px}.slide .band .big{width:64px;height:64px}.slide .band .big svg{width:46px;height:46px}.vs .c b{font-size:30px}.vs{padding-top:12px}.gain{padding-bottom:12px}.prog{padding:8px 10px;margin-bottom:8px}.prog .av{width:54px;height:54px}.prog .av img{width:58px;height:58px}.cta .sub{display:none}.cta .btn{height:52px}.scroll{padding-bottom:calc(var(--tabbar-space) + 74px)}}
