@@ -1,0 +1,6 @@
+/* барабан цифр баланса */
+.bal .num{height:1.2em;line-height:1.2em;overflow:hidden}
+.odo{display:flex;height:1.2em;align-items:flex-start}
+.odo-col{display:block;flex:none;width:.62em;height:1.2em;overflow:hidden;text-align:center;position:relative}
+.odo-strip{position:absolute;left:0;right:0;top:0;display:block;white-space:pre;line-height:1.2em;will-change:transform}
+.odo-sep{display:block;flex:none;width:.22em}
