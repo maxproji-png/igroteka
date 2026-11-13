@@ -3,9 +3,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Тапыши · Питомец</title>
 <link rel="preload" href="shared/fonts/Nunito.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="shared/tokens.css">
-<link rel="stylesheet" href="shared/components.css">
-<link rel="stylesheet" href="pet/tap.css">
+<link rel="stylesheet" href="shared/tokens.css?v228b">
+<link rel="stylesheet" href="shared/components.css?v228b">
+<link rel="stylesheet" href="pet/tap.css?v228b">
 <script type="importmap">{"imports":{"three":"./lib/three.module.min.js"}}</script>
 <style>
 .app{background:linear-gradient(180deg,var(--bg-tint) 0%,var(--bg) 42%,var(--white) 100%)}
@@ -75,11 +75,11 @@
     </div>
   </div>
 </div>
-<script src="pet/icons.js"></script>
-<script src="shared/nav.js"></script>
+<script src="pet/icons.js?v228b"></script>
+<script src="shared/nav.js?v228b"></script>
 <script type="module">
-import { petStage } from './pet/stage.js';
-import { doTap, on, comboColor, fmtMult } from './pet/tap.js';
+import { petStage } from './pet/stage.js?v228b';
+import { doTap, on, comboColor, fmtMult } from './pet/tap.js?v228b';
 const canvas = document.querySelector('canvas.scene');
 const st = await petStage({ canvas, f: .42, cy: .58, cx: .5, hop: .16, onTap: e => doTap(e.clientX, e.clientY) });
 const combo = document.getElementById('combo'), cn = document.getElementById('cn'), cm = document.getElementById('cm'), ct = document.getElementById('ct');

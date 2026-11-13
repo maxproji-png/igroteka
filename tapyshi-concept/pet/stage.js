@@ -1,5 +1,5 @@
 // Тапыши · енот на холсте. Тап не крутит 3D: только CSS-squash обёртки, рендер по запросу.
-import { THREE, makeRenderer, loadRaccoon, blob } from './kit.js';
+import { THREE, makeRenderer, loadRaccoon, blob } from './kit.js?v228b';
 export { THREE };
 export async function petStage({ canvas, f = .48, cy = .5, cx = .5, yaw = .32, hop = .22, onTap, onHover }) {
   const R = makeRenderer(canvas, { exposure: 1.0, alpha: true }); R.setClearColor(0, 0);
