@@ -7,24 +7,19 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
 .bgdeco .b3{width:10px;height:10px;left:150px;top:36px;background:var(--sun);box-shadow:120px 40px 0 -2px color-mix(in srgb,var(--violet) 50%,var(--white))}
 .page{position:relative;z-index:1;padding:18px 16px calc(var(--tabbar-space) + 24px);max-width:440px;margin:0 auto}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 4px 0}
-.top--acts{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:start}
-.top-acts{display:flex;flex-direction:column;gap:8px;align-items:stretch}
 .ttl h1{margin:0;font-size:34px;line-height:1.05;font-weight:1000;letter-spacing:-.4px;color:var(--ink)}
 .ttl p{margin:4px 0 0;font-size:14px;color:var(--ink-2);font-weight:800}
-.top--acts .inv-hint{grid-column:1/-1;max-width:none;margin-top:0}
 .invite{display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 14px 6px 6px;border-radius:var(--r-pill);background:var(--white);box-shadow:var(--sh-md);font-size:12.5px;line-height:1.15;font-weight:900;color:var(--ink);text-align:left;flex:none}
 .invite .ic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--white);background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 72%,var(--white)),var(--violet));box-shadow:0 2px 0 var(--violet-edge);flex:none}
 .invite .ic svg{width:20px;height:20px}
 .invite .tx{display:flex;flex-direction:column;gap:1px}
 .invite .tx b{font-weight:1000;font-size:13px}
 .invite .tx em{font-style:normal;font-size:11px;font-weight:900;color:var(--sun-edge);white-space:nowrap}
-.inv-hint{display:block;margin-top:6px;font-size:11.5px;font-weight:800;color:var(--ink-2);line-height:1.3}
 .inv-demo{color:var(--violet);font-weight:900}
 @media (max-width:370px){
   .ttl h1{font-size:30px}
   .invite{padding:5px 10px 5px 5px;gap:6px}
   .invite .tx b{font-size:12px}
-  
 }
 
 .seg{display:flex;gap:4px;margin:18px 0 6px;padding:5px;background:var(--fill);border-radius:20px}
@@ -87,9 +82,13 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
 }
 
 /* Друзья — вход с вкладки Игры, не отдельный таб */
-.friends-btn{display:flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 14px 0 8px;border-radius:var(--r-pill);background:var(--violet-soft);color:var(--violet-edge);font-size:13.5px;font-weight:1000;box-shadow:none}
-.friends-btn .ic{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--violet);color:var(--white)}
-.friends-btn .ic svg{width:16px;height:16px}
+.friends-btn{display:flex;align-items:center;gap:7px;height:48px;padding:0 12px 0 6px;border-radius:var(--r-pill);background:var(--white);box-shadow:var(--sh-md);font-size:14px;font-weight:1000;color:var(--ink);flex:none;white-space:nowrap}
+.friends-btn .ic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--white);background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 72%,var(--white)),var(--violet));box-shadow:0 2px 0 var(--violet-edge);flex:none}
+.friends-btn .ic svg{width:18px;height:18px}
+.friends-btn .on-n{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--green);color:var(--white);font-size:11.5px;font-weight:1000;display:grid;place-items:center;line-height:1}
+.friends-btn .rw{height:20px;padding:0 7px;border-radius:10px;background:var(--sun-soft);color:var(--sun-edge);font-size:11px;font-weight:900;display:grid;place-items:center;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--sun) 40%,var(--white))}
+.fr-demos{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 16px;margin:16px 0 0;padding:0;border:0}
+.fr-demos .inv-demo{background:none;border:0;padding:0;cursor:pointer;font:inherit}
 .invite--wide{width:100%;justify-content:flex-start;margin:4px 0 14px;min-height:54px;padding-right:16px}
 .fr-page{padding-top:10px}
 .fr-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -133,8 +132,9 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
 .fr-pick .g-opts .oi{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--bg1,var(--fill));color:var(--c,var(--violet));flex:none}
 .fr-pick .g-opts .oi svg{width:26px;height:26px}
 @media (max-width:370px){
-  .friends-btn{height:36px;padding:0 10px 0 6px;font-size:12.5px}
-  .friends-btn .ic{width:26px;height:26px}
+  .friends-btn{height:44px;padding:0 8px 0 5px;gap:5px;font-size:13px}
+  .friends-btn .ic{width:32px;height:32px}
+  .friends-btn .rw{padding:0 6px;font-size:10.5px}
   .fr-row{grid-template-columns:46px 1fr auto;padding:8px 10px;gap:8px}
   .fr-ava{width:46px;height:46px}
   .fr-ava img{width:40px;height:40px}

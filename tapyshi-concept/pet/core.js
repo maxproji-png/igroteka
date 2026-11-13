@@ -114,8 +114,7 @@ const HUD = `
   <div class="hud">
     <div class="top">
       <div class="pill card bal" id="bal"><span class="cico" id="balIco"></span><span class="num" id="balNum"></span></div>
-      <div class="enw"><div class="pill card"><svg class="ic"><use href="#i-bolt"/></svg><span class="num" id="enNum"></span><span class="bar"><i id="enBar"></i></span></div>
-      <a class="fr-chip card pe" href="games/?friends=1"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.2" cy="6.4" r="3.1" fill="currentColor"/><path d="M1.8 16.6c.5-3.4 2.8-5.1 5.4-5.1s4.9 1.7 5.4 5.1z" fill="currentColor"/><circle cx="14.2" cy="7" r="2.5" fill="currentColor" opacity=".95"/><path d="M12.2 16.6c.3-2.2 1.5-3.7 3.5-4.2 2 .7 3.3 2.3 3.6 4.2z" fill="currentColor" opacity=".95"/></svg>Друзья<b>3</b></a></div>
+      <div class="enw"><div class="pill card"><svg class="ic"><use href="#i-bolt"/></svg><span class="num" id="enNum"></span><span class="bar"><i id="enBar"></i></span></div></div>
     </div>
     <div class="side">
       <button class="rb card pe" aria-label="Задания"><svg class="ic"><use href="#i-tasks"/></svg><span class="dot n">2</span></button>

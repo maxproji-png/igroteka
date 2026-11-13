@@ -29,9 +29,6 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
 .bal .cico{position:relative;width:34px;height:34px;flex:none;will-change:transform}
 .bal .cico img{width:100%;height:100%;display:block}
 .enw{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.fr-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 8px;border-radius:16px;font-size:13px;font-weight:1000;color:var(--violet-edge);text-decoration:none}
-.fr-chip svg{width:16px;height:16px;flex:none}
-.fr-chip b{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--green);color:var(--white);font-size:11px;line-height:18px;text-align:center}
 .enw .pill{gap:5px;padding:0 14px 0 9px}.enw .pill .ic{width:26px;height:26px}
 .enw .pill .num{display:inline-block;min-width:2.6em;text-align:right;contain:layout paint}
 .enw .bar{width:54px;height:8px;border-radius:4px;background:var(--fill);overflow:hidden}

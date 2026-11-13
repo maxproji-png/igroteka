@@ -43,7 +43,7 @@ function card(g,wide){
 function catalog(){
   var duo=G.filter(function(g){return g.mode==='duo'}),solo=G.filter(function(g){return g.mode==='solo'});
   return '<div class="bgdeco" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div><main class="page">'+
-  '<header class="top top--acts"><div class="ttl"><h1>Игры</h1><p>8 игр с питомцами</p></div><div class="top-acts"><button type="button" class="friends-btn spring" data-act="friends"><span class="ic">'+IC.people+'</span><span>Друзья</span></button><button class="invite spring" data-act="invite-any"><span class="ic"><svg viewBox="0 0 20 20"><circle cx="8" cy="6.5" r="3.3" fill="currentColor"/><path d="M2 17c.6-3.6 3-5.4 6-5.4s5.4 1.8 6 5.4z" fill="currentColor"/><path d="M16 5.5v6M13 8.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><span class="tx"><b>Позвать друга</b><em>+5000 🪙 за друга</em></span></button></div><small class="inv-hint">+5000 🪙, когда друг впервые откроет игру по ссылке · <button type="button" class="inv-demo" data-invite-demo>демо: друг зашёл</button></small></header>'+
+  '<header class="top"><div class="ttl"><h1>Игры</h1><p>8 игр с питомцами</p></div><button type="button" class="friends-btn spring" data-act="friends" aria-label="Друзья, 3 в сети, +5000 за друга"><span class="ic">'+IC.people+'</span><span>Друзья</span><span class="on-n">3</span><span class="rw">+5000</span></button></header>'+
   '<div class="seg"><button class="spring on" data-f="all">Все <em>8</em></button><button class="spring" data-f="duo">На двоих <em>5</em></button><button class="spring" data-f="solo">Соло <em>3</em></button></div>'+
   '<section class="sec" data-sec="duo"><div class="sech"><h2>На двоих</h2><span>с другом из MAX или с ботом</span></div><div class="grid">'+duo.map(function(g,i){return card(g,!i)}).join('')+'</div></section>'+
   '<section class="sec" data-sec="solo"><div class="sech"><h2>Соло</h2><span>головоломки на рекорд</span></div><div class="grid">'+solo.map(function(g,i){return card(g,!i)}).join('')+'</div></section>'+
@@ -204,7 +204,7 @@ function friends(o){
     return '<main class="page fr-page">'+head+cta+
       '<div class="fr-empty"><div class="fr-ghost">'+IC.people+'</div><h2>Пока нет друзей</h2><p>Позови друга из MAX — когда он впервые откроет игру по ссылке, тебе придёт <b>+5000 🪙</b>.</p>'+
       '<button type="button" class="btn btn--primary btn--l" data-act="invite-any">Позвать друга</button>'+
-      '<button type="button" class="inv-demo" data-act="friends-demo">показать демо-список</button></div></main>'+(o.pick?pickSheet(o):'');
+      '<p class="fr-demos"><button type="button" class="inv-demo" data-invite-demo>демо: друг зашёл</button><button type="button" class="inv-demo" data-act="friends-demo">показать демо-список</button></p></div></main>'+(o.pick?pickSheet(o):'');
   }
   function row(f,inv){
     var act='';
@@ -217,7 +217,7 @@ function friends(o){
   var body='<p class="fr-earn">С приглашений: <b>'+fmt(earned)+' 🪙</b> · '+invited.filter(function(f){return f.joined;}).length+' из '+invited.length+' зашли'+(pending?' · ещё '+pending+' не зашёл':'')+'</p>'+
     '<section class="fr-sec"><div class="sech"><h2>Друзья</h2><span>'+main.filter(function(f){return f.on;}).length+' в сети сверху</span></div><div class="fr-list">'+main.map(function(f){return row(f,0);}).join('')+'</div></section>'+
     '<section class="fr-sec" id="invited"><div class="sech"><h2>Приглашён тобой</h2><span class="fr-badge">'+invited.length+'</span></div><div class="fr-list">'+invited.map(function(f){return row(f,1);}).join('')+'</div></section>'+
-    '<button type="button" class="inv-demo fr-empty-link" data-act="friends-empty">показать пустой список (демо)</button>';
+    '<p class="fr-demos"><button type="button" class="inv-demo" data-invite-demo>демо: друг зашёл</button><button type="button" class="inv-demo" data-act="friends-empty">показать пустой список</button></p>';
   return '<main class="page fr-page">'+head+cta+body+'</main>'+(o.pick?pickSheet(o):'');
 }
 function pickSheet(o){
