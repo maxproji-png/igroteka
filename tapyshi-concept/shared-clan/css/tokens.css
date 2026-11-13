@@ -28,7 +28,8 @@
   --stroke:inset 0 0 0 2px var(--line);
   --scrim:rgb(var(--ink-rgb) / .42);
   --page:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg) 100%);
-  --nav-h:68px;
+  --tabbar-row:56px; --tabbar-pad-top:8px; --tabbar-space:calc(var(--tabbar-pad-top) + var(--tabbar-row) + env(safe-area-inset-bottom, 0px));
+  --nav-h:var(--tabbar-space);
 
   /* старые имена (styles.css / v2.css) → токены Игр */
   --ink2:var(--ink-2); --ink3:var(--ink-3); --card:var(--white); --soft:var(--fill);

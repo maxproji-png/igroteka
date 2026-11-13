@@ -5,7 +5,7 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
 .bgdeco .b1{width:260px;height:260px;right:-90px;top:-110px;background:radial-gradient(circle at 40% 40%,var(--white),color-mix(in srgb,var(--violet) 12%,var(--white)) 70%)}
 .bgdeco .b2{width:140px;height:140px;left:-60px;top:120px;background:radial-gradient(circle at 40% 40%,var(--white),var(--pink-soft) 75%)}
 .bgdeco .b3{width:10px;height:10px;left:150px;top:36px;background:var(--sun);box-shadow:120px 40px 0 -2px color-mix(in srgb,var(--violet) 50%,var(--white))}
-.page{position:relative;z-index:1;padding:18px 16px 112px;max-width:440px;margin:0 auto}
+.page{position:relative;z-index:1;padding:18px 16px calc(var(--tabbar-space) + 24px);max-width:440px;margin:0 auto}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 4px 0}
 .ttl h1{margin:0;font-size:34px;line-height:1.05;font-weight:1000;letter-spacing:-.4px;color:var(--ink)}
 .ttl p{margin:4px 0 0;font-size:14px;color:var(--ink-2);font-weight:800}

@@ -53,4 +53,7 @@
   /* --- шрифт и движение --- */
   --font:'Nunito',ui-rounded,system-ui,sans-serif;
   --spring:cubic-bezier(.34,1.56,.64,1); --out:cubic-bezier(.22,1,.36,1);
+  /* место под нижнее меню (высота ряда + безопасная зона) */
+  --tabbar-row:56px; --tabbar-pad-top:8px;
+  --tabbar-space:calc(var(--tabbar-pad-top) + var(--tabbar-row) + env(safe-area-inset-bottom, 0px));
 }

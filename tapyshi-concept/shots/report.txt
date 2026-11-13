@@ -1,0 +1,10 @@
+pet tabs: Питомец* | Игры | Клан | Магазин
+tap: coins 12 000 -> 12 008, flying=2, combo.on=false n=8
+games tabs: Питомец | Игры* | Клан | Магазин
+games sheet: true
+clan tabs: Питомец | Игры | Клан* | Магазин
+clan top tab on=true panel="ТРОФЕИ НЕДЕЛИ 1 место — 60 2 — 40 3 — 20 1 Котики-ниндзя ур. 3 · 48 игроков 1,98 млн за неделю 2 Пушистый отряд ур. 3 · "
+clan chat tab on=true
+shop tabs: Питомец | Игры | Клан | Магазин* title=Магазин
+--- network/js ---
+none

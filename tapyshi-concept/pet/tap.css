@@ -1,10 +1,10 @@
 /* Тапыши · тапалка A. Цвета — только токены из shared/tokens.css */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);overflow:hidden}
+html,body{height:100%;height:100dvh;background:var(--bg);overflow:hidden}
 body{font-family:var(--font);color:var(--ink);font-weight:800;display:flex;justify-content:center;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 svg.ic{display:block;flex:none}
-.app{position:relative;width:100vw;max-width:430px;height:100vh;overflow:hidden;perspective:600px}
+.app{position:relative;width:100vw;max-width:430px;height:100%;height:100dvh;overflow:hidden}
 .bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .rays{position:absolute;left:50%;width:1400px;height:1400px;margin:-700px 0 0 -700px;border-radius:50%;
   background:repeating-conic-gradient(rgb(var(--white-rgb) / .55) 0 9deg,rgb(var(--white-rgb) / 0) 9deg 22.5deg);
@@ -28,25 +28,23 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
 .dot.n{width:auto;min-width:21px;height:21px;padding:0 5px;border-radius:11px;color:var(--white);font-size:12px;font-weight:1000;line-height:16px;text-align:center;top:-7px;right:-7px}
 @keyframes dotp{50%{transform:scale(1.15)}}
 .card{background:var(--white);box-shadow:var(--sh-md)}
-/* монетки в полёте */
-.fcoin{position:absolute;left:0;top:0;z-index:40;pointer-events:none;will-change:transform;transform-style:preserve-3d}
-.fcoin .ic{width:38px;height:38px;filter:drop-shadow(0 4px 4px color-mix(in srgb,var(--sun-edge) 35%,transparent))}
-.plus{position:absolute;z-index:41;pointer-events:none;transform:translate(-50%,-50%);animation:plus .9s cubic-bezier(.2,.8,.3,1) forwards}
-.plus b{display:block;font-size:40px;font-weight:1000;color:var(--sun);-webkit-text-stroke:8px var(--white);paint-order:stroke fill;text-shadow:0 5px 10px color-mix(in srgb,var(--sun-edge) 35%,transparent);letter-spacing:-.5px}
-.plus.x15 b{color:var(--violet);font-size:46px}.plus.x2 b{color:var(--pink);font-size:52px}
-@keyframes plus{0%{opacity:0;transform:translate(-50%,-20%) scale(.4)}15%{opacity:1;transform:translate(-50%,-80%) scale(1.2)}30%{transform:translate(-50%,-100%) scale(1)}65%{opacity:1}100%{opacity:0;transform:translate(-50%,-210%) scale(.9)}}
-.spark{position:absolute;z-index:39;width:10px;height:10px;border-radius:50%;background:var(--sun);pointer-events:none;box-shadow:0 0 0 2px var(--white);animation:spark .6s ease-out forwards}
+/* монетки в полёте — только transform/opacity, без теней и фильтров */
+.fcoin{position:absolute;left:0;top:0;z-index:40;pointer-events:none;display:none}
+.fcoin .coin-dot{display:block;width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#FFE9A0,var(--sun) 52%,var(--sun-edge))}
+.plus{position:absolute;left:0;top:0;z-index:41;pointer-events:none;display:none;margin-left:-20px;margin-top:-28px}
+.plus b{display:block;font-size:28px;font-weight:1000;color:var(--sun);letter-spacing:-.4px;line-height:1}
+.plus.x15 b{color:var(--violet);font-size:32px}.plus.x2 b{color:var(--pink);font-size:34px}
+.plus.go b{animation:plus .62s cubic-bezier(.2,.8,.3,1) both}
+@keyframes plus{0%{opacity:0;transform:translateY(0) scale(.5)}18%{opacity:1;transform:translateY(-18px) scale(1.12)}70%{opacity:1;transform:translateY(-36px) scale(1)}100%{opacity:0;transform:translateY(-64px) scale(.9)}}
+.spark{position:absolute;left:0;top:0;z-index:39;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--sun);pointer-events:none}
 .spark.alt{background:var(--violet)}
-@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
-/* вспышка порога */
+/* вспышка порога — облегчённая, редкая */
 .flash{position:absolute;inset:0;z-index:45;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.flash::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgb(var(--white-rgb) / .95),color-mix(in srgb,var(--violet) 35%,transparent) 40%,transparent 70%);animation:flbg 1.2s ease-out forwards}
-.flash.x2::before{background:radial-gradient(circle at 50% 45%,rgb(var(--white-rgb) / .95),color-mix(in srgb,var(--pink) 40%,transparent) 40%,transparent 70%)}
-.flash .burst{position:absolute;left:50%;top:45%;width:520px;height:520px;margin:-260px;border-radius:50%;
-  background:repeating-conic-gradient(color-mix(in srgb,var(--sun) 70%,transparent) 0 6deg,transparent 6deg 18deg);-webkit-mask:radial-gradient(closest-side,transparent 18%,#000 30%,transparent 70%);mask:radial-gradient(closest-side,transparent 18%,#000 30%,transparent 70%);animation:burst 1.2s ease-out forwards}
-.flash .big{position:relative;margin-top:-60px;font-size:96px;font-weight:1000;line-height:1;color:var(--violet);-webkit-text-stroke:12px var(--white);paint-order:stroke fill;text-shadow:0 10px 24px color-mix(in srgb,var(--violet) 45%,transparent);animation:fbig 1.2s var(--spring) forwards}
-.flash.x2 .big{color:var(--pink);text-shadow:0 10px 24px color-mix(in srgb,var(--pink) 45%,transparent)}
-.flash .sub{position:relative;margin-top:6px;padding:6px 14px;border-radius:16px;background:var(--white);color:var(--ink);font-size:17px;font-weight:1000;box-shadow:0 10px 20px -10px rgb(var(--shade) / .5);animation:fsub 1.2s ease-out forwards}
+.flash::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,rgb(var(--white-rgb) / .7),transparent 62%);animation:flbg 1s ease-out forwards}
+.flash .big{position:relative;margin-top:-40px;font-size:72px;font-weight:1000;line-height:1;color:var(--violet);animation:fbig 1s var(--spring) forwards}
+.flash.x2 .big{color:var(--pink)}
+.flash .sub{position:relative;margin-top:6px;padding:6px 14px;border-radius:16px;background:var(--white);color:var(--ink);font-size:16px;font-weight:1000;animation:fsub 1s ease-out forwards}
 @keyframes flbg{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 @keyframes burst{0%{transform:scale(.3) rotate(0);opacity:0}15%{opacity:1}100%{transform:scale(1.2) rotate(40deg);opacity:0}}
 @keyframes fbig{0%{transform:scale(.2) rotate(-12deg);opacity:0}25%{transform:scale(1.15) rotate(3deg);opacity:1}45%{transform:scale(1) rotate(0)}80%{opacity:1}100%{transform:scale(1.05) translateY(-30px);opacity:0}}

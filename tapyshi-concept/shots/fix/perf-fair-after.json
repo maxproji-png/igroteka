@@ -1,0 +1,22 @@
+{
+  "label": "after",
+  "taps": 150,
+  "elapsedMs": 4989,
+  "frames": 204,
+  "fps": 41.2,
+  "avgFrameMs": 24.3,
+  "p95FrameMs": 33.4,
+  "minFps": 29.9,
+  "framesOver16ms": 122,
+  "framesOver33ms": 93,
+  "framesOver50ms": 0,
+  "longTasks": 0,
+  "longTaskMaxMs": 0,
+  "longTaskSumMs": 0,
+  "maxCoinNodes": 7,
+  "maxVisCoins": 7,
+  "maxPlus": 1,
+  "maxSpark": 3,
+  "coinsNow": "12 266",
+  "energyNow": "181"
+}

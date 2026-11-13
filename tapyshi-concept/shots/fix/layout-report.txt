@@ -1,0 +1,18 @@
+pet 390x844: tabTop=780/844 space=calc(8px + 56px + 0px) overlaps=0
+games-scrolled 390x844: tabTop=780/844 space=calc(8px + 56px + 0px) overlaps=0
+clan-scrolled 390x844: tabTop=780/844 space=calc(8px + 56px + 0px) overlaps=0
+shop 390x844: tabTop=780/844 space=calc(8px + 56px + 0px) overlaps=0
+pet 360x740: tabTop=676/740 space=calc(8px + 56px + 0px) overlaps=0
+games-scrolled 360x740: tabTop=676/740 space=calc(8px + 56px + 0px) overlaps=0
+clan-scrolled 360x740: tabTop=676/740 space=calc(8px + 56px + 0px) overlaps=0
+shop 360x740: tabTop=676/740 space=calc(8px + 56px + 0px) overlaps=0
+pet 390x744-safari: tabTop=680/744 space=calc(8px + 56px + 0px) overlaps=0
+games-scrolled 390x744-safari: tabTop=680/744 space=calc(8px + 56px + 0px) overlaps=0
+clan-scrolled 390x744-safari: tabTop=680/744 space=calc(8px + 56px + 0px) overlaps=0
+shop 390x744-safari: tabTop=680/744 space=calc(8px + 56px + 0px) overlaps=0
+pet 390x650-safari: tabTop=586/650 space=calc(8px + 56px + 0px) overlaps=0
+games-scrolled 390x650-safari: tabTop=586/650 space=calc(8px + 56px + 0px) overlaps=0
+clan-scrolled 390x650-safari: tabTop=586/650 space=calc(8px + 56px + 0px) overlaps=0
+shop 390x650-safari: tabTop=586/650 space=calc(8px + 56px + 0px) overlaps=0
+--- errors ---
+none
