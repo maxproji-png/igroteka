@@ -1,4 +1,4 @@
-/* Главный экран «Питомец»: сцена, подиум, объединённая карточка, без прокрутки. */
+/* Главный экран: исходный светлый фон, крупный 3D-питомец, одна карточка энергии и Булочки. */
 
 #scr-pet.screen {
   display: flex;
@@ -7,86 +7,30 @@
   padding-bottom: 16px;
 }
 
-#scr-pet .home-top {
-  margin-bottom: 12px;
-}
+#scr-pet .topbar { flex: none; margin-bottom: 12px; }
+#scr-pet .pet-actions { flex: none; margin-bottom: 10px; }
 
-#scr-pet .pet-actions {
-  flex: none;
-  margin-bottom: 10px;
-}
-
-#scr-pet .pet-hero-block {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-#scr-pet .pet-name {
-  font-size: 26px;
-  font-weight: 900;
-  text-align: center;
-  margin: 0 0 2px;
-  line-height: 1.15;
-  letter-spacing: -.2px;
-}
-
-#scr-pet .pet-level {
-  text-align: center;
-  margin: 0 0 6px;
-  font-size: 14px;
-}
-
-/* Cozy tinted scene — full-bleed wash, no clipped white plate */
+/* Original light scene, but taller so the pet reads as the tap target */
 #scr-pet .pet-stage {
   position: relative;
   flex: 1 1 auto;
   height: auto;
-  min-height: 160px;
-  margin: 0 0 8px;
-  border-radius: 28px;
+  min-height: 220px;
+  margin: 0 0 12px;
+  border-radius: var(--r-xl);
   border: none;
   cursor: pointer;
   overflow: hidden;
-  background: transparent;
-  box-shadow: none;
-}
-
-#scr-pet .pet-stage-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(120% 80% at 50% -10%, #FFF8F0 0%, transparent 58%),
-    radial-gradient(90% 70% at 86% 100%, #FFDCC4 0%, transparent 58%),
-    radial-gradient(80% 60% at 8% 95%, #E6DCFF 0%, transparent 52%),
-    linear-gradient(180deg, #F4F7FF 0%, #F8EEE6 100%);
-}
-
-#scr-pet .podium {
-  position: absolute;
-  left: 50%;
-  bottom: 11%;
-  width: 58%;
-  height: 24px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 1;
-  background: radial-gradient(ellipse at 50% 40%, #EAD8C6 0%, #D4BFAE 50%, rgba(190,170,155,0) 74%);
-  box-shadow:
-    0 12px 18px rgba(80, 60, 50, .14),
-    0 2px 0 rgba(255,255,255,.5) inset;
+  background: radial-gradient(circle at 50% 78%, #fff 0%, #EEF3FF 52%, #E0E8FF 100%);
+  box-shadow: inset 0 -10px 0 rgba(124,156,255,.06);
 }
 
 #scr-pet .pet-mount {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 8%;
-  z-index: 2;
+  inset: 0;
+  z-index: 1;
+  transform: scale(1.28);
+  transform-origin: 50% 70%;
 }
 
 #scr-pet .pet-stage .pet-hero,
@@ -106,39 +50,27 @@
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: 8px;
+  bottom: 10px;
   z-index: 3;
   text-align: center;
   font-weight: 800;
   font-size: 14px;
   color: var(--ink-soft);
   pointer-events: none;
-  text-shadow: 0 1px 0 rgba(255,255,255,.8);
+  text-shadow: 0 1px 0 rgba(255,255,255,.85);
   transition: opacity .55s ease;
 }
 
-#scr-pet .tap-hint.out {
-  opacity: 0;
-}
+#scr-pet .tap-hint.out { opacity: 0; }
 
-/* Merged energy + progress card */
+/* One card: energy, name, progress, upgrade */
 #scr-pet .home-card {
   flex: none;
   padding: 14px 16px 16px;
   margin: 0;
 }
 
-#scr-pet .energy-row {
-  margin-bottom: 8px;
-}
-
-#scr-pet .en-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-  text-align: right;
-}
+#scr-pet .energy-row { margin-bottom: 8px; }
 
 #scr-pet .per-tap {
   font-size: 12px;
@@ -149,41 +81,24 @@
   border-radius: 0;
 }
 
-#scr-pet .en-eta {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--ink-soft);
+#scr-pet .home-card .progress.sun { margin-bottom: 14px; }
+
+#scr-pet .home-card .pet-name {
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+  margin: 0 0 4px;
 }
 
-#scr-pet .en-eta[hidden] {
-  display: none;
+#scr-pet .home-card .pet-level {
+  text-align: center;
+  margin: 0 0 12px;
 }
 
-#scr-pet .home-card .progress.sun {
-  margin-bottom: 14px;
-}
+#scr-pet .home-card .progress { margin: 10px 0 14px; }
+#scr-pet .home-card .progress.sun { margin: 0 0 14px; }
 
-#scr-pet .grow-row {
-  margin-bottom: 8px;
-}
-
-#scr-pet .grow-bar {
-  margin-bottom: 14px;
-}
-
-#scr-pet #upb {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 14px 16px;
-  font-size: 17px;
-}
-
-#scr-pet #upb .coin {
-  width: 20px;
-  height: 20px;
-}
+#scr-pet #upb { padding: 14px 16px; font-size: 17px; }
 
 .float.coin-float {
   display: flex;
@@ -194,22 +109,19 @@
   text-shadow: 0 2px 0 #fff;
   white-space: nowrap;
 }
-
-.float.coin-float .coin {
-  width: 20px;
-  height: 20px;
-}
+.float.coin-float .coin { width: 20px; height: 20px; }
 
 @media (max-height: 740px) {
   #scr-pet.screen { padding-top: 16px; padding-bottom: 12px; }
-  #scr-pet .home-top { margin-bottom: 8px; }
+  #scr-pet .topbar { margin-bottom: 8px; }
   #scr-pet .pet-actions { margin-bottom: 6px; }
-  #scr-pet .pet-name { font-size: 22px; }
-  #scr-pet .pet-level { font-size: 13px; margin-bottom: 4px; }
-  #scr-pet .pet-stage { min-height: 140px; border-radius: 24px; }
+  #scr-pet .pet-stage { min-height: 170px; margin-bottom: 8px; }
+  #scr-pet .pet-mount { transform: scale(1.22); }
   #scr-pet .home-card { padding: 12px 14px 13px; }
-  #scr-pet .home-card .progress.sun,
-  #scr-pet .grow-bar { margin-bottom: 10px; }
+  #scr-pet .home-card .progress.sun { margin-bottom: 10px; }
+  #scr-pet .home-card .pet-name { font-size: 22px; }
+  #scr-pet .home-card .pet-level { margin-bottom: 8px; }
+  #scr-pet .home-card .progress { margin: 8px 0 12px; }
   #scr-pet #upb { padding: 12px 14px; font-size: 16px; }
   #scr-pet .chip { padding: 8px 14px 8px 10px; font-size: 14px; }
 }
@@ -219,6 +131,5 @@
   #scr-pet .tap-hint { animation: none !important; transition: none !important; }
 }
 
-/* Duel sheet hero (unchanged sizing) */
 #duel-prev .pet-hero,
 #duel-prev .pet { width: 100%; height: 100%; display: block; }
