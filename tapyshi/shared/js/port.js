@@ -101,8 +101,17 @@
     if (en) en.textContent = fmt(ME.energy) + ' / ' + fmt(ME.maxEnergy);
     var bar = $('#en-bar');
     if (bar) bar.style.width = Math.max(0, Math.min(100, ME.energy / ME.maxEnergy * 100)) + '%';
-    var pt = $('.per-tap');
-    if (pt) pt.textContent = ME.tapPower + ' за тап';
+    var eta = $('#en-eta');
+    if (eta) {
+      var left = Math.max(0, ME.maxEnergy - ME.energy);
+      if (left <= 0) {
+        eta.hidden = true;
+      } else {
+        var m = Math.floor(left / 60), sec = left % 60;
+        eta.hidden = false;
+        eta.textContent = 'полная через ' + m + ':' + (sec < 10 ? '0' : '') + sec;
+      }
+    }
   }
 
   function bumpBal() {
@@ -181,18 +190,20 @@
   /* ---------- Home: 3D pet + energy tap ---------- */
   function mountHomePet() {
     var stage = $('#pet-stage');
-    if (!stage) return;
+    var mount = $('#pet-mount') || stage;
+    if (!stage || !mount) return;
     stage.classList.add('filled');
-    stage.innerHTML = petHero('raccoon', { mood: 'neutral', pose: 'neutral', idle: true, tap: true });
-    var hero = $('[data-live-pet]', stage) || stage;
+    mount.innerHTML = petHero('raccoon', { mood: 'neutral', pose: 'neutral', idle: true, tap: true });
+    var hero = $('[data-live-pet]', mount) || mount;
     if (TAP && TAP.mountLive) {
       TAP.mountLive(hero, { kind: 'raccoon', pose: 'neutral', idle: true, tap: true }).then(function (v) { livePet = v || (hero && hero._petViewer) || livePet; }).catch(function () {});
     }
     if (TAP && TAP.preloadLive) TAP.preloadLive('raccoon');
   }
 
+  var tapHintN = 0;
   function onHomeTap(e) {
-    if (e.target && e.target.closest && e.target.closest('.chip, .icon-btn, .btn, .balance, .topbar, .pet-actions, .pet-card')) return;
+    if (e.target && e.target.closest && e.target.closest('.chip, .icon-btn, .btn, .balance, .topbar, .pet-actions, .home-card')) return;
     if (ME.energy < ME.tapPower) {
       toast('Энергия закончилась', 'warn');
       return;
@@ -201,18 +212,23 @@
     ME.coins += ME.tapPower;
     setBalances();
     bumpBal();
+    tapHintN += 1;
+    if (tapHintN >= 3) {
+      var hint = $('#tap-hint');
+      if (hint) hint.classList.add('out');
+    }
     var stage = $('#pet-stage');
     if (stage) {
       stage.classList.remove('squish');
       void stage.offsetWidth;
       stage.classList.add('squish');
     }
-    var hero = $('[data-live-pet]', stage);
+    var hero = stage && $('[data-live-pet]', stage);
     var viewer = livePet || (hero && hero._petViewer);
     if (viewer && viewer.tap) viewer.tap();
     var f = document.createElement('div');
-    f.className = 'float';
-    f.textContent = '+' + ME.tapPower;
+    f.className = 'float coin-float';
+    f.innerHTML = '<span class="coin"></span><span>+' + ME.tapPower + '</span>';
     var app = $('#app').getBoundingClientRect();
     f.style.left = (e.clientX - app.left) + 'px';
     f.style.top = (e.clientY - app.top) + 'px';

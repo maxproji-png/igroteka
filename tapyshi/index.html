@@ -34,31 +34,36 @@
 
   <!-- Питомец -->
   <section class="screen active" id="scr-pet" data-screen="pet">
-    <div class="topbar">
-      <div class="title">Питомец</div>
-      <div class="topbar-r">
-        <div class="balance"><span class="coin"></span><span class="bal-val" id="bal">12 000</span></div>
-        <button class="icon-btn" data-open-profile aria-label="Профиль и настройки"><svg><use href="#i-gear"/></svg></button>
-      </div>
+    <div class="topbar home-top">
+      <div class="balance"><span class="coin"></span><span class="bal-val" id="bal">12 000</span></div>
+      <button class="icon-btn" data-open-profile aria-label="Профиль и настройки"><svg><use href="#i-gear"/></svg></button>
     </div>
     <div class="pet-actions">
       <button class="chip" id="open-tasks"><span class="ci"><svg><use href="#i-list"/></svg></span>Задания<span class="reddot" id="tasks-dot"></span></button>
       <button class="chip" id="open-daily"><span class="ci sun"><svg><use href="#i-gift"/></svg></span>Награда<span class="reddot" id="daily-dot"></span></button>
     </div>
-    <div class="slot pet-stage" data-slot="pet-model" id="pet-stage">Место под модельку питомца</div>
-    <div class="card energy">
-      <div class="row">
+    <div class="pet-hero-block">
+      <div class="pet-name" id="pet-name">Булочка</div>
+      <div class="muted pet-level">Подросток · уровень 7</div>
+      <div class="pet-stage filled" data-slot="pet-model" id="pet-stage">
+        <div class="pet-stage-bg" aria-hidden="true"></div>
+        <div class="podium" aria-hidden="true"></div>
+        <div class="pet-mount" id="pet-mount"></div>
+        <div class="tap-hint" id="tap-hint">Тапай по Булочке!</div>
+      </div>
+    </div>
+    <div class="card home-card">
+      <div class="row energy-row">
         <div class="en-l"><span class="bolt"><svg viewBox="0 0 24 24"><use href="#i-bolt"/></svg></span><span id="en-val">330 / 330</span></div>
-        <span class="per-tap">1 за тап</span>
+        <div class="en-meta">
+          <span class="per-tap">1 за тап</span>
+          <span class="en-eta" id="en-eta" hidden>полная через 0:00</span>
+        </div>
       </div>
       <div class="progress sun"><span id="en-bar" style="width:100%"></span></div>
-    </div>
-    <div class="card pet-card">
-      <div class="pet-name">Булочка</div>
-      <div class="muted pet-level">Подросток · уровень 7</div>
-      <div class="row"><span class="muted">Прогресс</span><span class="muted" id="xp-val">7 / 10</span></div>
-      <div class="progress"><span id="xp-bar" style="width:40%"></span></div>
-      <button class="btn" id="upb">Улучшить</button>
+      <div class="row grow-row"><span class="muted">До взрослой формы</span><span class="muted" id="xp-val">7 / 10</span></div>
+      <div class="progress grow-bar"><span id="xp-bar" style="width:40%"></span></div>
+      <button class="btn" id="upb">Улучшить · <span class="coin" aria-hidden="true"></span>500</button>
     </div>
   </section>
 
