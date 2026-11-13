@@ -1,6 +1,7 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
-import { petStage } from './stage.js?v=tc11132155';
+import { petStage } from './stage.js?v=tc11132220';
+import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11132220';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
@@ -121,11 +122,21 @@ const HUD = `
     </div>
     <div class="combo" id="combo"><div class="lab">комбо</div><div class="row"><svg class="flame"><use href="#i-flame"/></svg><span class="n" id="cn">0</span><span class="mult" id="cm">×1,5</span></div><div class="timer"><i id="ct"></i></div></div>
     <div class="tap-hint" id="hint"><svg class="ic"><use href="#i-tap"/></svg>Тапай!</div>
+    <div class="demo pe" id="demo">
+      <span class="demo-lab">демо</span>
+      <div class="demo-row">
+        <button type="button" id="stgPrev" aria-label="Предыдущая стадия">◀</button>
+        <span id="stgLab">стадия 2/6</span>
+        <button type="button" id="stgNext" aria-label="Следующая стадия">▶</button>
+      </div>
+      <div class="demo-pets" id="demoPets"></div>
+    </div>
     <div class="bottom">
-      <div class="lvl card"><span class="st"><svg><use href="#i-star"/></svg><b>7</b></span>Булочка <small>ур. 7</small></div>
-      <button class="up pe" type="button"><svg class="ic"><use href="#i-up"/></svg>Улучшить</button>
+      <div class="lvl card pe" id="lvlPlate"><span class="st"><svg><use href="#i-star"/></svg><b id="lvlN">7</b></span><span class="lvl-txt"><span id="lvlName">Иней</span> <small id="lvlLab">ур. 7</small></span></div>
+      <button class="up pe" id="btnUp" type="button"><svg class="ic"><use href="#i-up"/></svg>Улучшить</button>
     </div>
   </div>
+  <div class="evo-flash" id="evoFlash"></div>
   <div class="flash" id="flash"><div class="glow"></div><div class="big">×1,5!</div><div class="sub">Монеты ×1,5</div></div>
   <div class="flash x2" id="flash2"><div class="glow"></div><div class="big">×2!</div><div class="sub">Двойные монеты</div></div>`;
 
@@ -135,7 +146,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   app.insertAdjacentHTML('afterbegin', HUD);
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
   const $ = id => document.getElementById(id);
-  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2') };
+  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), demo: $('demo'), demoPets: $('demoPets') };
   const ico = new Image(); ico.alt = ''; ico.src = spriteURL(coinCanvas(40)); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
 
@@ -146,7 +157,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
 
   let appRect = app.getBoundingClientRect();
   const canvas = app.querySelector('canvas.scene');
-  const st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone' });
+  const st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: 'raccoon', stage: stageOf(7) });
   if (input === 'zone') bindZone();
 
   // Мультитач: зона тапа на всю игровую середину (между верхними плашками и нижней панелью).
@@ -262,8 +273,78 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     onTap({ x, y, gain, mult: S.mult, tier: tierOf(S.mult), combo: S.combo, now });
   }
 
+
+  /* --- эволюции: уровень, стадия, демо-переключатель --- */
+  const E = { pet: 'raccoon', level: 7 };
+  function paintPlate() {
+    const stg = stageOf(E.level);
+    el.lvlN.textContent = E.level;
+    el.lvlName.textContent = stageName(E.pet, stg);
+    el.lvlLab.textContent = 'ур. ' + E.level;
+    el.lvlPlate.classList.toggle('long', stageName(E.pet, stg).length > 12);
+    el.stgLab.textContent = 'стадия ' + stg + '/6';
+    el.demoPets.querySelectorAll('[data-pet]').forEach(b => b.classList.toggle('on', b.dataset.pet === E.pet));
+  }
+  function playEvolve() {
+    if (RM) return;
+    el.evoFlash.animate([{ opacity: 0 }, { opacity: .85, offset: .18 }, { opacity: 0 }], { duration: 480, easing: 'ease-out' });
+    el.wrap.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.07)', offset: .32 },
+      { transform: 'scale(.985)', offset: .64 },
+      { transform: 'scale(1)' }
+    ], { duration: 520, easing: 'cubic-bezier(.22,1,.36,1)' });
+  }
+  async function applyEvo({ pet = E.pet, level = E.level, evolve = false } = {}) {
+    const nextPet = PETS[pet] ? pet : 'raccoon';
+    const nextLv = Math.max(1, Math.min(LEVEL_MAX, level | 0));
+    const prevSt = stageOf(E.level);
+    const nextSt = stageOf(nextLv);
+    const petChanged = nextPet !== E.pet;
+    const stChanged = nextSt !== prevSt || petChanged;
+    E.pet = nextPet; E.level = nextLv;
+    if (stChanged) {
+      await st.show(E.pet, nextSt);
+      layout();
+      if (evolve && nextSt > prevSt && !petChanged) playEvolve();
+      if (petChanged) st.preload(E.pet);
+    }
+    paintPlate();
+  }
+  PET_ORDER.forEach(id => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.pet = id; b.textContent = PETS[id].label;
+    b.addEventListener('click', () => applyEvo({ pet: id }));
+    el.demoPets.appendChild(b);
+  });
+  $('stgPrev').addEventListener('click', () => {
+    const s = Math.max(1, stageOf(E.level) - 1);
+    applyEvo({ level: firstLevelOf(s) });
+  });
+  $('stgNext').addEventListener('click', () => {
+    const s = Math.min(6, stageOf(E.level) + 1);
+    applyEvo({ level: firstLevelOf(s), evolve: s > stageOf(E.level) });
+  });
+  el.btnUp.addEventListener('click', () => {
+    if (E.level >= LEVEL_MAX) return;
+    applyEvo({ level: E.level + 1, evolve: stageOf(E.level + 1) > stageOf(E.level) });
+  });
+  // Плашка уровня тоже листает уровень в демо (по кругу с 30 на 1 — без вспышки эволюции).
+  el.lvlPlate.style.cursor = 'pointer';
+  el.lvlPlate.title = 'Демо: следующий уровень';
+  el.lvlPlate.addEventListener('click', () => {
+    const n = E.level >= LEVEL_MAX ? 1 : E.level + 1;
+    applyEvo({ level: n, evolve: n > E.level && stageOf(n) > stageOf(E.level) });
+  });
+  paintPlate();
+  window.__evo = {
+    get pet() { return E.pet; }, get level() { return E.level; }, get stage() { return stageOf(E.level); },
+    set: opts => applyEvo(opts)
+  };
+
   layout();
   addEventListener('resize', () => { hitC = st.hit(); layout(); });
+
   window.__S = S;
   const ctx = { el, st, S, get balXY() { return balXY; }, get head() { return head; }, get appRect() { return appRect; }, tap };
   window.__petCenter = () => { const h = st.hit(); return { x: h.x, y: h.y }; };

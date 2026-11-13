@@ -39,7 +39,7 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
 .dot{position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:var(--violet);border:2.5px solid var(--white)}
 .dot.n{width:auto;min-width:21px;height:21px;padding:0 5px;border-radius:11px;color:var(--white);font-size:12px;font-weight:1000;line-height:16px;text-align:center;top:-7px;right:-7px}
 .bottom{position:absolute;left:14px;right:14px;bottom:calc(var(--tabbar-space) + 12px);display:flex;align-items:center;justify-content:space-between;gap:10px}
-.lvl{display:flex;align-items:center;gap:8px;height:48px;padding:0 16px 0 6px;border-radius:24px;font-size:18px;font-weight:1000;white-space:nowrap}
+.lvl{display:flex;align-items:center;gap:8px;height:auto;min-height:48px;padding:5px 14px 5px 6px;border-radius:24px;font-size:16px;font-weight:1000;max-width:62%}
 .lvl .st{position:relative;width:38px;height:38px;display:grid;place-items:center}
 .lvl .st svg{position:absolute;inset:0;width:38px;height:38px}
 .lvl .st b{position:relative;font-size:14px;color:var(--sun-edge);margin-top:3px}
@@ -95,3 +95,30 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
 .plus-img{position:absolute;left:0;top:0;z-index:41;width:130px;height:70px;margin:-35px 0 0 -65px;pointer-events:none;opacity:0;will-change:transform,opacity;display:block}
 /* зона тапа (вариант A): вся игровая середина; кнопки HUD (.pe, z-index выше) остаются кликабельными */
 .tapzone{position:absolute;left:0;right:0;top:64px;bottom:calc(var(--tabbar-space) + 74px);z-index:3;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+.lvl-txt{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;min-width:0;line-height:1.15}
+.lvl-txt span{font-weight:1000}
+.lvl.long .lvl-txt{flex-direction:column;align-items:flex-start;gap:1px}
+.lvl.long .lvl-txt span{font-size:13px}
+
+/* демо-переключатель стадий и питомца — явно служебный, не часть игрового UI */
+.demo{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 72px);transform:translateX(-50%);z-index:8;
+  display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:auto}
+.demo-lab{font-size:9px;font-weight:1000;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);opacity:.65}
+.demo-row{display:flex;align-items:center;gap:2px;height:28px;padding:0 4px;border-radius:14px;
+  background:rgb(var(--white-rgb) / .92);box-shadow:0 4px 14px -8px rgb(var(--shade) / .4);color:var(--ink-2);font-size:12px;font-weight:900}
+.demo-row button{width:28px;height:28px;border-radius:14px;display:grid;place-items:center;color:var(--violet);font-size:13px}
+.demo-row button:active{transform:scale(.92)}
+.demo-row span{min-width:6.4em;text-align:center}
+.demo-pets{display:flex;gap:4px}
+.demo-pets button{height:22px;padding:0 8px;border-radius:11px;font-size:11px;font-weight:900;
+  background:rgb(var(--white-rgb) / .86);color:var(--ink-2);box-shadow:0 2px 8px -6px rgb(var(--shade) / .35)}
+.demo-pets button.on{background:var(--violet);color:var(--white)}
+
+.evo-flash{position:absolute;inset:0;z-index:44;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 48%,rgb(var(--white-rgb) / .88),rgb(var(--white-rgb) / 0) 60%)}
+
+@media (max-height:760px){
+  .demo{bottom:calc(var(--tabbar-space) + 66px)}
+  .demo-pets button{padding:0 6px}
+}
