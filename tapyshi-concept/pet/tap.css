@@ -13,7 +13,10 @@ svg.ic{display:block;flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 .bokeh{position:absolute;border-radius:50%;filter:blur(6px);opacity:.55;animation:drift 9s ease-in-out infinite}
 @keyframes drift{50%{transform:translateY(-14px)}}
-canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;z-index:2}
+.pet-wrap{position:absolute;inset:0;z-index:2;pointer-events:none;transform-origin:50% 68%}
+.pet-wrap.is-bounce{animation:pet-bounce .12s ease-out}
+@keyframes pet-bounce{0%{transform:scale(1,1)}35%{transform:scale(1.14,.84)}70%{transform:scale(.95,1.08)}100%{transform:scale(1,1)}}
+canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;pointer-events:auto}
 .hud{position:absolute;inset:0;pointer-events:none;z-index:5}
 .hud .pe{pointer-events:auto}
 .spring{transition:transform .38s var(--spring)}

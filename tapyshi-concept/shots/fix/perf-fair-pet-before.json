@@ -1,0 +1,22 @@
+{
+  "label": "pet-before",
+  "taps": 150,
+  "elapsedMs": 5019,
+  "frames": 153,
+  "fps": 30.9,
+  "avgFrameMs": 32.34,
+  "p95FrameMs": 50,
+  "minFps": 20,
+  "framesOver16ms": 137,
+  "framesOver33ms": 132,
+  "framesOver50ms": 2,
+  "longTasks": 2,
+  "longTaskMaxMs": 58,
+  "longTaskSumMs": 108,
+  "maxCoinNodes": 7,
+  "maxVisCoins": 7,
+  "maxPlus": 1,
+  "maxSpark": 3,
+  "coinsNow": "12 266",
+  "energyNow": "181"
+}

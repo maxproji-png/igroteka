@@ -56,7 +56,7 @@
     <i class="bokeh" style="right:-40px;top:300px;width:150px;height:150px;background:var(--white);animation-delay:-3s"></i>
     <i class="bokeh" style="left:40px;top:560px;width:70px;height:70px;background:var(--violet-soft);animation-delay:-5s"></i></div>
   <div class="tapring" id="ring"><b></b><i></i><i></i></div>
-  <canvas class="scene"></canvas>
+  <div class="pet-wrap" id="petWrap"><canvas class="scene"></canvas></div>
   <div class="hud">
     <div class="top">
       <div class="pill card pe spring" data-coin-target><svg class="ic"><use href="#i-coin"/></svg><span class="num" data-b="coins">12 000</span></div>
@@ -84,24 +84,30 @@ const canvas = document.querySelector('canvas.scene');
 const st = await petStage({ canvas, f: .42, cy: .58, cx: .5, hop: .16, onTap: e => doTap(e.clientX, e.clientY) });
 const combo = document.getElementById('combo'), cn = document.getElementById('cn'), cm = document.getElementById('cm'), ct = document.getElementById('ct');
 const ring = document.getElementById('ring'), hint = document.getElementById('hint');
-let sc = .6, scT = .6;
+let sc = .6, hx = 0, hy = 205;
+function placeCombo() {
+  combo.style.transform = `translate(${hx}px,${hy}px) translate(-50%,-100%) scale(${sc})`;
+}
+function layoutPetHUD() {
+  const h = st.headTop();
+  hx = h.x; hy = Math.max(h.y - 6, 205); placeCombo();
+  const f = st.toScreen(0, 0, 0), s2 = st.toScreen(.62, 0, 0), w = (s2.x - f.x) * 2.3;
+  ring.style.left = f.x + 'px'; ring.style.top = f.y + 'px'; ring.style.width = w + 'px'; ring.style.height = w * .36 + 'px';
+  const hp = st.toScreen(.62, .55, .2); hint.style.left = Math.max(70, Math.min(innerWidth - 66, hp.x)) + 'px'; hint.style.top = hp.y + 'px';
+}
 on('combo', c => {
   if (!c.active) return;
   combo.classList.remove('out'); combo.classList.add('on'); cn.textContent = c.n;
   const [c1, c2] = comboColor(c.n); combo.style.setProperty('--c1', c1); combo.style.setProperty('--c2', c2);
   combo.style.setProperty('--fs', (44 + Math.min(c.n, 60) * .55) + 'px');
   combo.classList.toggle('hot', c.n >= 10); combo.classList.toggle('m', c.mult > 1); cm.textContent = fmtMult(c.mult);
-  ct.style.transform = 'scaleX(' + c.rem + ')'; scT = 1;
+  ct.style.transform = 'scaleX(' + c.rem + ')'; sc = 1;
+  placeCombo();
   if (c.tap) { combo.classList.remove('kick'); void combo.offsetWidth; combo.classList.add('kick'); }
 });
-on('end', () => { combo.classList.add('out'); combo.classList.remove('on'); scT = .6; });
-st.onFrame(() => {
-  const h = st.headTop(); sc += (scT - sc) * .2;
-  combo.style.transform = `translate(${h.x}px,${Math.max(h.y - 6, 205)}px) translate(-50%,-100%) scale(${sc})`;
-  const f = st.toScreen(0, 0, 0), s2 = st.toScreen(.62, 0, 0), w = (s2.x - f.x) * 2.3;
-  ring.style.left = f.x + 'px'; ring.style.top = f.y + 'px'; ring.style.width = w + 'px'; ring.style.height = w * .36 + 'px';
-  const hp = st.toScreen(.62, .55, .2); hint.style.left = Math.max(70, Math.min(innerWidth - 66, hp.x)) + 'px'; hint.style.top = hp.y + 'px';
-});
+on('end', () => { combo.classList.add('out'); combo.classList.remove('on'); sc = .6; placeCombo(); });
+layoutPetHUD();
+addEventListener('resize', layoutPetHUD);
 document.documentElement.dataset.ready = '1';
 </script>
 </body></html>

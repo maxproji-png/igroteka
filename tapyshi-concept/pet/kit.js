@@ -9,7 +9,7 @@ export const C = (hex) => new THREE.Color(hex);
 // ---------- рендер ----------
 export function makeRenderer(canvas, { exposure = 1.0, shadows = true, alpha = false } = {}) {
   const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha, powerPreference: 'high-performance' });
-  r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  r.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
   r.outputColorSpace = THREE.SRGBColorSpace;
   r.toneMapping = THREE.ACESFilmicToneMapping;
   r.toneMappingExposure = exposure;
@@ -178,6 +178,18 @@ export class Pet {
   }
   setLook(nx, ny) { this.look.tx = THREE.MathUtils.clamp(nx, -1, 1); this.look.ty = THREE.MathUtils.clamp(ny, -1, 1); this.lookAt = this.t; }
   tap() { this.tapT = this.t; this.happyUntil = this.t + .75; }
+  rest() {
+    this.squash.scale.set(1, 1, 1);
+    this.squash.rotation.set(0, 0, 0);
+    this.hop.position.y = 0;
+    this.hop.rotation.set(0, 0, 0);
+    this.models.neutral.visible = true;
+    this.models.happy.visible = false;
+    for (const m of Object.values(this.models)) {
+      const p = m.userData.parts || {};
+      for (const part of Object.values(p)) part.o.rotation.copy(part.r);
+    }
+  }
   update(dt) {
     const t = (this.t += dt);
     const happy = t < this.happyUntil;
