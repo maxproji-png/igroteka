@@ -27,12 +27,8 @@
 
 #scr-pet .pet-mount {
   position: absolute;
-  top: 12px;
-  left: 0;
-  right: 0;
-  bottom: 42px;
+  inset: 0;
   z-index: 1;
-  transform: scale(1.12);
   transform-origin: 50% 50%;
 }
 
@@ -119,7 +115,6 @@
   #scr-pet .topbar { margin-bottom: 8px; }
   #scr-pet .pet-actions { margin-bottom: 6px; }
   #scr-pet .pet-stage { min-height: 170px; margin-bottom: 8px; }
-  #scr-pet .pet-mount { top: 10px; bottom: 38px; transform: scale(1.08); }
   #scr-pet .home-card { padding: 12px 14px 13px; }
   #scr-pet .home-card .progress.sun { margin-bottom: 10px; }
   #scr-pet .home-card .pet-name { font-size: 22px; }
