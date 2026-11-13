@@ -1,7 +1,7 @@
 // Тапыши · сцена с эволюциями. 3D рендерится только по запросу: на тап WebGL не перерисовываем.
 // Сжатие на тап — CSS/WAAPI на обёртке. Смена модели — единственный повод для нового кадра.
-import { THREE, makeRenderer, blob } from './kit.js?v=tc11132270';
-import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11132270';
+import { THREE, makeRenderer, blob } from './kit.js?v=tc11132310';
+import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11132310';
 export { THREE };
 
 export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2 } = {}) {
@@ -112,11 +112,11 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
   }
   function worldBox() { return frontBox(current.object); }
 
-  // Референс по росту «Булочки»/енота: тело+голова ~1.20. Общий масштаб, лёгкий рост по стадиям.
-  // Ширина скромная — крылья не должны отжимать камеру.
-  const REF = { w: 1.12, h: 1.20, d: .95 };
+  // Общий масштаб на все 24 модели — как у уменьшенного дракона 4–6:
+  // дистанцию задаёт фронтальный размах крыльев дракона 6, тело/голова
+  // всех питомцев оказываются одного экранного размера (лёгкий рост модели).
+  const REF = { xmin: -.91, xmax: .74, h: 1.30, z: .22 };
   const EYE = .16;
-  const TARGET_H = 420; // целевая высота силуэта референса, css-пиксели
   const EDGE = 2;       // ни одна часть модели не должна выходить за край экрана
 
   function safeRect() {
@@ -126,8 +126,7 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     const bot = app.querySelector('.bottom');
     const T = (topEl ? topEl.getBoundingClientRect().bottom - appR.top : 60) + 8;
     const B = (bot ? bot.getBoundingClientRect().top - appR.top : FH * .86) - 10;
-    const band = Math.min(TARGET_H, Math.max(280, B - T - 8));
-    return { L: 0, R: FW, T, B, Tfit: B - band };
+    return { L: 0, R: FW, T, B };
   }
 
   function setCam(d, lookX, lookY) {
@@ -214,17 +213,15 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     haloA.scale.setScalar((foot * 2.15) / 2.1);
     haloB.scale.setScalar((foot * 2.7) / 3.1);
 
-    const refMin = { x: -REF.w / 2, y: 0, z: -REF.d / 2 }, refMax = { x: REF.w / 2, y: REF.h, z: REF.d / 2 };
-    const refPts = boxPoints(refMin, refMax, 2);
-    const Sfit = { ...S, T: S.Tfit };
+    const refPts = boxPoints({ x: REF.xmin, y: 0, z: -REF.z }, { x: REF.xmax, y: REF.h, z: REF.z }, 2);
 
-    // Общий масштаб: референсный силуэт (енот/Булочка) занимает целевую высоту, ноги на S.B.
-    let lo = 2.2, hi = 14, bestD = 7, bestY = .55;
+    // Одна дистанция на всех: референс = размах дракона 6, ноги на общей линии пола.
+    let lo = 2.2, hi = 14, bestD = 8, bestY = .55;
     for (let k = 0; k < 18; k++) {
       const d = (lo + hi) / 2;
-      const lookY = plantBottom(d, 0, refPts, Sfit);
+      const lookY = plantFeet(d, 0, S);
       setCam(d, 0, lookY);
-      if (!overflows(refPts, Sfit, { top: Sfit.T, edges: false })) { bestD = d; bestY = lookY; hi = d; }
+      if (!overflows(refPts, S, { top: S.T, edges: true })) { bestD = d; bestY = lookY; hi = d; }
       else lo = d;
     }
     const lookX = 0; // ось вращения между ног — питомец не уезжает при спине
@@ -232,8 +229,7 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     const modelPts = sil.pts;
     bestY = plantFeet(bestD, lookX, S);
     setCam(bestD, lookX, bestY);
-    // Если рога лезут под чипы или крылья/хвост выходят за край экрана — отъезжаем
-    // только эту модель, остальные остаются крупными.
+    // Если конкретная модель всё же вылезает (рога, кончик) — чуть отъезжаем только её.
     if (overflows(modelPts, S, { top: S.T })) {
       let lo = bestD, hi = 14, d2 = bestD;
       for (let k = 0; k < 16; k++) {

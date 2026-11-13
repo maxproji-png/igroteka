@@ -1,7 +1,7 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
-import { petStage } from './stage.js?v=tc11132270';
-import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11132270';
+import { petStage } from './stage.js?v=tc11132310';
+import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11132310';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
