@@ -101,17 +101,17 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
 .lvl.long .lvl-txt{flex-direction:column;align-items:flex-start;gap:1px}
 .lvl.long .lvl-txt span{font-size:13px}
 
-/* демо-переключатель стадий и питомца — явно служебный, не часть игрового UI */
-.demo{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 72px);transform:translateX(-50%);z-index:8;
-  display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:auto}
-.demo-lab{font-size:9px;font-weight:1000;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);opacity:.65}
-.demo-row{display:flex;align-items:center;gap:2px;height:28px;padding:0 4px;border-radius:14px;
-  background:rgb(var(--white-rgb) / .92);box-shadow:0 4px 14px -8px rgb(var(--shade) / .4);color:var(--ink-2);font-size:12px;font-weight:900}
-.demo-row button{width:28px;height:28px;border-radius:14px;display:grid;place-items:center;color:var(--violet);font-size:13px}
+/* демо — служебный, убран наверх под чипы, чтобы питомец мог быть крупнее */
+.demo{position:absolute;right:12px;top:76px;left:auto;bottom:auto;transform:none;z-index:8;
+  display:flex;flex-direction:column;align-items:flex-end;gap:3px;pointer-events:auto}
+.demo-lab{font-size:8px;font-weight:1000;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);opacity:.6}
+.demo-row{display:flex;align-items:center;gap:1px;height:24px;padding:0 3px;border-radius:12px;
+  background:rgb(var(--white-rgb) / .92);box-shadow:0 4px 14px -8px rgb(var(--shade) / .4);color:var(--ink-2);font-size:11px;font-weight:900}
+.demo-row button{width:24px;height:24px;border-radius:12px;display:grid;place-items:center;color:var(--violet);font-size:12px}
 .demo-row button:active{transform:scale(.92)}
-.demo-row span{min-width:6.4em;text-align:center}
-.demo-pets{display:flex;gap:4px}
-.demo-pets button{height:22px;padding:0 8px;border-radius:11px;font-size:11px;font-weight:900;
+.demo-row span{min-width:5.6em;text-align:center}
+.demo-pets{display:flex;gap:3px}
+.demo-pets button{height:20px;padding:0 7px;border-radius:10px;font-size:10px;font-weight:900;
   background:rgb(var(--white-rgb) / .86);color:var(--ink-2);box-shadow:0 2px 8px -6px rgb(var(--shade) / .35)}
 .demo-pets button.on{background:var(--violet);color:var(--white)}
 
@@ -119,6 +119,6 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
   background:radial-gradient(circle at 50% 48%,rgb(var(--white-rgb) / .88),rgb(var(--white-rgb) / 0) 60%)}
 
 @media (max-height:760px){
-  .demo{bottom:calc(var(--tabbar-space) + 66px)}
-  .demo-pets button{padding:0 6px}
+  .demo{top:72px}
+  .demo-pets button{padding:0 5px}
 }
