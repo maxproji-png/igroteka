@@ -201,6 +201,51 @@
     if (TAP && TAP.preloadLive) TAP.preloadLive('raccoon');
   }
 
+
+  var tapFxN = 0;
+  function spawnTapFx(clientX, clientY, amount) {
+    var appEl = $('#app');
+    if (!appEl) return;
+    var app = appEl.getBoundingClientRect();
+    var id = 'tf' + (tapFxN++);
+    var drift = (Math.random() * 44 - 22).toFixed(1);
+    var fx = document.createElement('div');
+    fx.className = 'tap-fx';
+    fx.style.left = (clientX - app.left) + 'px';
+    fx.style.top = (clientY - app.top) + 'px';
+    fx.style.setProperty('--drift', drift);
+    fx.innerHTML =
+      '<span class="tap-ring"></span>' +
+      '<span class="tap-spark a"></span>' +
+      '<span class="tap-spark b"></span>' +
+      '<span class="tap-spark c"></span>' +
+      '<div class="tap-floater">' +
+        '<svg class="tap-coin" viewBox="0 0 36 36" width="32" height="32" aria-hidden="true">' +
+          '<defs>' +
+            '<radialGradient id="' + id + 'f" cx="36%" cy="30%" r="70%">' +
+              '<stop offset="0%" stop-color="#FFF8D2"/>' +
+              '<stop offset="42%" stop-color="#FFDE7A"/>' +
+              '<stop offset="100%" stop-color="#E8A41C"/>' +
+            '</radialGradient>' +
+            '<linearGradient id="' + id + 'r" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="#F6D78A"/>' +
+              '<stop offset="45%" stop-color="#D49A22"/>' +
+              '<stop offset="100%" stop-color="#A56E0C"/>' +
+            '</linearGradient>' +
+          '</defs>' +
+          '<circle cx="18" cy="19.6" r="12.2" fill="#C48A14" opacity=".22"/>' +
+          '<circle cx="18" cy="18" r="15.2" fill="url(#' + id + 'r)"/>' +
+          '<circle cx="18" cy="18" r="12.6" fill="url(#' + id + 'f)"/>' +
+          '<circle cx="18" cy="18" r="10.2" fill="none" stroke="#FFF1B8" stroke-width="1.3" opacity=".8"/>' +
+          '<ellipse cx="13.4" cy="12.2" rx="5.6" ry="3.3" fill="#fff" opacity=".58"/>' +
+          '<path d="M11 22.2a8.1 8.1 0 0 0 14.2 0" fill="none" stroke="#fff" stroke-width="1.2" opacity=".28" stroke-linecap="round"/>' +
+        '</svg>' +
+        '<span class="tap-plus">+' + amount + '</span>' +
+      '</div>';
+    appEl.appendChild(fx);
+    setTimeout(function () { if (fx.parentNode) fx.parentNode.removeChild(fx); }, 960);
+  }
+
   var tapHintN = 0;
   function onHomeTap(e) {
     if (e.target && e.target.closest && e.target.closest('.chip, .icon-btn, .btn, .balance, .topbar, .pet-actions, .home-card')) return;
@@ -226,14 +271,7 @@
     var hero = stage && $('[data-live-pet]', stage);
     var viewer = livePet || (hero && hero._petViewer);
     if (viewer && viewer.tap) viewer.tap();
-    var f = document.createElement('div');
-    f.className = 'float coin-float';
-    f.innerHTML = '<span class="coin"></span><span>+' + ME.tapPower + '</span>';
-    var app = $('#app').getBoundingClientRect();
-    f.style.left = (e.clientX - app.left) + 'px';
-    f.style.top = (e.clientY - app.top) + 'px';
-    $('#app').appendChild(f);
-    setTimeout(function () { f.remove(); }, 900);
+    spawnTapFx(e.clientX, e.clientY, ME.tapPower);
   }
 
   setInterval(function () {

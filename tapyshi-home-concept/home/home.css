@@ -171,16 +171,102 @@
   box-shadow: 0 1px 0 #6A86E6, 0 4px 8px rgba(124,156,255,.25);
 }
 
-.float.coin-float {
+/* Home tap juice: +1 and glossy coin spawn at the finger and melt upward. */
+.tap-fx {
+  position: absolute;
+  z-index: 24;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.tap-ring,
+.tap-spark,
+.tap-floater {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform, opacity;
+}
+.tap-ring {
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  border: 2px solid rgba(232, 176, 70, .55);
+  box-shadow: 0 0 8px rgba(255, 230, 150, .45);
+  animation: tapRing .52s cubic-bezier(.16,.8,.28,1) forwards;
+}
+.tap-spark {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: #FFE7A0;
+  box-shadow: 0 0 6px #fff, 0 0 2px #FFD56A;
+  animation: tapSpark .48s ease-out forwards;
+}
+.tap-spark.a { --sx: 15px; --sy: -11px; }
+.tap-spark.b { --sx: -13px; --sy: -16px; animation-delay: 35ms; }
+.tap-spark.c { --sx: 9px; --sy: 12px; animation-delay: 18ms; }
+
+.tap-floater {
   display: flex;
   align-items: center;
-  gap: 5px;
-  color: #C79212;
-  font-size: 22px;
-  text-shadow: 0 2px 0 #fff;
+  gap: 6px;
+  margin-left: 0;
+  transform: translate(-50%, -50%);
+  animation: tapFloat .82s cubic-bezier(.2,.8,.22,1) forwards;
   white-space: nowrap;
 }
-.float.coin-float .coin { width: 20px; height: 20px; }
+.tap-coin {
+  width: 32px;
+  height: 32px;
+  display: block;
+  flex: none;
+  overflow: visible;
+  filter: drop-shadow(0 3px 5px rgba(160, 100, 16, .32));
+}
+.tap-plus {
+  font-family: Nunito, ui-rounded, system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -.04em;
+  color: #C88910;
+  text-shadow:
+    -1.5px -1.5px 0 #fff,
+     1.5px -1.5px 0 #fff,
+    -1.5px  1.5px 0 #fff,
+     1.5px  1.5px 0 #fff,
+     0 2px 0 #fff,
+     0 3px 8px rgba(90, 70, 20, .2);
+}
+
+@keyframes tapFloat {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.52); }
+  12%  { opacity: 1; transform: translate(-50%, calc(-50% - 6px)) scale(1.16); }
+  20%  { opacity: 1; transform: translate(-50%, calc(-50% - 10px)) scale(.98); }
+  28%  { opacity: 1; transform: translate(-50%, calc(-50% - 16px)) scale(1); }
+  62%  { opacity: 1; transform: translate(calc(-50% + var(--drift, 0) * .65px), calc(-50% - 72px)) scale(1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--drift, 0) * 1px), calc(-50% - 118px)) scale(.96); }
+}
+@keyframes tapRing {
+  0%   { opacity: .7; transform: scale(.35); }
+  100% { opacity: 0; transform: scale(2.05); }
+}
+@keyframes tapSpark {
+  0%   { opacity: 0; transform: scale(.2); }
+  28%  { opacity: .9; transform: translate(calc(var(--sx) * .4), calc(var(--sy) * .4)) scale(1.1); }
+  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(.25); }
+}
+
+@media (max-height: 740px) {
+  .tap-plus { font-size: 30px; }
+  .tap-coin { width: 28px; height: 28px; }
+}
 
 @media (max-height: 740px) {
   #scr-pet.screen { padding-top: 14px; padding-bottom: 8px; }
@@ -198,7 +284,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   #scr-pet .pet-stage.squish,
-  #scr-pet .tap-hint { animation: none !important; transition: none !important; }
+  #scr-pet .tap-hint,
+  .tap-floater, .tap-ring, .tap-spark { animation: none !important; transition: none !important; }
+  .tap-floater { opacity: 1; transform: translate(-50%, -50%); }
 }
 
 #duel-prev .pet-hero,
