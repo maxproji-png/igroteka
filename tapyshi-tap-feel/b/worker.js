@@ -1,5 +1,5 @@
 // Вариант B · воркер: частицы рисуются вне главного потока (OffscreenCanvas).
-import { createRenderer } from './particles.js?v=1';
+import { createRenderer } from './particles.js?v=tf11132128';
 let R = null;
 onmessage = e => {
   const m = e.data;

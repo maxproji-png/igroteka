@@ -1,0 +1,200 @@
+[
+ {
+  "v": "A",
+  "cfg": "Chromium, DPR 3",
+  "c": "chromium x1",
+  "avg": 59.6,
+  "low": 38.1,
+  "p95": 16.7,
+  "long": 2,
+  "runs": 3,
+  "mt": 985,
+  "L": 549,
+  "all": [
+   59.4,
+   60,
+   59.6
+  ]
+ },
+ {
+  "v": "A",
+  "cfg": "Chromium, DPR 3, CPU ×4",
+  "c": "chromium x4",
+  "avg": 60,
+  "low": 59.5,
+  "p95": 16.8,
+  "long": 0,
+  "runs": 3,
+  "mt": 3425,
+  "L": 548,
+  "all": [
+   60,
+   60,
+   58.9
+  ]
+ },
+ {
+  "v": "A",
+  "cfg": "WebKit, DPR 3",
+  "c": "webkit x1",
+  "avg": 58.6,
+  "low": 17,
+  "p95": 25,
+  "long": 51,
+  "runs": 3,
+  "mt": null,
+  "L": null,
+  "all": [
+   58.6,
+   58.8,
+   55
+  ]
+ },
+ {
+  "v": "B",
+  "cfg": "Chromium, DPR 3",
+  "c": "chromium x1",
+  "avg": 60,
+  "low": 59.5,
+  "p95": 16.7,
+  "long": 0,
+  "runs": 3,
+  "mt": 795,
+  "L": 528,
+  "all": [
+   60,
+   59.6,
+   60
+  ]
+ },
+ {
+  "v": "B",
+  "cfg": "Chromium, DPR 3, CPU ×4",
+  "c": "chromium x4",
+  "avg": 59.9,
+  "low": 52.2,
+  "p95": 16.7,
+  "long": 1,
+  "runs": 3,
+  "mt": 3325,
+  "L": 530,
+  "all": [
+   60,
+   59.8,
+   59.9
+  ]
+ },
+ {
+  "v": "B",
+  "cfg": "WebKit, DPR 3",
+  "c": "webkit x1",
+  "avg": 41.5,
+  "low": 17.9,
+  "p95": 34,
+  "long": 340,
+  "runs": 3,
+  "mt": null,
+  "L": null,
+  "all": [
+   43.3,
+   33.1,
+   41.5
+  ]
+ },
+ {
+  "v": "C",
+  "cfg": "Chromium, DPR 3",
+  "c": "chromium x1",
+  "avg": 59.5,
+  "low": 34.9,
+  "p95": 16.7,
+  "long": 2,
+  "runs": 3,
+  "mt": 976,
+  "L": 379,
+  "all": [
+   59.5,
+   54.8,
+   59.8
+  ]
+ },
+ {
+  "v": "C",
+  "cfg": "Chromium, DPR 3, CPU ×4",
+  "c": "chromium x4",
+  "avg": 59.7,
+  "low": 41.8,
+  "p95": 16.8,
+  "long": 1,
+  "runs": 3,
+  "mt": 4054,
+  "L": 378,
+  "all": [
+   59.9,
+   58,
+   59.7
+  ]
+ },
+ {
+  "v": "C",
+  "cfg": "WebKit, DPR 3",
+  "c": "webkit x1",
+  "avg": 59.8,
+  "low": 31.8,
+  "p95": 23,
+  "long": 51,
+  "runs": 3,
+  "mt": null,
+  "L": null,
+  "all": [
+   60,
+   52.3,
+   59.8
+  ]
+ },
+ {
+  "v": "old",
+  "cfg": "Chromium, DPR 3",
+  "c": "chromium x1",
+  "avg": 60,
+  "low": 59.5,
+  "p95": 16.7,
+  "long": 0,
+  "runs": 1,
+  "mt": 1291,
+  "L": 1260,
+  "all": [
+   60
+  ]
+ },
+ {
+  "v": "old",
+  "cfg": "Chromium, DPR 3, CPU ×4",
+  "c": "chromium x4",
+  "avg": 59.3,
+  "low": 29.9,
+  "p95": 16.7,
+  "long": 1,
+  "runs": 1,
+  "mt": 4564,
+  "L": 1256,
+  "all": [
+   59.3
+  ]
+ },
+ {
+  "v": "old",
+  "cfg": "WebKit, DPR 3",
+  "c": "webkit x1",
+  "avg": 31,
+  "low": 19,
+  "p95": 42,
+  "long": 321,
+  "runs": 1,
+  "mt": null,
+  "L": null,
+  "all": [
+   31
+  ]
+ }
+]

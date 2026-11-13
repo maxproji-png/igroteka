@@ -1,7 +1,7 @@
 // Тапыши · tap-feel · сцена с Булочкой (та же модель и свет, что в концепте).
 // 3D рендерится только по запросу: на тап НЕ перерисовываем WebGL.
 // Сжатие на тап — пружина в JS, пишет только transform обёртки (композитор).
-import { THREE, makeRenderer, loadRaccoon, blob } from './kit.js?v=1';
+import { THREE, makeRenderer, loadRaccoon, blob } from './kit.js?v=tf11132128';
 export { THREE };
 export async function petStage({ canvas, f = .42, cy = .58, cx = .5, yaw = .32, onTap }) {
   const R = makeRenderer(canvas, { exposure: 1.0, alpha: true }); R.setClearColor(0, 0);

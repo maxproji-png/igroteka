@@ -3,8 +3,8 @@
 // Холст отдан в Web Worker (OffscreenCanvas): кадры частиц не занимают главный поток вообще.
 // Нет OffscreenCanvas — тот же рендерер в главном потоке. Холст — полоса вокруг енота, не весь экран.
 // Баланс монет не принимает: число быстро досчитывается, плашка мягко вспыхивает (opacity готового слоя).
-import { startApp, addTicker, RM, S, fmt, fmtGain, coinCanvas, glintCanvas, plusCanvas } from '../common/core.js?v=1';
-import { createRenderer } from './particles.js?v=1';
+import { startApp, addTicker, RM, S, fmt, fmtGain, coinCanvas, glintCanvas, plusCanvas } from '../common/core.js?v=tf11132128';
+import { createRenderer } from './particles.js?v=tf11132128';
 
 const DPR = Math.min(2, devicePixelRatio || 1);
 startApp({ tag: '<b>B</b>canvas-частицы · баланс вспыхивает', onReady, onTap });
@@ -29,7 +29,7 @@ async function onReady(c) {
       const keys = Object.keys(src.plus), bms = await Promise.all(keys.map(k => bm(src.plus[k])));
       const sprites = { coin: await bm(src.coin), glint: await bm(src.glint), plus: Object.fromEntries(keys.map((k, i) => [k, bms[i]])) };
       const off = cv.transferControlToOffscreen();
-      const w = new Worker(new URL('./worker.js?v=1', import.meta.url), { type: 'module' });
+      const w = new Worker(new URL('./worker.js?v=tf11132128', import.meta.url), { type: 'module' });
       w.postMessage({ type: 'init', canvas: off, dpr: DPR, sprites, rm: RM }, [off, sprites.coin, sprites.glint, ...bms]);
       send = m => w.postMessage(m);
       window.__fxMode = 'worker';

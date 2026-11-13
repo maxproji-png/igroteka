@@ -3,9 +3,9 @@
 // У пальца: крупный «+1» и монетка, которая выпрыгивает, крутится и растворяется в блик.
 // Баланс — барабан цифр (каждая цифра — колонка, двигается translateY), плюс блик по плашке.
 // Поток монет к балансу — только на вехах комбо (25, 50, 75…): короткий «coin burst» из 8 монет.
-import { startApp, RM, S, coinCanvas, glintCanvas, spriteURL } from '../common/core.js?v=1';
-import { pool, play, arc, img } from '../common/fxkit.js?v=1';
-import { plusFx } from '../common/plus.js?v=1';
+import { startApp, RM, S, coinCanvas, glintCanvas, spriteURL } from '../common/core.js?v=tf11132128';
+import { pool, play, arc, img } from '../common/fxkit.js?v=tf11132128';
+import { plusFx } from '../common/plus.js?v=tf11132128';
 
 const PLUS_MS = 720, POP_MS = 460, GLINT_MS = 300, BURST = 8, MILESTONE = 25;
 startApp({ tag: '<b>C</b>монетка-блик · барабан · burst на 25/50/75', onReady, onTap });
