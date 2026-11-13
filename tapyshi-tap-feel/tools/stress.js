@@ -17,7 +17,7 @@ const [url, engine = 'chromium', cpu = '1', dpr = '3', secs = '10', rate = '30']
   // рекордер кадров
   await p.evaluate(() => {
     window.__ft = []; window.__lf = []; window.__rec = true; let last = performance.now();
-    window.__taps0 = window.__taps || 0; window.__pd = 0; if (!window.__pdHook) { window.__pdHook = 1; document.querySelector('canvas.scene').addEventListener('pointerdown', () => window.__pd++, true); }
+    window.__taps0 = window.__taps || 0; window.__pd = 0; if (!window.__pdHook) { window.__pdHook = 1; const T = document.querySelector('.tapzone') || document.querySelector('canvas.scene'); T.addEventListener(T.classList.contains('tapzone') ? 'touchstart' : 'pointerdown', () => window.__pd++, true); if (T.classList.contains('tapzone')) T.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') window.__pd++; }, true); }
     const loop = now => { if (!window.__rec) return; window.__ft.push(now - last); if (now - last > 20) (window.__lf = window.__lf || []).push([Math.round(now - last), window.__taps || window.__pd]); last = now; requestAnimationFrame(loop); };
     requestAnimationFrame(n => { last = n; requestAnimationFrame(loop); });
   });
@@ -35,11 +35,11 @@ const [url, engine = 'chromium', cpu = '1', dpr = '3', secs = '10', rate = '30']
   } else {
     // WebKit: нет CDP — синтетические pointer-события из таймера внутри страницы
     await p.evaluate(({ c, N, iv }) => new Promise(res => {
-      const cv = document.querySelector('canvas.scene'); let i = 0; const t0 = performance.now();
+      const cv = document.querySelector('.tapzone') || document.querySelector('canvas.scene'); const PT = cv.classList.contains('tapzone') ? 'mouse' : 'touch'; let i = 0; const t0 = performance.now();
       const step = () => {
         while (i < N && performance.now() - t0 >= i * iv) {
           const x = c.x + ((i * 37) % 60 - 30), y = c.y + ((i * 53) % 70 - 35);
-          cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: x, clientY: y, bubbles: true, pointerId: 1, pointerType: 'touch', isPrimary: true }));
+          cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: x, clientY: y, bubbles: true, pointerId: 1, pointerType: PT, isPrimary: true }));
           cv.dispatchEvent(new PointerEvent('pointerup', { clientX: x, clientY: y, bubbles: true, pointerId: 1, pointerType: 'touch', isPrimary: true }));
           i++;
         }

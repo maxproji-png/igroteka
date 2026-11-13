@@ -1,6 +1,6 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
-import { petStage } from './stage.js?v=tf11132128';
+import { petStage } from './stage.js?v=tf11132143mt';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 1000, max: 1000, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
@@ -134,7 +134,7 @@ const HUD = `
   <div class="flash x2" id="flash2"><div class="glow"></div><div class="big">×2!</div><div class="sub">Двойные монеты</div></div>`;
 
 /* ---------------- запуск ---------------- */
-export async function startApp({ tag, onTap, onComboEnd, onReady }) {
+export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' }) {
   const app = document.querySelector('.app');
   app.insertAdjacentHTML('afterbegin', HUD);
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
@@ -150,7 +150,29 @@ export async function startApp({ tag, onTap, onComboEnd, onReady }) {
 
   let appRect = app.getBoundingClientRect();
   const canvas = app.querySelector('canvas.scene');
-  const st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY) });
+  const st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone' });
+  if (input === 'zone') bindZone();
+
+  // Мультитач: зона тапа на всю игровую середину (между верхними плашками и нижней панелью).
+  // Каждое новое касание = отдельный тап, даже если несколько пальцев легли в одном кадре.
+  // Сенсор — touchstart по e.changedTouches (надёжно на iOS); pointerdown — только для мыши/пера,
+  // чтобы одно касание не посчиталось дважды. Счёт без троттлинга; троттлятся только эффекты.
+  function bindZone() {
+    const z = document.createElement('div'); z.className = 'tapzone'; app.appendChild(z);
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    z.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const ts = e.changedTouches;
+      for (let i = 0; i < ts.length; i++) tap(ts[i].clientX, ts[i].clientY);
+    }, { passive: false });
+    const block = e => e.preventDefault();
+    z.addEventListener('touchmove', block, { passive: false });
+    z.addEventListener('touchend', block, { passive: false });
+    z.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'touch' && hasTouch) return;    // касание уже посчитано в touchstart
+      tap(e.clientX, e.clientY);
+    });
+  }
 
   // геометрия, считается на старте/resize — не на тап
   let head = { x: 0, y: 0 }, feet = { x: 0, y: 0 }, balXY = { x: 40, y: 37 };
@@ -232,7 +254,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady }) {
     S.combo = (window.__holdCombo && S.combo > 0) || now - S.last < COMBO_MS ? S.combo + 1 : 1; S.last = now;
     const prev = S.mult; S.mult = S.combo >= 50 ? 2 : S.combo >= 20 ? 1.5 : 1;
     const gain = S.power * S.mult; S.energy -= 1; S.coins += gain; S.taps++;
-    window.__taps = (window.__taps || 0) + 1;
+    window.__taps = (window.__taps || 0) + 1; window.__tapCount = window.__taps;
     const x = cx - appRect.left, y = cy - appRect.top;
     squash(x);
     haptic(now);
@@ -246,6 +268,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady }) {
 
   layout();
   addEventListener('resize', () => { hitC = st.hit(); layout(); });
+  window.__S = S;
   const ctx = { el, st, S, get balXY() { return balXY; }, get head() { return head; }, get appRect() { return appRect; }, tap };
   window.__petCenter = () => { const h = st.hit(); return { x: h.x, y: h.y }; };
   onReady && onReady(ctx);

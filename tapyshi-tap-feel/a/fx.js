@@ -1,14 +1,14 @@
 // Вариант A · «Плавный досчёт»
 // +1 у пальца (WAAPI), баланс досчитывается твином в rAF (текст ≤ 20 раз/с) с мягким пульсом иконки,
 // одна красивая монета летит к балансу раз в 10 тапов; при посадке — блик по плашке.
-import { startApp, addTicker, RM, S, fmt, coinCanvas, glintCanvas, spriteURL } from '../common/core.js?v=tf11132128';
-import { pool, play, arc, img } from '../common/fxkit.js?v=tf11132128';
-import { plusFx } from '../common/plus.js?v=tf11132128';
+import { startApp, addTicker, RM, S, fmt, coinCanvas, glintCanvas, spriteURL } from '../common/core.js?v=tf11132143mt';
+import { pool, play, arc, img } from '../common/fxkit.js?v=tf11132143mt';
+import { plusFx } from '../common/plus.js?v=tf11132143mt';
 
 const EVERY = 10;          // монета к балансу раз в N тапов
 const PLUS_MS = 760, GLINT_MS = 340, FLY_MS = 680, MERGE_MS = 70;
 
-startApp({ tag: '<b>A</b>плавный досчёт · монета раз в 10 тапов', onReady, onTap });
+startApp({ tag: '<b>A</b>плавный досчёт · монета раз в 10 тапов', onReady, onTap, input: 'zone' });
 
 let lastGlint = -1e9, ctx, plus, glints, coins, shine, shown = S.coins, lastWrite = 0, lastPulse = 0;
 function onReady(c) {

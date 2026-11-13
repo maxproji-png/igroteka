@@ -95,3 +95,5 @@ canvas.scene.snap{pointer-events:none;opacity:0;transition:opacity .12s ease;wil
 canvas.scene.snap.on{opacity:1}
 /* «+1» битмапом (130×70, рисуется один раз на canvas) */
 .plus-img{position:absolute;left:0;top:0;z-index:41;width:130px;height:70px;margin:-35px 0 0 -65px;pointer-events:none;opacity:0;will-change:transform,opacity;display:block}
+/* зона тапа (вариант A): вся игровая середина; кнопки HUD (.pe, z-index выше) остаются кликабельными */
+.tapzone{position:absolute;left:0;right:0;top:64px;bottom:calc(var(--tabbar-space) + 74px);z-index:3;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
