@@ -54,7 +54,7 @@ body.var-a .glow{position:absolute;left:8%;right:8%;bottom:28%;height:38%;border
   background:radial-gradient(ellipse at 50% 50%,var(--white) 0%,var(--violet-soft) 55%,rgb(var(--white-rgb) / 0) 75%)}
 
 /* --- B: превью сверху, сетка 2×2 --- */
-body.var-b .preview{position:relative;flex:1 1 0;min-height:140px;overflow:visible}
+body.var-b .preview{position:relative;flex:1 1 0;min-height:140px;overflow:hidden}
 body.var-b .meta{flex:none;padding:0 16px 6px}
 body.var-b .grid{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 16px 0;max-height:min(300px,42vh)}
 body.var-b .card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;padding:4px 8px 8px;border-radius:var(--r-md);background:var(--white);box-shadow:var(--sh-sm);text-align:center;min-height:0;min-width:0;overflow:hidden;transition:transform .3s var(--spring),box-shadow .2s}

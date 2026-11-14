@@ -1,8 +1,8 @@
 // Тапыши · первый вход: общий код выбора персонажа (варианты A/B/C).
-import { petStage } from '../pet/stage.js?v=tc11141700';
-import { PETS, PET_ORDER, preloadEvo, stageName } from '../pet/evo.js?v=tc11141700';
+import { petStage } from '../pet/stage.js?v=tc11141720';
+import { PETS, PET_ORDER, preloadEvo, stageName } from '../pet/evo.js?v=tc11141720';
 
-export const V = 'tc11141700';
+export const V = 'tc11141720';
 
 export const PICKS = PET_ORDER.map(id => {
   const p = PETS[id];
@@ -222,6 +222,13 @@ export async function initB(root) {
   const st = await mountPet(canvas, { pet: PICKS[i].id, fit: 'host', padTop: 4, padBottom: 18 });
   preview.classList.remove('loading');
   preloadBabies();
+  const refit = () => st.relayout();
+  addEventListener('resize', refit);
+  requestAnimationFrame(refit);
+  setTimeout(refit, 80);
+  setTimeout(refit, 400);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+  if (window.ResizeObserver) new ResizeObserver(refit).observe(preview);
 
   function paint() {
     const p = PICKS[i];
