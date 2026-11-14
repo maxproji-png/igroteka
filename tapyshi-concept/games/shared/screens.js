@@ -181,8 +181,8 @@ function frAva(f){
   return '<span class="fr-ava"><img src="'+pet(f.pet,'happy')+'" alt=""><i class="on-dot'+(f.on?' on':'')+'"></i></span>';
 }
 function frMeta(f){
-  if(!f.pet) return '<small class="off">ещё не открыл игру</small>';
-  return '<small>'+PET_KIND[f.pet]+' · ст. '+f.stage+' · ур. '+f.lvl+'</small>';
+  if(!f.pet) return '';
+  return '<small>'+PET_KIND[f.pet]+' · ур. '+f.lvl+'</small>';
 }
 var ACC={'Саша':'Сашу','Кира М.':'Киру М.','Марина':'Марину','Алина ☀️':'Алину ☀️'};
 function frAcc(f){return ACC[f.name]||f.name;}
@@ -195,35 +195,24 @@ function friends(o){
   o=o||{};
   var empty=!!o.empty, list=FRIENDS.slice().sort(function(a,b){return (b.on?1:0)-(a.on?1:0);});
   var main=list.filter(function(f){return !f.invited;});
-  var invited=list.filter(function(f){return f.invited;});
-  var joinedN=invited.filter(function(f){return f.joined;}).length;
-  var earned=joinedN*5000;
-  var pending=invited.filter(function(f){return !f.joined;}).length;
-  var fv=o.fv||window.TAP_FV||'';
-  if(fv!=='a'&&fv!=='b'&&fv!=='c') fv='';
+  var invited=list.filter(function(f){return f.invited && f.joined;});
+  var joinedN=invited.length;
+  var fv=o.fv||window.TAP_FV||'b';
+  if(fv!=='a'&&fv!=='b'&&fv!=='c') fv='b';
   var invIc='<span class="ic"><svg viewBox="0 0 20 20"><circle cx="8" cy="6.5" r="3.3" fill="currentColor"/><path d="M2 17c.6-3.6 3-5.4 6-5.4s5.4 1.8 6 5.4z" fill="currentColor"/><path d="M16 5.5v6M13 8.5h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>';
   var head='<header class="fr-top"><button type="button" class="ibtn ibtn--round" data-act="close" aria-label="Назад">'+IC.back+'</button><div class="ttl"><h1>Друзья</h1><p>из MAX · демо-список</p></div></header>';
-  var cta='<button type="button" class="invite invite--wide spring" data-act="invite-any">'+invIc+'<span class="tx"><b>Позвать друга</b><em>+5000 🪙 за друга</em></span></button>';
-  var earn='<p class="fr-earn">С приглашений: <b>'+fmt(earned)+' 🪙</b> · '+joinedN+' из '+invited.length+' зашли'+(pending?' · ещё '+pending+' не зашёл':'')+'</p>';
-  var invHead='<div class="sech"><h2>Приглашён тобой</h2><span class="fr-badge">'+invited.length+'</span></div>';
+  var cta='<div class="fr-invite-b"><button type="button" class="invite invite--plain spring" data-act="invite-any">'+invIc+'<span class="tx"><b>Позвать друга</b></span></button><details class="fr-hint"><summary aria-label="О награде"><span aria-hidden="true">i</span></summary><p>5&nbsp;000 монет — когда друг впервые откроет игру по ссылке.</p></details></div>';
+  var earn='';
+  var invHead='<div class="sech"><h2>Приглашён тобой</h2><span class="fr-badge">'+joinedN+'</span></div>';
   if(fv==='a'){
-    cta='<button type="button" class="invite invite--quiet spring" data-act="invite-any">'+invIc+'<span class="tx"><b>Позвать друга</b><em>Когда друг откроет игру</em></span><span class="fr-quiet-stat">'+joinedN+' из '+invited.length+' уже зашли'+(pending?' · ещё '+pending+' не зашёл':'')+'</span></button>';
-    earn='';
-  }else if(fv==='b'){
-    cta='<div class="fr-invite-b"><button type="button" class="invite invite--plain spring" data-act="invite-any">'+invIc+'<span class="tx"><b>Позвать друга</b></span></button><details class="fr-hint"><summary aria-label="О награде"><span aria-hidden="true">i</span></summary><p>5&nbsp;000 монет — когда друг впервые откроет игру по ссылке.</p></details></div>';
-    earn='';
-    invHead='<div class="sech"><h2>Приглашён тобой</h2><span>'+joinedN+' из '+invited.length+' зашли'+(pending?' · '+pending+' ждёт':'')+'</span></div>';
+    cta='<button type="button" class="invite invite--quiet spring" data-act="invite-any">'+invIc+'<span class="tx"><b>Позвать друга</b><em>Когда друг откроет игру</em></span>'+(joinedN?'<span class="fr-quiet-stat">'+joinedN+' зашли по ссылке</span>':'')+'</button>';
   }else if(fv==='c'){
     head='<header class="fr-top"><button type="button" class="ibtn ibtn--round" data-act="close" aria-label="Назад">'+IC.back+'</button><div class="ttl"><h1>Друзья</h1><p>из MAX · демо-список</p></div><button type="button" class="fr-head-invite spring" data-act="invite-any" aria-label="Позвать друга">'+invIc+'<span>Позвать</span></button></header>';
     cta='';
-    earn='';
-    invHead='<div class="sech"><h2>Приглашён тобой</h2><span>'+joinedN+' зашёл · '+pending+' ждёт</span></div>';
   }
+  var emptyP='Позови друга — сыграете вместе.<br>5 000 монет за вход по твоей ссылке.';
   if(empty){
-    var emptyP=fv
-      ?'Позови друга из MAX. Награда придёт, когда он впервые откроет игру по ссылке.'
-      :'Позови друга из MAX — когда он впервые откроет игру по ссылке, тебе придёт <b>+5000 🪙</b>.';
-    return '<main class="page fr-page'+(fv?' fv-'+fv:'')+'">'+head+cta+
+    return '<main class="page fr-page fv-'+fv+'">'+head+
       '<div class="fr-empty"><div class="fr-ghost">'+IC.people+'</div><h2>Пока нет друзей</h2><p>'+emptyP+'</p>'+
       '<button type="button" class="btn btn--primary btn--l" data-act="invite-any">Позвать друга</button>'+
       '<p class="fr-demos"><button type="button" class="inv-demo" data-invite-demo>демо: друг зашёл</button><button type="button" class="inv-demo" data-act="friends-demo">показать демо-список</button></p></div></main>'+(o.pick?pickSheet(o):'');
@@ -238,9 +227,9 @@ function friends(o){
   }
   var body=earn+
     '<section class="fr-sec"><div class="sech"><h2>Друзья</h2><span>'+main.filter(function(f){return f.on;}).length+' в сети сверху</span></div><div class="fr-list">'+main.map(function(f){return row(f,0);}).join('')+'</div></section>'+
-    '<section class="fr-sec" id="invited">'+invHead+'<div class="fr-list">'+invited.map(function(f){return row(f,1);}).join('')+'</div></section>'+
+    (invited.length?('<section class="fr-sec" id="invited">'+invHead+'<div class="fr-list">'+invited.map(function(f){return row(f,1);}).join('')+'</div></section>'):'')+
     '<p class="fr-demos"><button type="button" class="inv-demo" data-invite-demo>демо: друг зашёл</button><button type="button" class="inv-demo" data-act="friends-empty">показать пустой список</button></p>';
-  return '<main class="page fr-page'+(fv?' fv-'+fv:'')+'">'+head+cta+body+'</main>'+(o.pick?pickSheet(o):'');
+  return '<main class="page fr-page fv-'+fv+'">'+head+cta+body+'</main>'+(o.pick?pickSheet(o):'');
 }
 function pickSheet(o){
   var fr=o.friend||FRIENDS[0], gid=o.game||'tictactoe', st=(o.stake==null?300:o.stake), write=!!o.write;

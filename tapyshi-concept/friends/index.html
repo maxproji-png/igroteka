@@ -4,31 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Тапыши · Друзья</title>
-<link rel="stylesheet" href="../games/shared/tokens.css?v=tc11152056">
-<link rel="stylesheet" href="../games/shared/components.css?v=tc11152056">
+<link rel="stylesheet" href="../games/shared/tokens.css?v=tc11152110">
+<link rel="stylesheet" href="../games/shared/components.css?v=tc11152110">
 <link rel="stylesheet" href="../games/catalog-a/style.css?v=tc11141101">
 <link rel="stylesheet" href="../games/shared/screens.css?v=tc11141101">
-<link rel="stylesheet" href="variants.css?v=tc11152056">
+<link rel="stylesheet" href="variants.css?v=tc11152110">
 </head>
 <body>
 <div id="app"></div>
 <script>
 (function(){
-  var fv = (new URLSearchParams(location.search).get('fv') || '').toLowerCase();
+  var q = new URLSearchParams(location.search);
+  var fv = (q.get('fv') || '').toLowerCase();
+  var empty = q.get('empty') === '1';
   if(fv !== 'a' && fv !== 'b' && fv !== 'c'){
-    location.replace('variants.html' + (location.search || '?v=tc11152056'));
-    return;
+    if(!empty){
+      location.replace('variants.html?v=tc11152110');
+      return;
+    }
+    fv = 'b';
   }
   window.TAP_PROTO = 1;
   window.TAP_BASE = '../games/shared/';
   window.TAP_OPEN_FRIENDS = true;
+  window.TAP_FRIENDS_EMPTY = empty;
   window.TAP_FV = fv;
 })();
 </script>
 <script src="../games/shared/games.js?v=tc11141101"></script>
-<script src="../games/shared/screens.js?v=tc11152056"></script>
+<script src="../games/shared/screens.js?v=tc11152110"></script>
 <script src="../shared/nav.js?v=tc11141101"></script>
 <script src="../shared/invite.js?v=tc11141101"></script>
-<script src="../games/proto.js?v=tc11152056"></script>
+<script src="../games/proto.js?v=tc11152110"></script>
 </body>
 </html>

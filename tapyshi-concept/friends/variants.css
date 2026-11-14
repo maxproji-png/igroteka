@@ -41,3 +41,5 @@ body.hub .more a{display:block;font-size:14px;font-weight:800;color:var(--violet
 .fr-head-invite{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 6px;border-radius:var(--r-pill);background:var(--white);box-shadow:var(--sh-sm);color:var(--ink);font-size:13px;font-weight:1000;flex:none;white-space:nowrap}
 .fr-head-invite .ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--violet-soft);color:var(--violet);flex:none}
 .fr-head-invite .ic svg{width:15px;height:15px}
+
+.fr-page .fr-empty p{max-width:none}

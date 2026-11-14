@@ -84,7 +84,7 @@ document.addEventListener('click',function(e){
   else if(a==='surrender'){go({screen:'result',outcome:'lose'});}
 });
 var q=location.search||'';
-if(/friends=empty/.test(q))go({screen:'friends',empty:true,fromFriends:true});
+if(window.TAP_FRIENDS_EMPTY||/friends=empty|[?&]empty=1(?:&|$)/.test(q))go({screen:'friends',empty:true,fromFriends:true});
 else if(window.TAP_OPEN_FRIENDS||/friends=1|friends/.test(q))go({screen:'friends',fromFriends:true});
 else go({screen:'catalog'});
 })();
