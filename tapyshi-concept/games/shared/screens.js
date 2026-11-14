@@ -210,10 +210,14 @@ function friends(o){
     head='<header class="fr-top"><button type="button" class="ibtn ibtn--round" data-act="close" aria-label="Назад">'+IC.back+'</button><div class="ttl"><h1>Друзья</h1><p>из MAX · демо-список</p></div><button type="button" class="fr-head-invite spring" data-act="invite-any" aria-label="Позвать друга">'+invIc+'<span>Позвать</span></button></header>';
     cta='';
   }
-  var emptyP='Позови друга и получи 5 000 монет.';
+  var ev=o.ev||window.TAP_EV||'a';
+  if(ev!=='a'&&ev!=='b') ev='a';
+  var emptyP=ev==='b'
+    ?('Позови друга и получи <span class="fr-coinpill">'+COIN+'5&nbsp;000</span>')
+    :('Позови друга и получи 5&nbsp;000'+COIN);
   if(empty){
-    return '<main class="page fr-page fv-'+fv+'">'+head+
-      '<div class="fr-empty"><div class="fr-ghost">'+IC.people+'</div><h2>Пока нет друзей</h2><p>'+emptyP+'</p>'+
+    return '<main class="page fr-page fv-'+fv+' ev-'+ev+'">'+head+
+      '<div class="fr-empty"><div class="fr-ghost">'+IC.people+'</div><h2>Пока нет друзей</h2><p class="fr-empty-line">'+emptyP+'</p>'+
       '<button type="button" class="btn btn--primary btn--l" data-act="invite-any">Позвать друга</button>'+
       '<p class="fr-demos"><button type="button" class="inv-demo" data-invite-demo>демо: друг зашёл</button><button type="button" class="inv-demo" data-act="friends-demo">показать демо-список</button></p></div></main>'+(o.pick?pickSheet(o):'');
   }

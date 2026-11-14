@@ -3,8 +3,9 @@
    Позвать друга на вкладке — общая ссылка MAX; в меню дуэли — ссылка на эту игру.
    Экран «Друзья»: инвайт в партию онлайн или MAX, если друг не в сети. */
 (function(){
-var S={screen:'catalog',game:'checkers',mode:'random',stake:300,filter:'all',fromFriends:false,pick:false,write:false,friend:null,empty:false,fv:''},T=[];
+var S={screen:'catalog',game:'checkers',mode:'random',stake:300,filter:'all',fromFriends:false,pick:false,write:false,friend:null,empty:false,fv:'',ev:''},T=[];
 if(window.TAP_FV==='a'||window.TAP_FV==='b'||window.TAP_FV==='c') S.fv=window.TAP_FV;
+if(window.TAP_EV==='a'||window.TAP_EV==='b') S.ev=window.TAP_EV;
 var REACT=['😄','😂','😮','😅','🔥','👍'];
 function clear(){T.forEach(clearTimeout);T=[];}
 function later(fn,ms){T.push(setTimeout(fn,ms));}
@@ -84,7 +85,8 @@ document.addEventListener('click',function(e){
   else if(a==='surrender'){go({screen:'result',outcome:'lose'});}
 });
 var q=location.search||'';
-if(window.TAP_FRIENDS_EMPTY||/friends=empty|[?&]empty=1(?:&|$)/.test(q))go({screen:'friends',empty:true,fromFriends:true});
+var evM=q.match(/[?&]ev=([ab])(?:&|$)/); if(evM) S.ev=evM[1];
+if(window.TAP_FRIENDS_EMPTY||/friends=empty|[?&]empty=1(?:&|$)/.test(q))go({screen:'friends',empty:true,fromFriends:true,ev:S.ev||'a'});
 else if(window.TAP_OPEN_FRIENDS||/friends=1|friends/.test(q))go({screen:'friends',fromFriends:true});
 else go({screen:'catalog'});
 })();
