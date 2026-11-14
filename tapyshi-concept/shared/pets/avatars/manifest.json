@@ -1,0 +1,312 @@
+{
+  "source": "tapyshi-redesign/final-concept/pet/evo.js (PETS.names, STAGE_AT)",
+  "size_px": 168,
+  "scale": "@3x (56pt)",
+  "master_px": 512,
+  "background": "transparent",
+  "safe_area": "key features within central ~80% circle",
+  "pet_order": [
+    "raccoon",
+    "capybara",
+    "dragon",
+    "goose"
+  ],
+  "stage_levels": [
+    1,
+    5,
+    10,
+    15,
+    20,
+    25
+  ],
+  "avatars": [
+    {
+      "pet": "raccoon",
+      "pet_label": "Енот",
+      "stage": 1,
+      "level": 1,
+      "form_name": "Снежок",
+      "files": {
+        "png_168": "raccoon/raccoon_stage_1.png",
+        "webp_168": "raccoon/raccoon_stage_1.webp",
+        "png_512": "raccoon/raccoon_stage_1_512.png"
+      }
+    },
+    {
+      "pet": "raccoon",
+      "pet_label": "Енот",
+      "stage": 2,
+      "level": 5,
+      "form_name": "Иней",
+      "files": {
+        "png_168": "raccoon/raccoon_stage_2.png",
+        "webp_168": "raccoon/raccoon_stage_2.webp",
+        "png_512": "raccoon/raccoon_stage_2_512.png"
+      }
+    },
+    {
+      "pet": "raccoon",
+      "pet_label": "Енот",
+      "stage": 3,
+      "level": 10,
+      "form_name": "Льдинка",
+      "files": {
+        "png_168": "raccoon/raccoon_stage_3.png",
+        "webp_168": "raccoon/raccoon_stage_3.webp",
+        "png_512": "raccoon/raccoon_stage_3_512.png"
+      }
+    },
+    {
+      "pet": "raccoon",
+      "pet_label": "Енот",
+      "stage": 4,
+      "level": 15,
+      "form_name": "Морозко",
+      "files": {
+        "png_168": "raccoon/raccoon_stage_4.png",
+        "webp_168": "raccoon/raccoon_stage_4.webp",
+        "png_512": "raccoon/raccoon_stage_4_512.png"
+      }
+    },
+    {
+      "pet": "raccoon",
+      "pet_label": "Енот",
+      "stage": 5,
+      "level": 20,
+      "form_name": "Вьюжка",
+      "files": {
+        "png_168": "raccoon/raccoon_stage_5.png",
+        "webp_168": "raccoon/raccoon_stage_5.webp",
+        "png_512": "raccoon/raccoon_stage_5_512.png"
+      }
+    },
+    {
+      "pet": "raccoon",
+      "pet_label": "Енот",
+      "stage": 6,
+      "level": 25,
+      "form_name": "Снежная Звёздочка",
+      "files": {
+        "png_168": "raccoon/raccoon_stage_6.png",
+        "webp_168": "raccoon/raccoon_stage_6.webp",
+        "png_512": "raccoon/raccoon_stage_6_512.png"
+      }
+    },
+    {
+      "pet": "capybara",
+      "pet_label": "Капибара",
+      "stage": 1,
+      "level": 1,
+      "form_name": "Росточек",
+      "files": {
+        "png_168": "capybara/capybara_stage_1.png",
+        "webp_168": "capybara/capybara_stage_1.webp",
+        "png_512": "capybara/capybara_stage_1_512.png"
+      }
+    },
+    {
+      "pet": "capybara",
+      "pet_label": "Капибара",
+      "stage": 2,
+      "level": 5,
+      "form_name": "Листик",
+      "files": {
+        "png_168": "capybara/capybara_stage_2.png",
+        "webp_168": "capybara/capybara_stage_2.webp",
+        "png_512": "capybara/capybara_stage_2_512.png"
+      }
+    },
+    {
+      "pet": "capybara",
+      "pet_label": "Капибара",
+      "stage": 3,
+      "level": 10,
+      "form_name": "Веточка",
+      "files": {
+        "png_168": "capybara/capybara_stage_3.png",
+        "webp_168": "capybara/capybara_stage_3.webp",
+        "png_512": "capybara/capybara_stage_3_512.png"
+      }
+    },
+    {
+      "pet": "capybara",
+      "pet_label": "Капибара",
+      "stage": 4,
+      "level": 15,
+      "form_name": "Бутончик",
+      "files": {
+        "png_168": "capybara/capybara_stage_4.png",
+        "webp_168": "capybara/capybara_stage_4.webp",
+        "png_512": "capybara/capybara_stage_4_512.png"
+      }
+    },
+    {
+      "pet": "capybara",
+      "pet_label": "Капибара",
+      "stage": 5,
+      "level": 20,
+      "form_name": "Цветик",
+      "files": {
+        "png_168": "capybara/capybara_stage_5.png",
+        "webp_168": "capybara/capybara_stage_5.webp",
+        "png_512": "capybara/capybara_stage_5_512.png"
+      }
+    },
+    {
+      "pet": "capybara",
+      "pet_label": "Капибара",
+      "stage": 6,
+      "level": 25,
+      "form_name": "Мандариновый Цвет",
+      "files": {
+        "png_168": "capybara/capybara_stage_6.png",
+        "webp_168": "capybara/capybara_stage_6.webp",
+        "png_512": "capybara/capybara_stage_6_512.png"
+      }
+    },
+    {
+      "pet": "dragon",
+      "pet_label": "Дракон",
+      "stage": 1,
+      "level": 1,
+      "form_name": "Искорка",
+      "files": {
+        "png_168": "dragon/dragon_stage_1.png",
+        "webp_168": "dragon/dragon_stage_1.webp",
+        "png_512": "dragon/dragon_stage_1_512.png"
+      }
+    },
+    {
+      "pet": "dragon",
+      "pet_label": "Дракон",
+      "stage": 2,
+      "level": 5,
+      "form_name": "Уголёк",
+      "files": {
+        "png_168": "dragon/dragon_stage_2.png",
+        "webp_168": "dragon/dragon_stage_2.webp",
+        "png_512": "dragon/dragon_stage_2_512.png"
+      }
+    },
+    {
+      "pet": "dragon",
+      "pet_label": "Дракон",
+      "stage": 3,
+      "level": 10,
+      "form_name": "Огонёк",
+      "files": {
+        "png_168": "dragon/dragon_stage_3.png",
+        "webp_168": "dragon/dragon_stage_3.webp",
+        "png_512": "dragon/dragon_stage_3_512.png"
+      }
+    },
+    {
+      "pet": "dragon",
+      "pet_label": "Дракон",
+      "stage": 4,
+      "level": 15,
+      "form_name": "Пламенчик",
+      "files": {
+        "png_168": "dragon/dragon_stage_4.png",
+        "webp_168": "dragon/dragon_stage_4.webp",
+        "png_512": "dragon/dragon_stage_4_512.png"
+      }
+    },
+    {
+      "pet": "dragon",
+      "pet_label": "Дракон",
+      "stage": 5,
+      "level": 20,
+      "form_name": "Жарик",
+      "files": {
+        "png_168": "dragon/dragon_stage_5.png",
+        "webp_168": "dragon/dragon_stage_5.webp",
+        "png_512": "dragon/dragon_stage_5_512.png"
+      }
+    },
+    {
+      "pet": "dragon",
+      "pet_label": "Дракон",
+      "stage": 6,
+      "level": 25,
+      "form_name": "Солнечный Дракоша",
+      "files": {
+        "png_168": "dragon/dragon_stage_6.png",
+        "webp_168": "dragon/dragon_stage_6.webp",
+        "png_512": "dragon/dragon_stage_6_512.png"
+      }
+    },
+    {
+      "pet": "goose",
+      "pet_label": "Гусь",
+      "stage": 1,
+      "level": 1,
+      "form_name": "Ветерок",
+      "files": {
+        "png_168": "goose/goose_stage_1.png",
+        "webp_168": "goose/goose_stage_1.webp",
+        "png_512": "goose/goose_stage_1_512.png"
+      }
+    },
+    {
+      "pet": "goose",
+      "pet_label": "Гусь",
+      "stage": 2,
+      "level": 5,
+      "form_name": "Облачко",
+      "files": {
+        "png_168": "goose/goose_stage_2.png",
+        "webp_168": "goose/goose_stage_2.webp",
+        "png_512": "goose/goose_stage_2_512.png"
+      }
+    },
+    {
+      "pet": "goose",
+      "pet_label": "Гусь",
+      "stage": 3,
+      "level": 10,
+      "form_name": "Пёрышко",
+      "files": {
+        "png_168": "goose/goose_stage_3.png",
+        "webp_168": "goose/goose_stage_3.webp",
+        "png_512": "goose/goose_stage_3_512.png"
+      }
+    },
+    {
+      "pet": "goose",
+      "pet_label": "Гусь",
+      "stage": 4,
+      "level": 15,
+      "form_name": "Бриз",
+      "files": {
+        "png_168": "goose/goose_stage_4.png",
+        "webp_168": "goose/goose_stage_4.webp",
+        "png_512": "goose/goose_stage_4_512.png"
+      }
+    },
+    {
+      "pet": "goose",
+      "pet_label": "Гусь",
+      "stage": 5,
+      "level": 20,
+      "form_name": "Небесный",
+      "files": {
+        "png_168": "goose/goose_stage_5.png",
+        "webp_168": "goose/goose_stage_5.webp",
+        "png_512": "goose/goose_stage_5_512.png"
+      }
+    },
+    {
+      "pet": "goose",
+      "pet_label": "Гусь",
+      "stage": 6,
+      "level": 25,
+      "form_name": "Облачный Ангел",
+      "files": {
+        "png_168": "goose/goose_stage_6.png",
+        "webp_168": "goose/goose_stage_6.webp",
+        "png_512": "goose/goose_stage_6_512.png"
+      }
+    }
+  ]
+}

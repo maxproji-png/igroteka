@@ -68,7 +68,8 @@ var topEmb = function(c){
     var col = ClanCreate.colorBy(c.color), ic = ClanCreate.iconBy(c.icon);
     return '<span class="emb sm clan-badge" style="'+ClanCreate.badgeStyle(col)+'">'+ClanCreate.svg(ic)+'</span>';
   }
-  return '<span class="emb sm e-'+c.pet+'"><img src="'+H(c.pet)+'" alt=""></span>';
+  var src=(window.TAP_petThumb?TAP_petThumb(c.pet,1):H(c.pet));
+  return '<span class="emb sm e-'+c.pet+'"><img src="'+src+'" alt=""></span>';
 };
 C.top_ = function(){
   var coin=T.coin?T.coin():'';

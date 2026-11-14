@@ -1,0 +1,80 @@
+/* Лицевые аватарки: скруглённый квадрат и мягкий фон по питомцу.
+   Рога и кристаллы ст. 5–6 не режутся круглой маской. */
+.fr-ava,
+.ava,
+.pl .av,
+.sh-me .fr-ava {
+  overflow: hidden;
+  background: var(--fill, #F4F1EA);
+}
+.fr-ava,
+.pl .av {
+  border-radius: 16px;
+}
+.fr-ava.raccoon, .ava.raccoon, .pl .av.raccoon, .emb.e-raccoon,
+.sh-me .fr-ava.raccoon {
+  background: linear-gradient(160deg, #EEF4FF, #D9E6FA);
+}
+.fr-ava.capybara, .ava.capybara, .pl .av.capybara, .emb.e-capybara,
+.sh-me .fr-ava.capybara {
+  background: linear-gradient(160deg, #F0F7E6, #D8E8C4);
+}
+.fr-ava.dragon, .ava.dragon, .pl .av.dragon, .emb.e-dragon,
+.sh-me .fr-ava.dragon {
+  background: linear-gradient(160deg, #FFF0E8, #F8D8C8);
+}
+.fr-ava.goose, .ava.goose, .pl .av.goose, .emb.e-goose,
+.sh-me .fr-ava.goose {
+  background: linear-gradient(160deg, #EEF0FF, #DEE4FA);
+}
+
+.fr-ava img,
+.ava img,
+.pl .av img,
+.sh-me .fr-ava img,
+.emb:not(.clan-badge) img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  padding: 0;
+  margin: 0;
+}
+
+.sh-me .fr-ava {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  flex: none;
+}
+
+/* Пилюля «Друзья» в шапке Игр — стопка лиц друзей в сети */
+.friends-btn .fr-stack {
+  display: flex;
+  align-items: center;
+  flex: none;
+  padding: 2px 0 2px 2px;
+}
+.friends-btn .fr-stack .fr-ava {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  margin-left: -8px;
+  box-shadow: 0 0 0 2px var(--white);
+  flex: none;
+}
+.friends-btn .fr-stack .fr-ava:first-child { margin-left: 0; }
+
+@media (max-width: 389px) {
+  .fr-ava { border-radius: 15px; }
+  .friends-btn .fr-stack .fr-ava { width: 26px; height: 26px; border-radius: 8px; }
+}
+
+.orb.raccoon { background: linear-gradient(160deg, #EEF4FF, #D9E6FA); }
+.orb.capybara { background: linear-gradient(160deg, #F0F7E6, #D8E8C4); }
+.orb.dragon { background: linear-gradient(160deg, #FFF0E8, #F8D8C8); }
+.orb.goose { background: linear-gradient(160deg, #EEF0FF, #DEE4FA); }
+.orb { border-radius: 16px; }
+.orb img { width: 100%; height: 100%; object-fit: contain; object-position: center; filter: none; opacity: .9; }
+.pl .av { place-items: center; }
+.friends-btn { padding-left: 8px; }
