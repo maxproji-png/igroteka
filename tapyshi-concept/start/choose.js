@@ -1,9 +1,9 @@
 // Тапыши · первый вход: общий код выбора персонажа (варианты A/B/C).
-import { petStage } from '../pet/stage.js?v=tc11151755';
-import { PETS, PET_ORDER, preloadEvo } from '../pet/evo.js?v=tc11151755';
-import { getPlayerNick } from '../shared/nick.js?v=tc11151755';
+import { petStage } from '../pet/stage.js?v=tc11151810';
+import { PETS, PET_ORDER, preloadEvo } from '../pet/evo.js?v=tc11151810';
+import { getPlayerNick } from '../shared/nick.js?v=tc11151810';
 
-export const V = 'tc11151755';
+export const V = 'tc11151810';
 
 export const PICKS = PET_ORDER.map(id => {
   const p = PETS[id];
@@ -22,9 +22,6 @@ const EL_ICON = {
   fire: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4 0 6-3 6-6 0-4-3-7-3-7s0 3-2 4c0-5-3-8-3-8s-4 5-4 10c0 3.2 2 7 6 7z"/></svg>',
   wind: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10h11a3 3 0 1 0-3-3"/><path d="M4 14h13a3 3 0 1 1-3 3"/><path d="M4 18h7"/></svg>'
 };
-
-// Ник фиксируется при первом заходе (MAX / ?nick= / «Игрок») и больше не перечитывается.
-getPlayerNick();
 
 export function inviteCopy() {
   const q = new URLSearchParams(location.search);
@@ -55,6 +52,7 @@ export function elChip(elId, label) {
 }
 
 export function goHome(pet) {
+  getPlayerNick(pet);
   const data = { fresh: true, pet: pet };
   try { sessionStorage.setItem('tapyshi.start', JSON.stringify(data)); } catch (e) {}
   const q = new URLSearchParams();

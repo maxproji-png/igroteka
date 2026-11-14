@@ -2,7 +2,7 @@
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
 import { petStage } from './stage.js?v=tc11151755';
 import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11151755';
-import { getPlayerNick } from '../shared/nick.js?v=tc11151755';
+import { getPlayerNick } from '../shared/nick.js?v=tc11151810';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
@@ -384,7 +384,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     el.lvlLab.textContent = 'ур. ' + E.level;
     if (START.fresh && el.playerNick) {
       el.playerNick.hidden = false;
-      el.playerNick.textContent = getPlayerNick();
+      el.playerNick.textContent = getPlayerNick(START.pet);
     }
     el.lvlPlate.classList.toggle('long', !START.fresh && nm.length > 12);
     el.lvlPlate.classList.toggle('has-nick', START.fresh);
