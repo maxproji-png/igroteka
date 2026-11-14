@@ -122,3 +122,8 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
   .demo{top:72px}
   .demo-pets button{padding:0 5px}
 }
+
+/* Свежий старт после выбора персонажа: без демо-переключателя и без «Улучшить» */
+body.is-fresh .demo{display:none!important}
+body.is-fresh .up{display:none!important}
+body.is-fresh .lvl{flex:1;max-width:none}

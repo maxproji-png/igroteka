@@ -30,7 +30,8 @@ export function stageName(pet, stage) {
   return p.names[Math.max(0, Math.min(5, stage - 1))];
 }
 export function evoUrl(pet, stage) {
-  return `models/evo/${pet}/${pet}_stage_${stage}.glb`;
+  const root = (document.documentElement.dataset.root || './').replace(/\/?$/, '/');
+  return `${root}models/evo/${pet}/${pet}_stage_${stage}.glb`;
 }
 
 const loader = new GLTFLoader();

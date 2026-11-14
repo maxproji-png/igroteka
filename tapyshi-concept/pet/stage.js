@@ -1,10 +1,10 @@
 // Тапыши · сцена с эволюциями. 3D рендерится только по запросу: на тап WebGL не перерисовываем.
 // Сжатие на тап — CSS/WAAPI на обёртке. Смена модели — единственный повод для нового кадра.
 import { THREE, makeRenderer, blob } from './kit.js?v=tc11132310';
-import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11132310';
+import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11141700';
 export { THREE };
 
-export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2 } = {}) {
+export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2, fit = 'app', padTop = 8, padBottom = 10 } = {}) {
   const R = makeRenderer(canvas, { exposure: 1.0, alpha: true }); R.setClearColor(0, 0);
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(28, 1, .05, 50);
@@ -120,6 +120,11 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
   const EDGE = 2;       // ни одна часть модели не должна выходить за край экрана
 
   function safeRect() {
+    if (fit === 'host') {
+      const T = padTop;
+      const B = Math.max(T + 8, FH - padBottom);
+      return { L: 0, R: FW, T, B };
+    }
     const app = host.closest('.app') || document.querySelector('.app') || host;
     const appR = app.getBoundingClientRect();
     const topEl = app.querySelector('.top');
@@ -385,8 +390,16 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     };
   }
 
+  function relayout() {
+    place();
+    rect = host.getBoundingClientRect();
+    calcHit();
+    R.shadowMap.needsUpdate = true;
+    requestDraw();
+  }
+
   return {
-    cam, toScreen, headTop, requestDraw, setHappy, hit: () => hitE, show, measure,
+    cam, toScreen, headTop, requestDraw, setHappy, hit: () => hitE, show, measure, relayout,
     spinBy, spinEnd,
     get yaw() { return userYaw; },
     set onSpinSettle(fn) { onSpinSettle = fn; },
