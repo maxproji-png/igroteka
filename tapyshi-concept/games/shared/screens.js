@@ -43,7 +43,7 @@ function card(g,wide){
 function catalog(){
   var duo=G.filter(function(g){return g.mode==='duo'}),solo=G.filter(function(g){return g.mode==='solo'});
   return '<div class="bgdeco" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div><main class="page">'+
-  '<header class="top"><div class="ttl"><h1>Игры</h1><p>8 игр с питомцами</p></div><button type="button" class="friends-btn spring" data-act="friends" aria-label="Друзья, 3 в сети, +5000 за друга"><span class="ic">'+IC.people+'</span><span>Друзья</span><span class="on-n">3</span><span class="rw">+5000</span></button></header>'+
+  '<header class="top"><div class="ttl"><h1>Игры</h1><p>8 игр с питомцами</p></div><button type="button" class="friends-btn spring" data-act="friends" aria-label="Друзья, 3 в сети"><span class="ic">'+IC.people+'</span><span>Друзья</span><span class="on-n">3</span></button></header>'+
   '<div class="seg"><button class="spring on" data-f="all">Все <em>8</em></button><button class="spring" data-f="duo">На двоих <em>5</em></button><button class="spring" data-f="solo">Соло <em>3</em></button></div>'+
   '<section class="sec" data-sec="duo"><div class="sech"><h2>На двоих</h2><span>с другом из MAX или с ботом</span></div><div class="grid">'+duo.map(function(g,i){return card(g,!i)}).join('')+'</div></section>'+
   '<section class="sec" data-sec="solo"><div class="sech"><h2>Соло</h2><span>головоломки на рекорд</span></div><div class="grid">'+solo.map(function(g,i){return card(g,!i)}).join('')+'</div></section>'+
