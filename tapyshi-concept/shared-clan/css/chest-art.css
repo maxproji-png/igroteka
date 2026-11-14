@@ -1,0 +1,29 @@
+/* Сундуки клана (концепт А «Классика»: деревянный → серебряный → золотой) — SVG из ../js/chest-art.js.
+   Только анимации и размеры; цвета страницы — токены. */
+.chest{display:block;overflow:visible;width:100%;height:100%}
+.chest .ch-rays{animation:chRays 14s linear infinite}
+.chest .ch-tw{animation:chTw 2.2s ease-in-out infinite}
+.chest .ch-tw:nth-of-type(2n){animation-delay:-1.1s}
+@keyframes chRays{to{transform:rotate(360deg)}}
+@keyframes chTw{0%,100%{transform:scale(.55);opacity:.5}50%{transform:scale(1.1);opacity:1}}
+/* шкала цели */
+.prog .ms-rail{height:88px}
+.prog .ms-ch{width:66px}
+.prog .ms-ico{width:62px;height:62px}
+.ms-ico .chest{filter:drop-shadow(0 3px 4px rgb(var(--shade) / .14));transition:transform .25s var(--spring)}
+.ms-ch:active .ms-ico .chest{transform:scale(.92)}
+.ms-ico i{z-index:2;right:0;bottom:0}
+.ms-ch.st-locked .ms-ico .chest{filter:saturate(.8) drop-shadow(0 3px 4px rgb(var(--shade) / .12))}
+.ms-ch.st-ready .ms-ico .chest{animation:chestPulse 1.8s ease-in-out infinite}
+.ms-ch.st-ready .ms-ico::before{content:"";position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--sun) 50%,transparent),transparent);z-index:-1}
+.ms-ch.st-ready small{color:var(--white);background:linear-gradient(180deg,color-mix(in srgb,var(--green) 82%,var(--white)),var(--green));box-shadow:0 2px 0 var(--green-edge);padding:1px 9px;border-radius:var(--r-pill)}
+.ms-ch.st-claimed .ms-ico .chest{opacity:.95}
+/* крупный сундук в шапке карточки */
+.prog .ch.ch-art{display:block;width:62px;height:62px}
+/* шторка */
+.chest-sheet .cs-head .cs-art{width:104px;height:104px;flex:none;display:block}
+.chest-sheet .cs-lv{display:inline-flex;align-items:center;height:22px;padding:0 10px;margin-right:6px;border-radius:11px;font-size:12px;font-weight:900}
+.cs-lv.lv-0{background:var(--fill);color:var(--ink-2)}
+.cs-lv.lv-1{background:var(--violet-soft);color:var(--violet)}
+.cs-lv.lv-2{background:var(--sun-soft);color:var(--sun-edge)}
+@media (max-width:370px){.prog .ms-ch{width:58px}.prog .ms-ico{width:54px;height:54px}.prog .ms-rail{height:80px}.prog .ch.ch-art{width:52px;height:52px}}

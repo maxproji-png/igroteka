@@ -95,16 +95,16 @@ C.tabs = function(tabsEl, opts){ opts=opts||{}; var app=document.querySelector('
 
 /* Сундуки на шкале цели недели — каждый открывает свою шторку с наградами (демо). */
 C.chests = [
-  { id:'c500', at:500000, lbl:'500 тыс', title:'Сундук 500 000', img:'chest-wood.png',
+  { id:'c500', tier:0, at:500000, lbl:'500 тыс', title:'Деревянный сундук', img:'chest-wood.png',
     cond:'Клан натапал 500 000',
     who:'Каждому участнику, который внёс вклад на этой неделе',
     defaultClaimed:1,
     rewards:[{k:'coin',n:'Монеты',a:'+200'}] },
-  { id:'c1m', at:1000000, lbl:'1 млн', title:'Сундук 1 000 000', img:'chest-star.png',
+  { id:'c1m', tier:1, at:1000000, lbl:'1 млн', title:'Серебряный сундук', img:'chest-star.png',
     cond:'Клан натапал 1 000 000',
     who:'Каждому участнику, который внёс вклад на этой неделе',
     rewards:[{k:'coin',n:'Монеты',a:'+500'}] },
-  { id:'c15', at:1500000, lbl:'1,5 млн', title:'Сундук клана', img:'chest-gold.png',
+  { id:'c15', tier:2, at:1500000, lbl:'1,5 млн', title:'Золотой сундук', img:'chest-gold.png',
     cond:'Клан натапал 1 500 000',
     who:'Каждому, кто натапал не меньше 1 000 за эту неделю',
     rewards:[
@@ -141,6 +141,13 @@ function rwIcon(k){
   if(k==='xp') return '<span class="rw-svg xp">'+T.IC.shield+'</span>';
   return '<span class="rw-svg rare"><svg viewBox="0 0 24 24"><path d="M12 3.5 L14.4 9.2 L20.5 10 L16 14.3 L17.2 20.4 L12 17.4 L6.8 20.4 L8 14.3 L3.5 10 L9.6 9.2Z" fill="#FFC93D" stroke="#E39200" stroke-width="1.4" stroke-linejoin="round"/></svg></span>';
 }
+/* арт сундуков: SVG концепта А (js/chest-art.js); если скрипт не подключён — прежние PNG */
+var LV=['Простой','Редкий','Легендарный'];
+function chestArt(ch, open, cls){
+  if(window.CH) return CH.svg('a', ch.tier, open, {cls:cls||''});
+  return '<img'+(cls?' class="'+cls+'"':'')+' src="'+T.img('v2/'+ch.img)+'" alt="">';
+}
+C.chestArt = chestArt;
 function stLabel(s){ return s==='claimed'?'Получен':s==='ready'?'Можно забрать':'Закрыт'; }
 C.chestSheet = function(id){
   var ch, i; for(i=0;i<C.chests.length;i++) if(C.chests[i].id===id) ch=C.chests[i];
@@ -155,7 +162,7 @@ C.chestSheet = function(id){
   else if(st==='claimed') cta='<button type="button" class="btn btn--secondary btn--m btn--wide" disabled>Уже получен</button>';
   else cta='<button type="button" class="btn btn--secondary btn--m btn--wide" disabled>Пока закрыт</button>';
   var html='<div class="chest-sheet" data-chest-sheet="'+ch.id+'">'+
-    '<div class="cs-head"><img src="'+T.img('v2/'+ch.img)+'" alt=""><div><h3>'+ch.title+'</h3>'+chip+'</div></div>'+
+    '<div class="cs-head">'+(window.CH?'<span class="cs-art">'+chestArt(ch, st==='claimed')+'</span>':chestArt(ch,false))+'<div><h3>'+ch.title+'</h3>'+(ch.tier!=null?'<span class="cs-lv lv-'+ch.tier+'">'+LV[ch.tier]+'</span>':'')+chip+'</div></div>'+
     '<p class="cs-demo">цифры и состав — демо макета</p>'+
     '<ul class="rw-list">'+rewards+'</ul>'+
     '<div class="cs-meta"><div><small>Как открыть</small><b>'+ch.cond+'</b><span>'+(st==='locked'?'Ещё '+T.fmt(left)+' тапов · сейчас '+T.fmt(now):'Цель выполнена: '+T.fmt(Math.min(now,need))+' / '+T.fmt(need))+'</span></div>'+
@@ -186,8 +193,8 @@ C.paintMilestones = function(){
   host.innerHTML='<div class="ms-track">'+C.chests.map(function(ch){
     var pct=Math.min(100, ch.at/goal*100), st=C.chestState(ch);
     return '<button type="button" class="ms-ch st-'+st+'" style="left:'+pct+'%" data-chest="'+ch.id+'" aria-label="'+ch.title+', '+stLabel(st)+'">'+
-      '<span class="ms-ico"><img src="'+T.img('v2/'+ch.img)+'" alt=""><i></i></span>'+
-      '<small>'+ch.lbl+'</small></button>';
+      '<span class="ms-ico">'+chestArt(ch, st==='claimed')+'<i></i></span>'+
+      '<small>'+(st==='ready'&&window.CH?'Забрать':ch.lbl)+'</small></button>';
   }).join('')+'</div>';
   var big=document.querySelector('[data-chest-big], .ch-btn, .prog .ch');
   if(big && !big.closest('[data-chest]')){
@@ -195,6 +202,14 @@ C.paintMilestones = function(){
     wrap.setAttribute('data-chest','c15');
     wrap.classList.add('ch-btn','st-'+C.chestState(C.chests[2]));
   }
+  var bigArt=document.querySelector('.prog .ch-art');
+  if(bigArt && window.CH){
+    var st2=C.chestState(C.chests[2]);
+    bigArt.innerHTML=chestArt(C.chests[2], st2==='claimed');
+    var bw=bigArt.closest('.ch-btn'); if(bw) bw.className='ch-btn st-'+st2;
+  }
+  var hm=(location.hash||'').match(/^#chest-(c500|c1m|c15)$/);
+  if(hm && !C._hashOpened){ C._hashOpened=1; setTimeout(function(){ C.chestSheet(hm[1]); }, 250); }
   if(!C._chestBound){
     C._chestBound=1;
     document.addEventListener('click', function(e){
