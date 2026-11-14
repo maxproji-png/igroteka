@@ -141,15 +141,19 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
   .fr-got{max-width:120px;font-size:11px}
 }
 
-.fr-pick .g-opts{max-height:none;overflow:visible}
+.fr-pick .g-opts{max-height:none;overflow:visible;padding-right:0}
 .fr-pick .opt{padding:8px 12px 8px 8px}
-.fr-pick .stakes{grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
-.fr-pick .stk{height:62px;padding:6px 6px;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px}
-.fr-pick .stk .sv{align-items:center}
-.fr-pick .stk .sv b{font-size:15px}
+.fr-pick .stakes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;min-width:0;margin-bottom:12px;box-sizing:border-box}
+.fr-pick .stk{height:auto;min-height:62px;padding:8px 6px;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px;min-width:0;width:100%;max-width:100%;box-sizing:border-box}
+.fr-pick .stk .sv{align-items:center;min-width:0;width:100%}
 .fr-pick .stk .radio{display:none}
-.fr-pick .stk .sv b{font-size:13.5px;white-space:normal}
-.fr-pick .stk .sv small{font-size:11px;white-space:nowrap}
+.fr-pick .stk .sv b{font-size:13.5px;white-space:normal;overflow-wrap:anywhere;line-height:1.15}
+.fr-pick .stk .sv small{font-size:11px;white-space:normal;overflow-wrap:anywhere;line-height:1.15;max-width:100%}
+@media (max-width:374px){
+  .fr-pick .stk{padding:7px 4px}
+  .fr-pick .stk .sv b{font-size:12.5px}
+  .fr-pick .stk .sv small{font-size:10px}
+}
 
 .fr-pick .opt .ot small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .fr-pick .g-opts{min-height:280px}

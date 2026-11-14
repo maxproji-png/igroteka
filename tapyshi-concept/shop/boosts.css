@@ -1,0 +1,78 @@
+/* Магазин · раздел «Бусты». Только токены (../shared/tokens.css); арт иконок — ../shared/boost-art.js. */
+.boost-ico{display:block;width:100%;height:100%;overflow:visible}
+.boost-ico .bo-rays{animation:boRays 16s linear infinite}
+.boost-ico .bo-tw{animation:boTw 2.2s ease-in-out infinite}
+@keyframes boRays{to{transform:rotate(360deg)}}
+@keyframes boTw{0%,100%{transform:scale(.55);opacity:.5}50%{transform:scale(1.1);opacity:1}}
+.coin3d{display:block}
+/* внутренний круг единой монеты (shared/coin.js); в общем CSS он задан только для «Игр» */
+.coin-in{fill:color-mix(in srgb,var(--sun-edge) 35%,var(--sun))}
+/* шапка раздела */
+.bsec{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:6px 4px 10px}
+.bsec b{display:block;font-size:20px;font-weight:1000;letter-spacing:-.3px}
+.bsec small{display:block;margin-top:2px;font-size:13px;font-weight:800;color:var(--ink-2)}
+.bsec .chip{height:26px;padding:0 10px;font-size:12px}
+/* карточка буста */
+.bl{display:flex;flex-direction:column;gap:10px}
+.bc{position:relative;display:grid;grid-template-columns:78px 1fr auto;grid-template-areas:"i n n" "i t a";align-items:center;column-gap:12px;row-gap:0;padding:12px 12px 12px 10px;border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-sm);text-align:left;width:100%;cursor:pointer}
+.bc-ico{grid-area:i;position:relative;width:78px;height:78px;border-radius:22px;background:radial-gradient(circle at 50% 38%,var(--white),var(--violet-soft) 75%);display:block}
+.bc-ico .boost-ico{position:absolute;inset:4px;width:auto;height:auto}
+.bc-tx{grid-area:t;min-width:0;align-self:start}
+.bc-nm{grid-area:n;display:block;font-size:16px;font-weight:1000;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:end}
+.pips{display:flex;align-items:center;gap:4px;margin-top:4px;font-size:12px;font-weight:900;color:var(--ink-3);white-space:nowrap}
+.pips i{width:14px;height:6px;border-radius:3px;background:var(--fill)}
+.pips i.on{background:var(--violet)}
+.pips span{margin-left:3px}
+.eff{display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin-top:6px;font-size:13px;font-weight:800;color:var(--ink-2);line-height:1.2}
+.eff b{font-size:15px;font-weight:1000;color:var(--ink)}
+.eff b.to{color:var(--green-edge)}
+.eff .ar{color:var(--ink-3);font-weight:1000}
+.eff .coin{width:16px;height:16px}
+.eff .bolt{display:inline-block;width:14px;height:14px}
+.eff-sub{display:block;margin-top:2px;font-size:12px;font-weight:800;color:var(--ink-3);line-height:1.25}
+.bc-act{grid-area:a;align-self:center;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.bc .price{height:40px;padding:0 13px 0 9px;font-size:15.5px;font-weight:1000;gap:5px}
+.bc .price .coin{width:20px;height:20px}
+.lack{font-size:11.5px;font-weight:900;color:var(--pink-edge);white-space:nowrap}
+/* состояния */
+.bc.st-lack .bc-ico{filter:saturate(.55);opacity:.8}
+.bc.st-lack .price{--b:var(--fill);--be:color-mix(in srgb,var(--ink-3) 45%,var(--white));color:var(--ink-2);text-shadow:none;box-shadow:0 3px 0 var(--be)}
+.bc.st-lack .price .coin{filter:saturate(.4);opacity:.75}
+.bc.st-lack .bc-nm{color:var(--ink-2)}
+.bc.st-max{box-shadow:var(--sh-sm),inset 0 0 0 2.5px color-mix(in srgb,var(--sun) 55%,var(--white))}
+.bc.st-max .bc-ico{background:radial-gradient(circle at 50% 38%,var(--white),var(--sun-soft) 75%)}
+.bc.st-max .pips i.on{background:var(--sun)}
+.maxchip{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 11px;border-radius:var(--r-pill);background:var(--sun-soft);color:var(--sun-edge);font-size:13px;font-weight:1000;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--sun) 45%,var(--white));white-space:nowrap}
+.maxchip svg{width:15px;height:15px}
+.bc.bump{animation:boing .5s var(--spring)}
+/* тизер «скоро» */
+.soon-card{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;border-radius:var(--r-lg);background:var(--violet-soft)}
+.soon-card img{width:56px;height:56px;object-fit:contain;flex:none}
+.soon-card b{display:block;font-size:14.5px;font-weight:1000}
+.soon-card small{display:block;margin-top:2px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.soon-card .tx{flex:1;min-width:0}
+.soon-card .ibtn{flex:none;color:var(--violet)}
+.soon-card .ibtn.done{color:var(--green-edge)}
+/* шторка покупки */
+.bs-top{display:flex;align-items:center;justify-content:center;gap:6px;margin:2px 0 6px}
+.bs-top .a{width:84px;height:84px;opacity:.75}
+.bs-top .b{width:128px;height:128px}
+.bs-top .ar{width:26px;height:26px;color:var(--ink-3)}
+.bs h3{margin:0;text-align:center;font-size:22px;font-weight:1000;letter-spacing:-.3px}
+.bs .sub{margin:3px 0 12px;text-align:center;font-size:13.5px;font-weight:800;color:var(--ink-2)}
+.bs .big{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:20px;background:var(--green-soft);font-size:15px;font-weight:800;color:var(--ink-2);margin-bottom:10px;flex-wrap:wrap}
+.bs .big b{font-size:22px;font-weight:1000;color:var(--ink)}.bs .big b.to{color:var(--green-edge)}
+.bs .big .coin{width:22px;height:22px}.bs .big .bolt{width:18px;height:18px;display:inline-block}
+.lvl{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:6px}
+.lvl li{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;background:var(--bg);font-size:13.5px;font-weight:800;color:var(--ink-2)}
+.lvl li b{color:var(--ink);font-weight:1000}
+.lvl li .p{display:inline-flex;align-items:center;gap:4px;font-weight:1000;color:var(--ink)}
+.lvl li .p .coin{width:16px;height:16px}
+.lvl li.have .p{color:var(--green-edge)}
+.lvl li.next{background:var(--violet-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--violet) 30%,var(--white))}
+.lvl li em{font-style:normal;font-size:11px;font-weight:900;color:var(--pink-edge);display:block}
+.bs .btn--l .coin{width:24px;height:24px}
+.bs .btn--l[disabled]{--b:var(--fill);--be:color-mix(in srgb,var(--ink-3) 45%,var(--white));color:var(--ink-2);text-shadow:none}
+.bs .after{margin:10px 0 0;text-align:center;font-size:12.5px;font-weight:800;color:var(--ink-3)}
+.bs .after.bad{color:var(--pink-edge)}
+@media (max-width:370px){.bc{grid-template-columns:66px 1fr auto;gap:10px}.bc-ico{width:66px;height:66px;border-radius:19px}.bc-nm{font-size:15px}.bc .price{padding:0 11px 0 7px;font-size:14.5px}.eff{font-size:12.5px}.eff b{font-size:14px}}
