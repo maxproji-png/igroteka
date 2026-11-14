@@ -167,6 +167,19 @@ var PET_STAGE={
   goose:['Ветерок','Облачко','Пёрышко','Бриз','Небесный','Облачный Ангел']
 };
 function stageName(pet,st){var a=PET_STAGE[pet];return a?a[Math.max(0,Math.min(5,(st||1)-1))]:'';}
+// Пороги стадий — как в pet/evo.js (STAGE_AT) и server/game.js STAGES: 1, 5, 10, 15, 20, 25.
+// Стадия по уровню: 1–4, 5–9, 10–14, 15–19, 20–24, 25+.
+var STAGE_AT=[1,5,10,15,20,25];
+function stageOfLevel(level){
+  var lv=Math.max(1,Math.floor(level)||1), i=0;
+  for(var k=STAGE_AT.length-1;k>=0;k--) if(lv>=STAGE_AT[k]){i=k;break;}
+  return i+1;
+}
+function formName(f){
+  var names=PET_STAGE[f.pet];
+  if(!names) return '';
+  return names[Math.max(0,Math.min(5,stageOfLevel(f.lvl)-1))];
+}
 var FRIENDS=[
   {id:'sasha',name:'Саша',pet:'dragon',stage:5,lvl:22,on:1,seen:null},
   {id:'kira',name:'Кира М.',pet:'goose',stage:3,lvl:12,on:1,seen:null},
@@ -182,7 +195,8 @@ function frAva(f){
 }
 function frMeta(f){
   if(!f.pet) return '';
-  return '<small>'+PET_KIND[f.pet]+' · ур. '+f.lvl+'</small>';
+  var nm=formName(f);
+  return '<small>'+(nm?nm+' · ':'')+'ур. '+f.lvl+'</small>';
 }
 var ACC={'Саша':'Сашу','Кира М.':'Киру М.','Марина':'Марину','Алина ☀️':'Алину ☀️'};
 function frAcc(f){return ACC[f.name]||f.name;}
