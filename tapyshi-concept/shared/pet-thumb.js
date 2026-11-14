@@ -15,7 +15,7 @@
   function petThumb(kind, level) {
     var k = kind || 'raccoon';
     var st = stageOfLevel(level);
-    return root() + 'shared/pets/stage/' + k + '_' + st + '.png';
+    return root() + 'shared/pets/stage/' + k + '_' + st + '_head.png';
   }
   w.TAP_stageOfLevel = stageOfLevel;
   w.TAP_petThumb = petThumb;

@@ -103,8 +103,8 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
 .fr-badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:var(--violet);color:var(--white);font-size:12px;font-weight:1000}
 .fr-list{display:flex;flex-direction:column;gap:8px}
 .fr-row{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-sm)}
-.fr-ava{position:relative;width:52px;height:52px;border-radius:50%;background:var(--fill);display:grid;place-items:center}
-.fr-ava img{width:46px;height:46px;object-fit:contain;margin-top:4px}
+.fr-ava{position:relative;width:52px;height:52px;border-radius:50%;background:var(--fill);display:grid;place-items:center;overflow:hidden}
+.fr-ava img{width:100%;height:100%;object-fit:cover;object-position:center 40%;margin:0}
 .fr-ava.empty{background:var(--violet-soft);color:var(--violet);font-size:20px;font-weight:1000;overflow:visible}
 .fr-ava.lg{width:52px;height:52px;flex:none}
 .fr-ava .on-dot{position:absolute;right:1px;bottom:1px;width:12px;height:12px;border-radius:50%;background:var(--fill);box-shadow:0 0 0 2px var(--white)}
@@ -135,7 +135,7 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
   .friends-btn .ic{width:32px;height:32px}
   .fr-row{grid-template-columns:46px 1fr auto;padding:8px 10px;gap:8px}
   .fr-ava{width:46px;height:46px}
-  .fr-ava img{width:40px;height:40px}
+  .fr-ava img{width:100%;height:100%}
   .fr-nm b{font-size:14.5px}
   .fr-act .btn--s{padding:0 10px;height:34px;font-size:12.5px}
   .fr-got{max-width:120px;font-size:11px}

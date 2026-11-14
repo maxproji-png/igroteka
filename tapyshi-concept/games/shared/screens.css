@@ -29,7 +29,7 @@ body.has-sheet .tabbar,body.is-sheet .tabbar{transform:translateX(-50%) translat
 .sh-sub .mode{box-shadow:none}
 .sh-sub .mode.duo{background:var(--violet-soft)}.sh-sub .mode.solo{background:var(--green-soft)}
 .sh-me{display:flex;align-items:center;gap:10px;margin:14px 0 2px;padding:6px 12px 6px 6px;border-radius:18px;background:var(--bg);font-size:13px;color:var(--ink-2);font-weight:800}
-.sh-me img{width:34px;height:40px;object-fit:contain;object-position:bottom}
+.sh-me img{width:36px;height:36px;border-radius:50%;object-fit:cover;object-position:center 40%}
 .sh-me b{color:var(--ink)}
 .sh-h{margin:16px 2px 8px;font-size:15px;font-weight:1000;color:var(--ink)}
 .opts{display:flex;flex-direction:column;gap:8px}
@@ -237,4 +237,4 @@ body.has-sheet .tabbar,body.is-sheet .tabbar{transform:translateX(-50%) translat
 .sheet .sh-var{min-height:196px;display:flex;flex-direction:column;justify-content:center}
 .fr-pick .sh-var{min-height:148px}
 .sheet > .btn--l,.sheet > .btn--max,.sheet > .btn--primary{position:sticky;bottom:0;z-index:2;margin-top:8px;box-shadow:0 -12px 16px var(--white)}
-.fr-ava img,.sh-me img,.pl .av img,.slot img,.mepet img,.rpet img,.mini,.orb img{object-fit:contain}
+.fr-ava img,.sh-me img,.pl .av img,.slot img,.mepet img,.rpet img,.mini,.orb img{object-fit:cover;object-position:center 40%}

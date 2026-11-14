@@ -14,7 +14,7 @@ function go(p){var wasSheet=(S.screen==='sheet')||(S.screen==='friends'&&S.pick)
   var o=Object.assign({},S);
   if(wasSheet&&((S.screen==='sheet')||(S.screen==='friends'&&S.pick))) o.stay=true;
   TAP.render(o);S.enter=false;
-  if(S.screen==='catalog'||S.screen==='sheet'||S.screen==='friends'){if(S.screen!=='friends')applyFilter();window.scrollTo(0,S.y||0);}
+  if(!o.stay && (S.screen==='catalog'||S.screen==='sheet'||S.screen==='friends')){if(S.screen!=='friends')applyFilter();window.scrollTo(0,S.y||0);}
   if(S.screen==='search'){var t=0,el=document.querySelector('.timer');(function tick(){el.textContent='0:'+('0'+t).slice(-2);t++;if(t<=4)later(tick,1000);})();later(startGame,4200);}
   if(S.screen==='wait')later(startGame,4500);
   if(S.screen==='waitFriend')later(startGame,2800);

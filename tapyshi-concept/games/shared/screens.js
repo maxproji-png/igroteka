@@ -274,10 +274,26 @@ function waitFriend(o){
 
 var SCREENS={catalog:catalog,sheet:function(o){return catalog()+sheet(o)},search:search,invite:invite,wait:wait,waitFriend:waitFriend,friends:friends,shellDuo:shellDuo,shellSolo:shellSolo,result:result};
 TAP.render=function(o){
-  var app=document.getElementById('app');app.innerHTML=SCREENS[o.screen](o);
+  var app=document.getElementById('app');
+  /* Переключение режима/ставки в открытой шторке: обновляем только её, фон и scrim не пересобираем. */
+  if(o.stay){
+    var html=(o.screen==='sheet')?sheet(o):(o.pick?pickSheet(o):'');
+    var oldSh=app.querySelector('section.sheet, .sheet');
+    if(html && oldSh){
+      var tmp=document.createElement('div'); tmp.innerHTML=html;
+      var neu=tmp.querySelector('section.sheet, .sheet');
+      if(neu){
+        oldSh.className=neu.className+' sheet-stay';
+        if(neu.getAttribute('style')) oldSh.setAttribute('style',neu.getAttribute('style'));
+        if(neu.getAttribute('aria-label')) oldSh.setAttribute('aria-label',neu.getAttribute('aria-label'));
+        oldSh.innerHTML=neu.innerHTML;
+        return;
+      }
+    }
+  }
+  app.innerHTML=SCREENS[o.screen](o);
   var tabs=o.screen==='catalog'||o.screen==='sheet'||o.screen==='friends';
   document.body.className='scr-'+o.screen+(tabs?'':' no-tabs')+(o.screen==='sheet'||o.pick?' has-sheet':'');
-  if(o.stay){var sh=app.querySelector('.sheet'); if(sh) sh.classList.add('sheet-stay');}
   if(o.screen!=='sheet'&&o.screen!=='catalog'&&!(o.screen==='friends'&&o.pick))window.scrollTo(0,0);
 };
 TAP.game=game;TAP.OPP=OPP;
