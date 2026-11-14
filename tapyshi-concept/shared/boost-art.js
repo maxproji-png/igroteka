@@ -1,7 +1,7 @@
 /* Иконки бустов (SVG, светлый мультяшный объём — как сундуки А). viewBox 0 0 120 120.
    BA.svg(id, level 1..N, {badge:true}) → строка <svg>.  id: tap | energy | regen | offline.
    Материал растёт с уровнем: ур. 1 — серебро, ур. 2 — фиолетовый, макс. — золото с сиянием.
-   Монета — та же, что T.coin (../shared/coin.js): золотая с лапкой. */
+   Монета — вариант A: золотая с коричневой лапкой, без внутреннего круга. */
 (function(){
 var uid=0,SH='rgb(80 62 160)';
 var M={
@@ -29,13 +29,12 @@ function aura(c,lv,cx,cy,col){if(lv<2)return '';var s='<circle cx="'+cx+'" cy="'
     s+='<g class="bo-rays" style="transform-origin:'+cx+'px '+cy+'px" fill="'+c.rad([[0,'#FFE27A',.7],[1,'#FFE27A',0]])+'">'+r+'</g>'}
   return s}
 function paw(x,y,s,col,op){return '<g fill="'+col+'"'+(op?' opacity="'+op+'"':'')+'><ellipse cx="'+x+'" cy="'+(y+s*.25)+'" rx="'+(s*.42)+'" ry="'+(s*.34)+'"/><circle cx="'+(x-s*.5)+'" cy="'+(y-s*.2)+'" r="'+(s*.16)+'"/><circle cx="'+(x-s*.2)+'" cy="'+(y-s*.5)+'" r="'+(s*.17)+'"/><circle cx="'+(x+s*.2)+'" cy="'+(y-s*.5)+'" r="'+(s*.17)+'"/><circle cx="'+(x+s*.5)+'" cy="'+(y-s*.2)+'" r="'+(s*.16)+'"/></g>'}
-/* монета: как T.coin — золотая, ребро, внутренний круг, белая лапка */
+/* монета: вариант A — золотая, ребро, коричневая лапка */
 function coin(c,x,y,r,tilt,rot){var g=M.gold,ry=r*(tilt||1),t=rot?' transform="rotate('+rot+' '+x+' '+y+')"':'';
   return '<g'+t+'><ellipse cx="'+x+'" cy="'+(y+r*.18)+'" rx="'+r+'" ry="'+ry+'" fill="'+g.d+'" stroke="'+g.o+'" stroke-width="'+Math.max(1.4,r*.12)+'"/>'+
-    '<ellipse cx="'+x+'" cy="'+y+'" rx="'+r+'" ry="'+ry+'" fill="'+c.lin([[0,g.l],[.6,g.b],[1,g.d]])+'" stroke="'+g.o+'" stroke-width="'+Math.max(1.4,r*.12)+'"/>'+
-    '<ellipse cx="'+x+'" cy="'+y+'" rx="'+(r*.72)+'" ry="'+(ry*.72)+'" fill="'+g.b+'" stroke="'+g.d+'" stroke-width="'+Math.max(1,r*.08)+'"/>'+
-    '<g transform="translate('+x+' '+y+') scale(1 '+(tilt||1)+') translate('+(-x)+' '+(-y)+')">'+paw(x,y+r*.05,r*.85,'#fff',.95)+'</g>'+
-    '<path d="M'+(x-r*.68)+','+(y-ry*.3)+' A'+(r*.72)+','+(ry*.72)+' 0 0 1 '+(x-r*.15)+','+(y-ry*.7)+'" stroke="#fff" stroke-width="'+Math.max(1.2,r*.12)+'" fill="none" stroke-linecap="round" opacity=".8"/></g>'}
+    '<ellipse cx="'+x+'" cy="'+y+'" rx="'+r+'" ry="'+ry+'" fill="'+c.lin([[0,g.l],[.55,g.b],[1,g.d]])+'" stroke="'+g.o+'" stroke-width="'+Math.max(1.4,r*.12)+'"/>'+
+    '<g transform="translate('+x+' '+y+') scale(1 '+(tilt||1)+') translate('+(-x)+' '+(-y)+')">'+paw(x,y+r*.04,r*.82,'#7A3E00',.95)+'</g>'+
+    '<path d="M'+(x-r*.62)+','+(y-ry*.28)+' A'+(r*.7)+','+(ry*.7)+' 0 0 1 '+(x-r*.1)+','+(y-ry*.66)+'" stroke="#fff" stroke-width="'+Math.max(1.1,r*.1)+'" fill="none" stroke-linecap="round" opacity=".75"/></g>'}
 function bolt(c,x,y,s){var g=M.gold;var d='M'+(x+s*.15)+','+(y-s)+' L'+(x-s*.55)+','+(y+s*.12)+' H'+(x-s*.02)+' L'+(x-s*.22)+','+(y+s)+' L'+(x+s*.58)+','+(y-s*.18)+' H'+(x+s*.05)+'Z';
   return P(d,c.lin([[0,'#FFF6C2'],[.5,g.b],[1,g.d]]),g.o,Math.max(2,s*.12))+P('M'+(x+s*.02)+','+(y-s*.62)+' L'+(x-s*.28)+','+(y-s*.02),'none','#fff',Math.max(1.5,s*.1),' opacity=".8"')}
 function badge(c,lv,max){var m=max?M.gold:(M[MAT[lv]]||M.gold),cx=100,cy=100;

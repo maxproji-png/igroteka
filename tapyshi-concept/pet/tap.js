@@ -63,7 +63,7 @@ function appEl() { return document.querySelector('.app'); }
 function makeCoin() {
   const c = document.createElement('div');
   c.className = 'fcoin';
-  c.innerHTML = '<i class="coin-dot"></i>';
+  c.innerHTML = '<img src="shared/coin/png/coin-24@2x.png" alt="">';
   c.style.display = 'none';
   appEl().appendChild(c);
   return c;

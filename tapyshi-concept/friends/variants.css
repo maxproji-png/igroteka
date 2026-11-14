@@ -46,13 +46,13 @@ body.hub .more a{display:block;font-size:14px;font-weight:800;color:var(--violet
 
 /* Пустой список — награда с игровой монетой, не эмодзи */
 .fr-empty .fr-empty-line{display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;max-width:none;font-size:15px;font-weight:800;color:var(--ink-2);line-height:1.35}
-.fr-empty .fr-empty-line .coin{width:18px;height:18px;flex:none;margin-top:-1px}
+
 .fr-empty .fr-coinpill{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 8px 0 5px;border-radius:var(--r-pill);background:var(--white);box-shadow:var(--sh-sm);color:var(--ink);font-size:14px;font-weight:1000;line-height:1}
-.fr-empty .fr-coinpill .coin{width:16px;height:16px;margin:0}
+
 
 /* Полученная награда в «Приглашён тобой» — тихо, без зелёной плашки */
 .fr-got{display:inline-flex;align-items:center;gap:5px;padding:0;max-width:none;border-radius:0;background:none;color:var(--ink-2);font-size:13px;font-weight:800;line-height:1;text-align:right}
-.fr-got .coin{width:16px;height:16px;flex:none}
+
 
 /* Аккуратнее шапка Друзей: без подзаголовка, меньше зазор */
 .fr-page .fr-top{align-items:center;gap:8px;margin:0 0 8px}

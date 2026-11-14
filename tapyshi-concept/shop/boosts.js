@@ -15,15 +15,15 @@ var BOLT='<svg class="bolt" viewBox="0 0 24 24"><path d="M13.5 2 L4.5 13.5 H11 L
 var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
 var ARR='<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 H18 M13 6 L19 12 L13 18"/></svg>';
 function fmt(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00A0');}
-function coin(){return T.coin();}
+function coin(px){return T.coin('',px||16);}
 function word(n){n=+String(n).replace(',','.');return n===1?'монета':(n>=2&&n<=4)?'монеты':'монет';}
 /* эффект: from/to — индексы уровней; to=null → только текущий */
-function eff(b,f,t){var A=b.lv[f],B=t!=null?b.lv[t]:null,v=function(x,cls){return '<b'+(cls?' class="'+cls+'"':'')+'>'+x.v+'</b>'},ar=' <span class="ar">→</span> ';
+function eff(b,f,t,px){var A=b.lv[f],B=t!=null?b.lv[t]:null,v=function(x,cls){return '<b'+(cls?' class="'+cls+'"':'')+'>'+x.v+'</b>'},ar=' <span class="ar">→</span> ';
   var mid=B?v(A)+ar+v(B,'to'):v(A),sub='';
-  if(b.unit==='coin-tap') mid+=' '+coin()+' за тап';
+  if(b.unit==='coin-tap') mid+=' '+coin(px||16)+' за тап';
   if(b.unit==='energy'){mid+=' '+BOLT;sub='максимум энергии';}
   if(b.unit==='regen'){mid+=' мин';sub='полная шкала';}
-  if(b.unit==='offline'){mid+=' '+coin()+' в сек.';}
+  if(b.unit==='offline'){mid+=' '+coin(px||16)+' в сек.';}
   return {mid:mid,sub:sub};}
 function state(b,lv,bal){if(lv>=b.lv.length)return 'max';return bal>=b.lv[lv].p?'buy':'lack';}
 function card(b,lv,bal){var st=state(b,lv,bal),max=b.lv.length,e=st==='max'?eff(b,lv-1):eff(b,lv-1,lv),act;
@@ -39,12 +39,12 @@ function card(b,lv,bal){var st=state(b,lv,bal),max=b.lv.length,e=st==='max'?eff(
 function byId(id){for(var i=0;i<BOOSTS.length;i++)if(BOOSTS[i].id===id)return BOOSTS[i];}
 function sheet(id){var b=byId(id),lv=S.lv[id],max=b.lv.length,st=state(b,lv,S.bal);
   var top=st==='max'?'<span class="b">'+BA.svg(id,lv,{badge:1,max:1})+'</span>':'<span class="a">'+BA.svg(id,lv,{badge:1})+'</span>'+ARR+'<span class="b">'+BA.svg(id,lv+1,{badge:1,max:lv+1===max})+'</span>';
-  var e=st==='max'?eff(b,lv-1):eff(b,lv-1,lv);
+  var e=st==='max'?eff(b,lv-1,null,22):eff(b,lv-1,lv,22);
   var rows=b.lv.map(function(L,i){var ee=eff(b,i),cls=i<lv?'have':i===lv?'next':'';
     return '<li class="'+cls+'"><b>Ур. '+(i+1)+'</b><span>'+ee.mid.replace(/<b[^>]*>/g,'').replace(/<\/b>/g,'')+'</span><span class="p">'+(i===0?'старт':i<lv?CHECK.replace('<svg','<svg width="16" height="16"')+'есть':coin()+fmt(L.p))+'</span></li>'}).join('');
   var btn=st==='max'?'<button class="btn btn--secondary btn--m btn--wide" disabled>Всё куплено</button>':
-    st==='buy'?'<button class="btn btn--primary btn--l" data-confirm="'+id+'">Купить за '+coin()+fmt(b.lv[lv].p)+'</button>':
-    '<button class="btn btn--l" disabled>'+coin()+fmt(b.lv[lv].p)+'</button>';
+    st==='buy'?'<button class="btn btn--primary btn--l" data-confirm="'+id+'">Купить за '+coin(20)+fmt(b.lv[lv].p)+'</button>':
+    '<button class="btn btn--l" disabled>'+coin(20)+fmt(b.lv[lv].p)+'</button>';
   var after=st==='buy'?'<p class="after">Баланс после покупки: '+fmt(S.bal-b.lv[lv].p)+'</p>':'';
   T.sheet('<div class="bs"><div class="bs-top">'+top+'</div><h3>'+b.n+'</h3><p class="sub">'+(st==='max'?'Максимальный уровень · '+b.d.toLowerCase():'Ур. '+lv+' → ур. '+(lv+1)+' · '+b.d.toLowerCase())+'</p>'+
     '<div class="big">'+e.mid+'</div>'+(e.sub?'<p class="sub" style="margin-top:-4px">'+e.sub+'</p>':'')+'<ul class="lvl">'+rows+'</ul>'+btn+after+'</div>');
@@ -55,7 +55,7 @@ function buy(id){var b=byId(id),lv=S.lv[id];if(lv>=b.lv.length||S.bal<b.lv[lv].p
   var c=document.querySelector('.bc[data-id="'+id+'"]');if(c){c.classList.add('bump');}
   if(T.toast)T.toast(b.n+' — ур. '+(lv+1)+'!');}
 var host,balEl;
-function render(){if(balEl)balEl.innerHTML=coin()+'<span class="num">'+fmt(S.bal)+'</span>';
+function render(){if(balEl)balEl.innerHTML=coin(24)+'<span class="num">'+fmt(S.bal)+'</span>';
   if(host)host.innerHTML=BOOSTS.map(function(b){return card(b,S.lv[b.id],S.bal)}).join('');}
 window.SHOP={BOOSTS:BOOSTS,card:card,state:state,
   mount:function(h,bal){host=h;balEl=bal;render();

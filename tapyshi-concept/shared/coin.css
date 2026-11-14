@@ -1,0 +1,42 @@
+/* Единая монета A: центр иконки на середине высоты кегля (Nunito 1000). */
+.coin{
+  --coin-size:18px;
+  width:var(--coin-size);
+  height:var(--coin-size);
+  flex:none;
+  display:inline-block;
+  vertical-align:calc(0.352em - (var(--coin-size) / 2));
+  overflow:visible;
+}
+/* Крупные монеты (48px и больше) — мягкая тень по гайду. */
+.coin.coin--lg{filter:drop-shadow(0 2px 3px rgb(80 62 160 / .18))}
+
+/* Контекстные размеры. Отступ до числа задаёт gap родителя ≈ 0,24 размера (мин 4px). */
+.bal .coin,
+.inv .coin,
+.inv-row .coin{--coin-size:16px}
+.btn-tag .coin{--coin-size:16px}
+.chip .coin,
+.inv-toast .coin,
+.toast .coin{--coin-size:16px}
+.prize .chip .coin{--coin-size:14px}
+.fr-got .coin,
+.fr-empty-line .coin,
+.fr-coinpill .coin{--coin-size:16px}
+.hd .coins .coin,
+.coins .coin{--coin-size:24px}
+.price .coin,
+.bc .price .coin,
+.lvl li .p .coin,
+.eff .coin{--coin-size:16px}
+.bs .big .coin{--coin-size:22px}
+.bs .btn--l .coin{--coin-size:20px}
+.stk .stack .coin{--coin-size:30px;margin:0;position:absolute;filter:none}
+.prize > .coin{--coin-size:30px}
+.prize.lose > .coin,
+.prize.draw > .coin{--coin-size:26px}
+.rw-ico,
+.coin.rw-ico{--coin-size:20px}
+.loot .li .coin,
+.coin.loot-ico{--coin-size:36px}
+.fx-coin{width:26px;height:26px;position:fixed;z-index:80;pointer-events:none;transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .55s}

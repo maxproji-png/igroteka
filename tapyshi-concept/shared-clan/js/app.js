@@ -22,7 +22,7 @@
     down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9 L12 15 L18 9"/></svg>',
     max: '<svg viewBox="0 0 24 24"><path d="M12 3.5 C7 3.5 3.5 7 3.5 11.6 C3.5 14 4.4 15.9 6 17.3 L5.2 20.5 L8.7 18.9 C9.7 19.3 10.8 19.6 12 19.6 C17 19.6 20.5 16.1 20.5 11.6 C20.5 7 17 3.5 12 3.5Z" fill="#fff"/></svg>'
   };
-  if (!window.TAP_COIN) T.coin = function (cls) { return '<img class="' + (cls || '') + '" src="' + T.img('items/icon-coin.png') + '" alt="">'; };
+  if (!T.coin) T.coin = function (cls, px) { var size = px || 18; return '<img class="coin ' + (cls || '') + '" style="--coin-size:' + size + 'px" src="' + (T.coinSrc ? T.coinSrc(size) : '../shared/coin/png/coin-24@2x.png') + '" alt="">'; };
 
   T.nav = function (active) {
     var items = [['pet', 'Питомец', 'paw'], ['clan', 'Клан', 'shield'], ['games', 'Игры', 'swords'], ['shop', 'Магазин', 'bag']];
@@ -41,9 +41,9 @@
   document.addEventListener('click', function (e) { var a = e.target.closest('a[href="#"]'); if (a) e.preventDefault(); });
 
   T.burst = function (from, to) {
-    var a = from.getBoundingClientRect(), b = (to || document.querySelector('.coins img') || from).getBoundingClientRect();
+    var a = from.getBoundingClientRect(), b = (to || document.querySelector('.hd .coins, .coins') || from).getBoundingClientRect();
     for (var i = 0; i < 7; i++) (function (i) {
-      var c = document.createElement('img'); c.src = T.img('items/icon-coin.png'); c.className = 'fx-coin';
+      var c = document.createElement('img'); c.src = T.coinSrc ? T.coinSrc(26) : '../shared/coin/png/coin-24@2x.png'; c.className = 'fx-coin';
       c.style.left = (a.left + a.width / 2 - 13) + 'px'; c.style.top = (a.top + a.height / 2 - 13) + 'px';
       document.body.appendChild(c);
       var dx = (Math.random() - .5) * 90, dy = -30 - Math.random() * 50;

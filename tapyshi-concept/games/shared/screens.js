@@ -18,7 +18,7 @@ function friendsPill(){
 function game(id){for(var i=0;i<G.length;i++)if(G[i].id===id)return G[i];return G[0];}
 function sty(g){return '--c:'+g.c+';--cd:'+g.cd+';--bg1:'+g.bg1+';--bg2:'+g.bg2;}
 function fmt(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u202f');}
-var COIN='<svg class="coin" viewBox="0 0 24 24"><circle cx="12" cy="12.8" r="10" class="ico-sun-edge"/><circle cx="12" cy="11.6" r="10" class="ico-sun"/><circle cx="12" cy="11.6" r="7.4" class="coin-in"/><g class="ico-white" opacity=".95"><ellipse cx="12" cy="13.6" rx="3" ry="2.4"/><circle cx="8.6" cy="10.6" r="1.25"/><circle cx="10.6" cy="8.6" r="1.25"/><circle cx="13.4" cy="8.6" r="1.25"/><circle cx="15.4" cy="10.6" r="1.25"/></g><path d="M5.6 7.6a7.6 7.6 0 0 1 5-3.4" class="ico-white-s" stroke-width="1.6" stroke-linecap="round" opacity=".6" fill="none"/></svg>';
+function COIN(cls,px){return (window.T&&T.coin)?T.coin(cls,px):'';}
 var IC={
  x:'<svg viewBox="0 0 20 20"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
  back:'<svg viewBox="0 0 20 20"><path d="M12.5 4.5L7 10l5.5 5.5" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -66,14 +66,14 @@ function sheet(o){
   '<div class="sh-head"><div class="sh-icon">'+P[g.prop]+'</div><div><h2>'+g.title+'</h2><p class="sh-sub">'+modeChip(g)+'<span class="rec">'+I.cup+'<span>Рекорд <b>'+g.rec+'</b></span></span></p></div></div>'+
   '<h4 class="sh-h">С кем играем</h4><div class="opts">'+modes.map(function(x){return '<button class="opt selectable spring'+(x[0]===m?' on':'')+'" data-mode="'+x[0]+'"><span class="oi oi-'+x[0]+'">'+IC[x[1]]+'</span><span class="ot"><b>'+x[2]+'</b><small>'+x[3]+'</small></span><span class="radio"></span></button>';}).join('')+'</div>'+
   '<div class="sh-var">'+(m==='bot'?'<div class="botnote"><span class="oi oi-bot">'+IC.bot+'</span><span><b>Без ставки</b><small>С ботом играем на интерес — монеты не списываются</small></span></div>':
-  '<div class="stakebox"><div class="sk-h"><h4 class="sh-h">Ставка</h4><span class="bal">'+COIN+'на счету <b>'+fmt(BAL)+'</b></span></div>'+
-  '<div class="stakes">'+STAKES.map(function(s){return '<button class="stk spring'+(s===st?' on':'')+'" data-stake="'+s+'"><span class="stack">'+COIN+COIN+(s>300?COIN:'')+'</span><span class="sv"><b>'+fmt(s)+'</b><small>банк '+fmt(s*2)+'</small></span><span class="radio"></span></button>';}).join('')+'</div></div>')+'</div>'+
-  '<button class="btn btn--primary btn--l" data-act="start">'+cta+(m==='bot'?'':'<span class="btn-tag">'+COIN+fmt(st)+'</span>')+'</button></section>';
+  '<div class="stakebox"><div class="sk-h"><h4 class="sh-h">Ставка</h4><span class="bal">'+COIN('',16)+'на счету <b>'+fmt(BAL)+'</b></span></div>'+
+  '<div class="stakes">'+STAKES.map(function(s){return '<button class="stk spring'+(s===st?' on':'')+'" data-stake="'+s+'"><span class="stack">'+COIN('',30)+COIN('',30)+(s>300?COIN('',30):'')+'</span><span class="sv"><b>'+fmt(s)+'</b><small>банк '+fmt(s*2)+'</small></span><span class="radio"></span></button>';}).join('')+'</div></div>')+'</div>'+
+  '<button class="btn btn--primary btn--l" data-act="start">'+cta+(m==='bot'?'':'<span class="btn-tag">'+COIN('',16)+fmt(st)+'</span>')+'</button></section>';
 }
 
 /* ---------- полноэкранные этапы матчмейкинга ---------- */
 function stageTop(g,label){return '<header class="stg-top"><div class="gchip" style="'+sty(g)+'"><span class="gi">'+P[g.prop]+'</span>'+g.title+'</div><span class="chip chip--m chip--white stg-lbl">'+label+'</span></header>';}
-function potChip(st){return '<span class="chip chip--m chip--sun pot">'+COIN+'Банк <b>'+fmt(st*2)+'</b></span>';}
+function potChip(st){return '<span class="chip chip--m chip--sun pot">'+COIN('',16)+'Банк <b>'+fmt(st*2)+'</b></span>';}
 function search(o){
   var g=game(o.game),st=o.stake||DEF;
   return '<main class="stage s-search" style="'+sty(g)+'">'+stageTop(g,'ставка '+fmt(st))+
@@ -145,15 +145,15 @@ function result(o){
   var h='';
   if(k==='win') h=confetti()+'<div class="rcard win"><div class="rpet"><i class="rays"></i><img src="'+pet(ME.pet,'happy')+'" alt=""></div><span class="chip chip--m chip--solid-green rbadge">Победа!</span>'+
     '<h2>Победа за тобой!</h2><p>Соперник: '+op.name+' · счёт 2:1</p>'+
-    (bot?noStake:'<div class="prize">'+COIN+'<b>+'+fmt(st*2)+'</b><small>весь банк твой: '+fmt(st)+' + '+fmt(st)+'</small></div>')+
+    (bot?noStake:'<div class="prize">'+COIN('',30)+'<b>+'+fmt(st*2)+'</b><small>весь банк твой: '+fmt(st)+' + '+fmt(st)+'</small></div>')+
     '<div class="rstats"><span><b>5</b>побед в «'+g.title+'»</span><span><b>2:1</b>счёт</span></div>'+btns('Ещё раз')+'</div>';
   if(k==='lose') h='<div class="rcard lose"><div class="rpet"><img src="'+pet(ME.pet,'neutral')+'" alt=""><span class="bubble">Ещё разок?</span></div><span class="chip chip--m chip--violet rbadge">Почти получилось</span>'+
     '<h2>В этот раз — '+op.name+'</h2><p>Счёт 1:2 — совсем рядом! '+ME.petName+' уже рвётся в реванш.</p>'+
-    (bot?noStake:'<div class="prize lose">'+COIN+'<b>−'+fmt(st)+'</b><small>твоя ставка ушла в банк соперника</small></div>')+
+    (bot?noStake:'<div class="prize lose">'+COIN('',26)+'<b>−'+fmt(st)+'</b><small>твоя ставка ушла в банк соперника</small></div>')+
     (g.id==='checkers'?'<div class="tip"><span class="tbulb"><svg viewBox="0 0 20 20"><path d="M10 2.5a5.5 5.5 0 0 0-3.2 10c.5.4.7.9.7 1.5h5c0-.6.2-1.1.7-1.5A5.5 5.5 0 0 0 10 2.5z" class="ico-sun"/><rect x="7.5" y="15" width="5" height="2.6" rx="1.3" class="ico-sun-edge"/></svg></span>Совет: в шашках бить обязательно — ищи размены в свою пользу</div>':'')+btns('Реванш')+'</div>';
   if(k==='draw') h='<div class="rcard draw"><div class="rpet two"><img class="l" src="'+pet(ME.pet,'happy')+'" alt=""><img class="r" src="'+pet(op.pet,'happy')+'" alt=""></div><span class="chip chip--m chip--blue rbadge">Ничья</span>'+
     '<h2>Силы равны!</h2><p>Ты и '+op.name+' сыграли вничью</p>'+
-    (bot?noStake:'<div class="prize draw">'+COIN+'<b>'+fmt(st)+'</b><small>ставка вернулась к тебе</small></div>')+btns('Ещё раз')+'</div>';
+    (bot?noStake:'<div class="prize draw">'+COIN('',26)+'<b>'+fmt(st)+'</b><small>ставка вернулась к тебе</small></div>')+btns('Ещё раз')+'</div>';
   if(k==='record') h=confetti()+'<div class="rcard record"><div class="rpet"><i class="rays"></i><img src="'+pet(ME.pet,'happy')+'" alt=""></div><span class="chip chip--m chip--solid-sun rbadge">'+I.cup+'Новый рекорд!</span>'+
     '<div class="bigscore">3 840</div><p>Прошлый рекорд — 3 560. Плюс 280!</p>'+
     '<div class="rstats"><span><b>128</b>ходов</span>'+((o.game||'2048')==='2048'?'<span><b>256</b>лучшая плитка</span>':'')+'<span><b>6:12</b>время</span></div>'+btns('Ещё раз')+'</div>';
@@ -228,7 +228,7 @@ function friends(o){
     head='<header class="fr-top"><button type="button" class="ibtn ibtn--round" data-act="close" aria-label="Назад">'+IC.back+'</button><div class="ttl"><h1>Друзья</h1></div><button type="button" class="fr-head-invite spring" data-act="invite-any" aria-label="Позвать друга">'+invIc+'<span>Позвать</span></button></header>';
     cta='';
   }
-  var emptyP='Позови друга и получи 5&nbsp;000'+COIN;
+  var emptyP='Позови друга и получи 5&nbsp;000'+COIN('',16);
   if(empty){
     return '<main class="page fr-page fv-'+fv+'">'+head+
       '<div class="fr-empty"><div class="fr-ghost">'+IC.people+'</div><h2>Пока нет друзей</h2><p class="fr-empty-line">'+emptyP+'</p>'+
@@ -237,7 +237,7 @@ function friends(o){
   }
   function row(f,inv){
     var act='';
-    if(inv && f.joined) act='<span class="fr-got">'+COIN+'+5&nbsp;000</span>';
+    if(inv && f.joined) act='<span class="fr-got">'+COIN('',16)+'+5&nbsp;000</span>';
     else if(inv && !f.joined) act='<button type="button" class="btn btn--secondary btn--s" data-act="friends-write" data-fid="'+f.id+'">Написать</button>';
     else if(f.on) act='<button type="button" class="btn btn--primary btn--s" data-act="friends-play" data-fid="'+f.id+'">Позвать играть</button>';
     else act='<button type="button" class="btn btn--secondary btn--s" data-act="friends-write" data-fid="'+f.id+'">Написать</button>';
@@ -263,7 +263,7 @@ function pickSheet(o){
     '<h4 class="sh-h">Ставка</h4><div class="stakes">'+stakes.map(function(s){
       return '<button type="button" class="stk spring'+(s[0]===st?' on':'')+'" data-fstake="'+s[0]+'"><span class="sv"><b>'+s[1]+'</b><small>'+s[2]+'</small></span><span class="radio"></span></button>';
     }).join('')+'</div>'+
-    '<button type="button" class="btn '+(write?'btn--max':'btn--primary')+' btn--l" data-act="pick-go">'+(write?IC.max:'')+cta+(st?('<span class="btn-tag">'+COIN+fmt(st)+'</span>'):'')+'</button></section>';
+    '<button type="button" class="btn '+(write?'btn--max':'btn--primary')+' btn--l" data-act="pick-go">'+(write?IC.max:'')+cta+(st?('<span class="btn-tag">'+COIN('',16)+fmt(st)+'</span>'):'')+'</button></section>';
 }
 function waitFriend(o){
   var g=game(o.game||'tictactoe'),st=o.stake||0,fr=o.friend||FRIENDS[0];

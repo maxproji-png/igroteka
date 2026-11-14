@@ -52,7 +52,7 @@ var H = function(p){ return T.img('pets/'+p+'_happy_head.png'); };
 C.head = H;
 C.pct = function(){ return Math.round(C.goal.now / C.goal.goal * 100); };
 C.ava = function(p, cls, lvl){ var src=(window.TAP_petThumb?TAP_petThumb(p,lvl):H(p)); return '<span class="ava '+p+' '+(cls||'')+'"><img src="'+src+'" alt=""></span>'; };
-C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +5000 '+(T.coin?T.coin():'')+' за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
+C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +5000 '+(T.coin?T.coin('',16):'')+' за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
 C.members_ = function(o){ o=o||{}; var list=(o.all?C.allMembers():C.members).slice(); if(o.all) list.sort(function(a,b){return b.t-a.t;}); var max=list[0].t;
   return '<div class="list">'+list.map(function(m,i){
     var bar = o.bars ? '<span class="cbar"><i style="width:'+(m.t/max*100).toFixed(1)+'%;background:'+(i<5?C.colors[i]:C.rest)+'"></i></span>' : '';
@@ -72,8 +72,7 @@ var topEmb = function(c){
   return '<span class="emb sm e-'+c.pet+'"><img src="'+src+'" alt=""></span>';
 };
 C.top_ = function(){
-  var coin=T.coin?T.coin():'';
-  return '<div class="prize"><span class="cap">Награды недели</span>'+C.prize.map(function(n,i){return '<span class="chip chip--sun">'+(i+1)+'-е — '+coin+'<b>'+T.fmt(n)+'</b></span>';}).join('')+'</div><div class="list">'+C.top.map(function(c,i){
+  return '<div class="prize"><span class="cap">Награды недели</span>'+C.prize.map(function(n,i){return '<span class="chip chip--sun">'+(i+1)+'-е — '+(T.coin?T.coin('',14):'')+'<b>'+T.fmt(n)+'</b></span>';}).join('')+'</div><div class="list">'+C.top.map(function(c,i){
     return '<div class="row tap'+(c.me?' me':'')+'"><span class="rk r'+(i+1)+'">'+(i+1)+'</span>'+topEmb(c)+''+
       '<span class="nm"><b>'+c.n+'</b><small>ур. '+c.lvl+' · '+c.m+' игроков</small></span><span class="val"><b class="num">'+T.short(c.t)+'</b><small>за неделю</small></span></div>';
   }).join('')+'</div><p class="foot">Неделя закончится через '+C.goal.left+'</p>';
@@ -162,7 +161,7 @@ C.markClaimed = function(id){
   try{ sessionStorage.setItem('tapyshi.clan.chests', JSON.stringify(m)); }catch(e){}
 };
 function rwIcon(k){
-  if(k==='coin') return T.coin ? T.coin('rw-ico') : (window.TAP_COIN||'');
+  if(k==='coin') return T.coin ? T.coin('rw-ico',20) : (window.TAP_COIN||'');
   if(k==='bolt') return '<span class="rw-svg bolt">'+T.IC.bolt+'</span>';
   if(k==='xp') return '<span class="rw-svg xp">'+T.IC.shield+'</span>';
   return '<span class="rw-svg rare"><svg viewBox="0 0 24 24"><path d="M12 3.5 L14.4 9.2 L20.5 10 L16 14.3 L17.2 20.4 L12 17.4 L6.8 20.4 L8 14.3 L3.5 10 L9.6 9.2Z" fill="#FFC93D" stroke="#E39200" stroke-width="1.4" stroke-linejoin="round"/></svg></span>';

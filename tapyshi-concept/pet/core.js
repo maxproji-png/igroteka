@@ -55,49 +55,20 @@ function paw(x, cx, cy, r) {
     x.beginPath(); x.ellipse(cx + dx * r, cy + dy * r, rr * r, rr * r * 1.18, dx * .5, 0, 7); x.fill(); });
 }
 // Монета: толщина ребра, обод, рельефное кольцо, лапка-чекан, блик. Всё запечено в битмап.
+export function coinSrc(cssPx = 48) {
+  const dpr = Math.min(3, Math.max(1, Math.round(SDPR || (typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 2))));
+  let base = 48;
+  if (cssPx <= 20) base = 16;
+  else if (cssPx <= 32) base = 24;
+  else if (cssPx <= 64) base = 48;
+  else base = 96;
+  return new URL('../shared/coin/png/coin-' + base + '@' + dpr + 'x.png', import.meta.url).href;
+}
 export function coinCanvas(size = 64, dpr = SDPR) {
-  const key = 'coin' + size + '@' + dpr; if (cache.has(key)) return cache.get(key);
-  const pad = size * .12, W = size + pad * 2;
-  const [c, x] = mk(W, W, dpr);
-  const cx = W / 2, cy = W / 2 - size * .03, r = size / 2 * .94, th = size * .07;
-  // мягкая тень (запечена)
-  let g = x.createRadialGradient(cx, cy + r + th * .9, 0, cx, cy + r + th * .9, r * .9);
-  g.addColorStop(0, `rgb(${PAL.shade.split(' ').join(',')},.20)`); g.addColorStop(1, `rgb(${PAL.shade.split(' ').join(',')},0)`);
-  x.save(); x.translate(0, 0); x.scale(1, .32); x.fillStyle = g; x.beginPath(); x.arc(cx, (cy + r + th * .9) / .32, r * .9, 0, 7); x.fill(); x.restore();
-  // ребро (толщина)
-  g = x.createLinearGradient(cx - r, 0, cx + r, 0);
-  g.addColorStop(0, PAL.wordEdge); g.addColorStop(.5, PAL.sunEdge); g.addColorStop(1, PAL.wordEdge);
-  x.fillStyle = g; x.beginPath(); x.arc(cx, cy + th, r, 0, 7); x.fill();
-  // обод
-  g = x.createLinearGradient(0, cy - r, 0, cy + r);
-  g.addColorStop(0, '#FFE9A3'); g.addColorStop(.45, PAL.sun); g.addColorStop(1, PAL.sunEdge);
-  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill();
-  // лицевая сторона
-  const fr = r * .8;
-  g = x.createRadialGradient(cx - fr * .35, cy - fr * .45, fr * .05, cx, cy, fr * 1.05);
-  g.addColorStop(0, '#FFF4C9'); g.addColorStop(.35, '#FFD65C'); g.addColorStop(.8, PAL.sun); g.addColorStop(1, '#F2AE17');
-  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, fr, 0, 7); x.fill();
-  // фаска: тёмная сверху, светлая снизу — ощущение утопленного поля
-  x.lineWidth = size * .028;
-  x.strokeStyle = 'rgba(184,110,0,.45)'; x.beginPath(); x.arc(cx, cy, fr, Math.PI * 1.05, Math.PI * 1.95); x.stroke();
-  x.strokeStyle = 'rgba(255,248,214,.9)'; x.beginPath(); x.arc(cx, cy, fr, Math.PI * .05, Math.PI * .95); x.stroke();
-  // чекан: лапка Булочки с рельефом
-  x.fillStyle = 'rgba(255,250,225,.85)'; paw(x, cx + size * .012, cy + size * .018, fr * .62);
-  x.fillStyle = PAL.sunEdge; paw(x, cx, cy, fr * .62);
-  // блик-полумесяц
-  x.save(); x.beginPath(); x.arc(cx, cy, r, 0, 7); x.clip();
-  g = x.createLinearGradient(cx - r, cy - r, cx, cy);
-  g.addColorStop(0, 'rgba(255,255,255,.85)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-  x.fillStyle = g; x.beginPath(); x.ellipse(cx - r * .28, cy - r * .5, r * .62, r * .3, -.6, 0, 7); x.fill(); x.restore();
-  // искра
-  star(x, cx - r * .5, cy - r * .52, size * .12, 'rgba(255,255,255,.95)');
-  cache.set(key, c); return c;
+  /* оставлено для совместимости: летающие монеты и HUD берут PNG через coinSrc */
+  return { _src: coinSrc(size) };
 }
-function star(x, cx, cy, s, col) {
-  x.fillStyle = col; x.beginPath();
-  x.moveTo(cx, cy - s); x.quadraticCurveTo(cx, cy, cx + s, cy); x.quadraticCurveTo(cx, cy, cx, cy + s); x.quadraticCurveTo(cx, cy, cx - s, cy); x.quadraticCurveTo(cx, cy, cx, cy - s); x.fill();
-}
-// Блик-звёздочка: белое ядро + тёплое свечение (запечено)
+
 export function glintCanvas(size = 56, dpr = SDPR) {
   const key = 'glint' + size + '@' + dpr; if (cache.has(key)) return cache.get(key);
   const [c, x] = mk(size, size, dpr); const m = size / 2;
@@ -163,7 +134,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
   const $ = id => document.getElementById(id);
   const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick') };
-  const ico = new Image(); ico.alt = ''; ico.src = spriteURL(coinCanvas(40)); el.balIco.appendChild(ico);
+  const ico = new Image(); ico.alt = ''; ico.src = coinSrc(24); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
 
   // защита от зума/выделения/меню

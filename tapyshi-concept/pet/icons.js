@@ -2,9 +2,6 @@
 (function () {
   var S = '' +
   '<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><defs>' +
-  '<radialGradient id="g-coin" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#FFF6BF"/><stop offset=".38" stop-color="#FFD84A"/><stop offset=".8" stop-color="#FFB61E"/><stop offset="1" stop-color="#F29A0C"/></radialGradient>' +
-  '<linearGradient id="g-coin-in" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC93A"/><stop offset="1" stop-color="#FFE47A"/></linearGradient>' +
-  '<linearGradient id="g-coin-edge" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C9730A"/><stop offset=".5" stop-color="#E58E0E"/><stop offset="1" stop-color="#B9650A"/></linearGradient>' +
   '<linearGradient id="g-bolt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE66B"/><stop offset="1" stop-color="#FFB21A"/></linearGradient>' +
   '<linearGradient id="g-gift" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8DB5"/><stop offset="1" stop-color="#FF5C8E"/></linearGradient>' +
   '<linearGradient id="g-task" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6FB0FF"/><stop offset="1" stop-color="#3D82F5"/></linearGradient>' +
@@ -12,19 +9,9 @@
   '<linearGradient id="g-star" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE15C"/><stop offset="1" stop-color="#FFAE12"/></linearGradient>' +
   '</defs>' +
 
-  /* Объёмная монета: ребро + лицевая сторона + внутренний круг + выпуклая звезда + блик */
-  '<symbol id="i-coin" viewBox="0 0 48 48">' +
-    '<ellipse cx="24" cy="27.2" rx="20" ry="19.6" fill="url(#g-coin-edge)"/>' +
-    '<circle cx="24" cy="23" r="20" fill="url(#g-coin)"/>' +
-    '<circle cx="24" cy="23" r="20" fill="none" stroke="#E8900C" stroke-width="1.4" opacity=".55"/>' +
-    '<circle cx="24" cy="23.4" r="14.2" fill="#F0A114" opacity=".55"/>' +
-    '<circle cx="24" cy="22.6" r="14.2" fill="url(#g-coin-in)"/>' +
-    '<path d="M24 13.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.4L24 28.4l-5.8 3 1.1-6.4-4.7-4.6 6.5-.9z" fill="#E08A08" transform="translate(0 1.3)"/>' +
-    '<path d="M24 13.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.4L24 28.4l-5.8 3 1.1-6.4-4.7-4.6 6.5-.9z" fill="#FFF3B0"/>' +
-    '<path d="M24 15.6l2.2 4.5 4.6.7" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".9"/>' +
-    '<path d="M10.5 17.5a14.6 14.6 0 0 1 9-9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".75"/>' +
-    '<circle cx="9.6" cy="21.6" r="1.5" fill="#fff" opacity=".7"/>' +
-  '</symbol>' +
+  /* Официальная монета · вариант A (лапка) */
+  '<symbol id="i-coin" viewBox="0 0 96 96">' +
+    '<defs><linearGradient id="i-a-face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF0A8"/><stop offset=".45" stop-color="#FFC233"/><stop offset="1" stop-color="#F5AC12"/></linearGradient><linearGradient id="i-a-side" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B97800"/><stop offset=".5" stop-color="#D99200"/><stop offset="1" stop-color="#B97800"/></linearGradient></defs><circle cx="48" cy="44.5" r="43" fill="#A66A00"/><circle cx="48" cy="51" r="43" fill="#A66A00"/><circle cx="48" cy="51" r="39.5" fill="url(#i-a-side)"/><circle cx="48" cy="44.5" r="39.5" fill="url(#i-a-face)"/><path d="M10.6 50a38 38 0 0 0 74.8 0" fill="none" stroke="#FFE27A" stroke-width="2" stroke-linecap="round" opacity=".55"/><g transform="translate(0 2.6)" fill="#C98300" opacity="0.55"><path d="M48 49.32c10.2 0 17.68 7.48 17.68 15.3c0 6.800000000000001-5.78 10.2-10.2 10.2c-3.4000000000000004 0-4.760000000000001-1.36-7.48-1.36s-4.08 1.36-7.48 1.36c-4.42 0-10.2-3.4000000000000004-10.2-10.2c0-7.82 7.48-15.3 17.68-15.3z"/><ellipse cx="30.32" cy="43.2" rx="5.44" ry="6.800000000000001" transform="rotate(-20 30.32 43.2)"/><ellipse cx="41.2" cy="34.02" rx="5.44" ry="7.14" transform="rotate(-6 41.2 34.02)"/><ellipse cx="54.8" cy="34.02" rx="5.44" ry="7.14" transform="rotate(6 54.8 34.02)"/><ellipse cx="65.68" cy="43.2" rx="5.44" ry="6.800000000000001" transform="rotate(20 65.68 43.2)"/></g><g fill="#FFFFFF"><path d="M48 49.32c10.2 0 17.68 7.48 17.68 15.3c0 6.800000000000001-5.78 10.2-10.2 10.2c-3.4000000000000004 0-4.760000000000001-1.36-7.48-1.36s-4.08 1.36-7.48 1.36c-4.42 0-10.2-3.4000000000000004-10.2-10.2c0-7.82 7.48-15.3 17.68-15.3z"/><ellipse cx="30.32" cy="43.2" rx="5.44" ry="6.800000000000001" transform="rotate(-20 30.32 43.2)"/><ellipse cx="41.2" cy="34.02" rx="5.44" ry="7.14" transform="rotate(-6 41.2 34.02)"/><ellipse cx="54.8" cy="34.02" rx="5.44" ry="7.14" transform="rotate(6 54.8 34.02)"/><ellipse cx="65.68" cy="43.2" rx="5.44" ry="6.800000000000001" transform="rotate(20 65.68 43.2)"/></g><path d="M19.5 33.5a31 31 0 0 1 17-17.5" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".85"/><circle cx="16.6" cy="42" r="2.6" fill="#FFFFFF" opacity=".8"/></symbol>' +
 
   '<symbol id="i-gear" viewBox="0 0 32 32">' +
     '<circle cx="16" cy="16" r="10.6" fill="none" stroke="url(#g-gear)" stroke-width="5.4" stroke-dasharray="4.2 4.12" transform="rotate(12 16 16)"/>' +

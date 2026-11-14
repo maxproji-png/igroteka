@@ -5,8 +5,6 @@
 @keyframes boRays{to{transform:rotate(360deg)}}
 @keyframes boTw{0%,100%{transform:scale(.55);opacity:.5}50%{transform:scale(1.1);opacity:1}}
 .coin3d{display:block}
-/* внутренний круг единой монеты (shared/coin.js); в общем CSS он задан только для «Игр» */
-.coin-in{fill:color-mix(in srgb,var(--sun-edge) 35%,var(--sun))}
 /* шапка раздела */
 .bsec{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:6px 4px 10px}
 .bsec b{display:block;font-size:20px;font-weight:1000;letter-spacing:-.3px}
@@ -27,17 +25,14 @@
 .eff b{font-size:15px;font-weight:1000;color:var(--ink)}
 .eff b.to{color:var(--green-edge)}
 .eff .ar{color:var(--ink-3);font-weight:1000}
-.eff .coin{width:16px;height:16px}
 .eff .bolt{display:inline-block;width:14px;height:14px}
 .eff-sub{display:block;margin-top:2px;font-size:12px;font-weight:800;color:var(--ink-3);line-height:1.25}
 .bc-act{grid-area:a;align-self:center;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .bc .price{height:40px;padding:0 13px 0 9px;font-size:15.5px;font-weight:1000;gap:5px}
-.bc .price .coin{width:20px;height:20px}
 .lack{font-size:11.5px;font-weight:900;color:var(--pink-edge);white-space:nowrap}
 /* состояния */
 .bc.st-lack .bc-ico{filter:saturate(.55);opacity:.8}
 .bc.st-lack .price{--b:var(--fill);--be:color-mix(in srgb,var(--ink-3) 45%,var(--white));color:var(--ink-2);text-shadow:none;box-shadow:0 3px 0 var(--be)}
-.bc.st-lack .price .coin{filter:saturate(.4);opacity:.75}
 .bc.st-lack .bc-nm{color:var(--ink-2)}
 .bc.st-max{box-shadow:var(--sh-sm),inset 0 0 0 2.5px color-mix(in srgb,var(--sun) 55%,var(--white))}
 .bc.st-max .bc-ico{background:radial-gradient(circle at 50% 38%,var(--white),var(--sun-soft) 75%)}
@@ -62,16 +57,14 @@
 .bs .sub{margin:3px 0 12px;text-align:center;font-size:13.5px;font-weight:800;color:var(--ink-2)}
 .bs .big{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:20px;background:var(--green-soft);font-size:15px;font-weight:800;color:var(--ink-2);margin-bottom:10px;flex-wrap:wrap}
 .bs .big b{font-size:22px;font-weight:1000;color:var(--ink)}.bs .big b.to{color:var(--green-edge)}
-.bs .big .coin{width:22px;height:22px}.bs .big .bolt{width:18px;height:18px;display:inline-block}
+.bs .big .coin{--coin-size:22px}.bs .big .bolt{width:18px;height:18px;display:inline-block}
 .lvl{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:6px}
 .lvl li{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;background:var(--bg);font-size:13.5px;font-weight:800;color:var(--ink-2)}
 .lvl li b{color:var(--ink);font-weight:1000}
 .lvl li .p{display:inline-flex;align-items:center;gap:4px;font-weight:1000;color:var(--ink)}
-.lvl li .p .coin{width:16px;height:16px}
 .lvl li.have .p{color:var(--green-edge)}
 .lvl li.next{background:var(--violet-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--violet) 30%,var(--white))}
 .lvl li em{font-style:normal;font-size:11px;font-weight:900;color:var(--pink-edge);display:block}
-.bs .btn--l .coin{width:24px;height:24px}
 .bs .btn--l[disabled]{--b:var(--fill);--be:color-mix(in srgb,var(--ink-3) 45%,var(--white));color:var(--ink-2);text-shadow:none}
 .bs .after{margin:10px 0 0;text-align:center;font-size:12.5px;font-weight:800;color:var(--ink-3)}
 .bs .after.bad{color:var(--pink-edge)}

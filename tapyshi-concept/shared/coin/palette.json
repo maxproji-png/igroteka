@@ -1,0 +1,25 @@
+{
+  "name": "Тапыши · эталонная монета",
+  "coin": {
+    "light":    "#FFF0A8",
+    "face":     "#FFC233",
+    "faceDeep": "#F5AC12",
+    "rim":      "#E8A100",
+    "rimLight": "#FFE27A",
+    "side":     "#D99200",
+    "sideDark": "#B97800",
+    "outline":  "#A66A00",
+    "emboss":   "#C98300",
+    "cream":    "#FFF3C4",
+    "white":    "#FFFFFF",
+    "ink":      "#5A3600",
+    "blush":    "#FF9DB5"
+  },
+  "context": {
+    "bg":       "#F8F7FF",
+    "bgTint":   "#F4F0FF",
+    "text":     "#3A3358",
+    "textSoft": "#7E789E",
+    "shadowRGB": "80 62 160"
+  }
+}

@@ -38,8 +38,7 @@ img{display:block}
 .btn--m{height:46px;padding:0 20px;font-size:16px}
 .btn--s{height:40px;padding:0 16px;font-size:15px}
 .btn--wide{width:100%}
-.btn .btn-tag{display:inline-flex;align-items:center;gap:4px;margin-left:4px;height:30px;padding:0 10px 0 6px;border-radius:var(--r-pill);background:rgb(var(--white-rgb) / .24);font-size:15px;font-weight:1000}
-.btn .btn-tag .coin{width:20px;height:20px}
+.btn .btn-tag{display:inline-flex;align-items:center;gap:5px;margin-left:4px;height:30px;padding:0 10px 0 6px;border-radius:var(--r-pill);background:rgb(var(--white-rgb) / .24);font-size:15px;font-weight:1000}
 /* старое имя для каталога B */
 .play{--b:var(--c);--be:var(--cd)}
 .play:not(.btn){display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:var(--r-pill);color:var(--white);font-weight:900;font-size:15px;
@@ -56,7 +55,6 @@ img{display:block}
 /* ---------- плашки ---------- */
 .chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:var(--r-pill);font-size:13px;font-weight:900;white-space:nowrap}
 .chip svg{width:16px;height:16px;flex:none}
-.chip .coin{width:20px;height:20px}
 .chip b{font-weight:1000}
 .chip--s{height:24px;padding:0 9px;font-size:11.5px;gap:4px}.chip--s svg{width:14px;height:14px}
 .chip--m{height:36px;padding:0 14px;font-size:14px}
@@ -80,7 +78,6 @@ img{display:block}
 .rec{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2);font-weight:800;white-space:nowrap}
 .rec svg{width:15px;height:15px;flex:none}
 .rec b{color:var(--ink);font-weight:900}
-.coin{width:18px;height:18px;flex:none}
 .ico-sun{fill:var(--sun)}.ico-sun-edge{fill:var(--sun-edge)}.ico-white{fill:var(--white)}.ico-white-s{stroke:var(--white)}
 
 /* поверхность / карточка / выбор */
@@ -124,8 +121,6 @@ body > .sheet{position:fixed;left:50%;right:auto;bottom:0;transform:translateX(-
   box-shadow:0 -10px 40px rgb(var(--shade) / .18);max-height:calc(100dvh - 8px);overflow:auto;transition:transform .45s var(--spring,cubic-bezier(.34,1.4,.64,1))}
 body > .sheet.on{transform:translateX(-50%) translateY(0)}
 body > .sheet .xbtn, .sheet .xbtn{position:absolute;right:14px;top:14px;z-index:2}
-.inv-toast .coin,.prize .coin,.inv .coin,.inv-row .coin{width:18px;height:18px;flex:none;vertical-align:-3px;display:inline-block}
 .prize{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 12px}
 .prize .cap{width:100%;font-size:12.5px;font-weight:800;color:var(--ink-3)}
 .prize .chip{display:inline-flex;align-items:center;gap:4px}
-.prize .chip .coin{width:16px;height:16px}

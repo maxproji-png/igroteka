@@ -19,10 +19,11 @@ S.list = [
    loot:[['items/icon-coin','10 000–25 000 монет',60],['v2/furn-aquarium','Аквариум',30],['v2/furn-bed','Лежанка-облачко',10]] } ];
 S.by = function(id){ for(var i=0;i<S.list.length;i++) if(S.list[i].id===id) return S.list[i]; };
 S.I = I;
-S.price = function(p){ return T.coin()+'<span class="num">'+T.fmt(p)+'</span>'; };
+S.price = function(p){ return T.coin('',16)+'<span class="num">'+T.fmt(p)+'</span>'; };
 S.rar = function(c){ return '<span class="rar '+c.r+'">'+S.R[c.r].n+'</span>'; };
 S.lootRows = function(c){ return '<div class="loot">'+c.loot.map(function(l){
-  return '<div class="lrow"><span class="li"><img src="'+I(l[0])+'" alt=""></span><span class="ln">'+l[1]+'</span><span class="lp">'+l[2]+'%</span></div>';}).join('')+'</div>'; };
+  var ico=(l[0]==='items/icon-coin')?T.coin('loot-ico',36):('<img src="'+I(l[0])+'" alt="">');
+  return '<div class="lrow"><span class="li">'+ico+'</span><span class="ln">'+l[1]+'</span><span class="lp">'+l[2]+'%</span></div>';}).join('')+'</div>'; };
 S.buyBtn = function(c){ var lack=c.p-S.bal;
   if(lack>0) return '<button class="btn block lack tap" data-lack>Не хватает '+S.price(lack)+'</button><p class="after">Монеты дают за тапы, игры и награды клана</p>';
   return '<button class="btn gold block tap" data-buy="'+c.id+'">Открыть за '+S.price(c.p)+'</button><p class="after">После покупки останется '+T.fmt(S.bal-c.p)+' монет</p>'; };
