@@ -59,17 +59,15 @@ function catalog(){
 /* ---------- шторка дуэли ---------- */
 function sheet(o){
   var g=game(o.game),m=o.mode||'random',st=o.stake||DEF;
-  var modes=[['random','globe','Случайный соперник','Найдём игрока за пару секунд'],['friend','max','С другом','Через MAX · +5 000 ' + COIN],['bot','bot','С ботом','Тренировка, без ставки']];
+  var modes=[['random','globe','Случайный соперник','Найдём игрока за пару секунд'],['friend','max','С другом','Отправим приглашение'],['bot','bot','С ботом','Тренировка, без ставки']];
   var cta={random:'Найти соперника',friend:'Позвать друга',bot:'Играть с ботом'}[m];
   return '<div class="scrim" data-act="close"></div><section class="sheet" style="'+sty(g)+'" role="dialog" aria-label="'+g.title+'"><i class="grab"></i>'+
   '<button class="ibtn ibtn--round xbtn" data-act="close" aria-label="Закрыть">'+IC.x+'</button>'+
   '<div class="sh-head"><div class="sh-icon">'+P[g.prop]+'</div><div><h2>'+g.title+'</h2><p class="sh-sub">'+modeChip(g)+'<span class="rec">'+I.cup+'<span>Рекорд <b>'+g.rec+'</b></span></span></p></div></div>'+
-  '<div class="sh-me"><span class="fr-ava '+ME.pet+'"><img src="'+petAva(ME.pet,'happy',ME.lvl)+'" alt=""></span><span>Играешь своим питомцем: <b>'+ME.petName+'</b></span></div>'+
   '<h4 class="sh-h">С кем играем</h4><div class="opts">'+modes.map(function(x){return '<button class="opt selectable spring'+(x[0]===m?' on':'')+'" data-mode="'+x[0]+'"><span class="oi oi-'+x[0]+'">'+IC[x[1]]+'</span><span class="ot"><b>'+x[2]+'</b><small>'+x[3]+'</small></span><span class="radio"></span></button>';}).join('')+'</div>'+
   '<div class="sh-var">'+(m==='bot'?'<div class="botnote"><span class="oi oi-bot">'+IC.bot+'</span><span><b>Без ставки</b><small>С ботом играем на интерес — монеты не списываются</small></span></div>':
   '<div class="stakebox"><div class="sk-h"><h4 class="sh-h">Ставка</h4><span class="bal">'+COIN+'на счету <b>'+fmt(BAL)+'</b></span></div>'+
-  '<div class="stakes">'+STAKES.map(function(s){return '<button class="stk spring'+(s===st?' on':'')+'" data-stake="'+s+'"><span class="stack">'+COIN+COIN+(s>300?COIN:'')+'</span><span class="sv"><b>'+fmt(s)+'</b><small>банк '+fmt(s*2)+'</small></span><span class="radio"></span></button>';}).join('')+'</div>'+
-  '<p class="sk-note">Победитель забирает весь банк, при ничьей ставка вернётся</p></div>')+'</div>'+
+  '<div class="stakes">'+STAKES.map(function(s){return '<button class="stk spring'+(s===st?' on':'')+'" data-stake="'+s+'"><span class="stack">'+COIN+COIN+(s>300?COIN:'')+'</span><span class="sv"><b>'+fmt(s)+'</b><small>банк '+fmt(s*2)+'</small></span><span class="radio"></span></button>';}).join('')+'</div></div>')+'</div>'+
   '<button class="btn btn--primary btn--l" data-act="start">'+cta+(m==='bot'?'':'<span class="btn-tag">'+COIN+fmt(st)+'</span>')+'</button></section>';
 }
 
