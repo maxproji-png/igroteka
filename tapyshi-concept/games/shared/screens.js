@@ -210,7 +210,7 @@ function friends(o){
     head='<header class="fr-top"><button type="button" class="ibtn ibtn--round" data-act="close" aria-label="Назад">'+IC.back+'</button><div class="ttl"><h1>Друзья</h1><p>из MAX · демо-список</p></div><button type="button" class="fr-head-invite spring" data-act="invite-any" aria-label="Позвать друга">'+invIc+'<span>Позвать</span></button></header>';
     cta='';
   }
-  var emptyP='Позови друга — сыграете вместе.<br>5 000 монет за вход по твоей ссылке.';
+  var emptyP='Позови друга и получи 5 000 монет.';
   if(empty){
     return '<main class="page fr-page fv-'+fv+'">'+head+
       '<div class="fr-empty"><div class="fr-ghost">'+IC.people+'</div><h2>Пока нет друзей</h2><p>'+emptyP+'</p>'+
