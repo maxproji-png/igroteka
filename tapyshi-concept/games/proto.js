@@ -3,7 +3,8 @@
    Позвать друга на вкладке — общая ссылка MAX; в меню дуэли — ссылка на эту игру.
    Экран «Друзья»: инвайт в партию онлайн или MAX, если друг не в сети. */
 (function(){
-var S={screen:'catalog',game:'checkers',mode:'random',stake:300,filter:'all',fromFriends:false,pick:false,write:false,friend:null,empty:false},T=[];
+var S={screen:'catalog',game:'checkers',mode:'random',stake:300,filter:'all',fromFriends:false,pick:false,write:false,friend:null,empty:false,fv:''},T=[];
+if(window.TAP_FV==='a'||window.TAP_FV==='b'||window.TAP_FV==='c') S.fv=window.TAP_FV;
 var REACT=['😄','😂','😮','😅','🔥','👍'];
 function clear(){T.forEach(clearTimeout);T=[];}
 function later(fn,ms){T.push(setTimeout(fn,ms));}
@@ -84,6 +85,6 @@ document.addEventListener('click',function(e){
 });
 var q=location.search||'';
 if(/friends=empty/.test(q))go({screen:'friends',empty:true,fromFriends:true});
-else if(/friends=1|friends/.test(q))go({screen:'friends',fromFriends:true});
+else if(window.TAP_OPEN_FRIENDS||/friends=1|friends/.test(q))go({screen:'friends',fromFriends:true});
 else go({screen:'catalog'});
 })();

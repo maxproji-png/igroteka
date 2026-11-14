@@ -1,0 +1,43 @@
+/* Верх экрана «Друзья»: три спокойных варианта. Основной экран не меняем. */
+
+/* ---------- хаб ---------- */
+body.hub{overflow:auto;display:block;background:linear-gradient(180deg,var(--bg-tint),var(--bg) 50%)}
+body.hub .app{height:auto;min-height:100dvh;overflow:visible;margin:0 auto;padding:28px 20px calc(28px + env(safe-area-inset-bottom,0px));display:block;max-width:440px}
+body.hub .lead{text-align:center;margin-bottom:22px}
+body.hub .lead .brand{display:block;font-size:12px;font-weight:1000;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin-bottom:8px}
+body.hub .lead h1{margin:0;font-size:28px;font-weight:1000;letter-spacing:-.03em}
+body.hub .lead p{margin:8px 0 0;font-size:15px;font-weight:800;color:var(--ink-2);line-height:1.4}
+body.hub .lead a{color:var(--violet-edge);text-decoration:none}
+body.hub .vars{display:flex;flex-direction:column;gap:12px}
+body.hub .vcard{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:18px 18px 16px;border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-sm);text-decoration:none;color:inherit;transition:transform .3s var(--spring)}
+body.hub .vcard:active{transform:scale(.98)}
+body.hub .vcard .let{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--violet-soft);color:var(--violet-edge);font-size:16px;font-weight:1000;margin-bottom:6px}
+body.hub .vcard b{font-size:18px;font-weight:1000}
+body.hub .vcard span{font-size:14px;font-weight:800;color:var(--ink-2);line-height:1.35}
+body.hub .more{margin-top:22px;padding-top:16px;border-top:1.5px solid var(--line)}
+body.hub .more .lab{font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin-bottom:10px}
+body.hub .more a{display:block;font-size:14px;font-weight:800;color:var(--violet-edge);text-decoration:none;padding:8px 0}
+
+/* ---------- A: спокойная карточка, тихая строка статистики ---------- */
+.fr-page.fv-a .invite--quiet{width:100%;flex-wrap:wrap;justify-content:flex-start;align-items:center;margin:2px 0 16px;min-height:52px;padding:8px 16px 10px 8px;box-shadow:var(--sh-sm)}
+.fr-page.fv-a .invite--quiet .ic{background:var(--violet-soft);color:var(--violet);box-shadow:none}
+.fr-page.fv-a .invite--quiet .tx{flex:1}
+.fr-page.fv-a .invite--quiet .tx em{color:var(--ink-2);font-weight:800;font-size:12px}
+.fr-page.fv-a .fr-quiet-stat{display:block;width:100%;margin:8px 0 0 44px;padding:8px 0 0;border-top:1px solid var(--line);box-sizing:border-box;font-size:12.5px;font-weight:800;color:var(--ink-2);line-height:1.35;text-align:left}
+
+/* ---------- B: кнопка без суммы, подсказка, счёт в секции ---------- */
+.fr-invite-b{display:flex;align-items:center;gap:8px;margin:2px 0 16px}
+.fr-invite-b .invite--plain{flex:1;justify-content:flex-start;margin:0;min-height:52px;padding:8px 16px 8px 8px;box-shadow:var(--sh-sm)}
+.fr-invite-b .invite--plain .ic{background:var(--violet-soft);color:var(--violet);box-shadow:none}
+.fr-hint{position:relative;flex:none}
+.fr-hint summary{list-style:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--violet-soft);color:var(--violet-edge);font-size:13px;font-weight:1000;cursor:pointer;line-height:1}
+.fr-hint summary::-webkit-details-marker{display:none}
+.fr-hint summary::marker{content:''}
+.fr-hint p{position:absolute;right:0;top:calc(100% + 8px);z-index:4;width:max-content;max-width:220px;margin:0;padding:10px 12px;border-radius:14px;background:var(--white);box-shadow:var(--sh-md);font-size:12.5px;font-weight:800;color:var(--ink-2);line-height:1.35}
+.fr-hint p::before{content:'';position:absolute;right:10px;top:-5px;width:10px;height:10px;background:var(--white);transform:rotate(45deg);box-shadow:-1px -1px 2px rgb(var(--shade) / .04)}
+
+/* ---------- C: приглашение в шапке ---------- */
+.fr-page.fv-c .fr-top{margin-bottom:16px}
+.fr-head-invite{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 6px;border-radius:var(--r-pill);background:var(--white);box-shadow:var(--sh-sm);color:var(--ink);font-size:13px;font-weight:1000;flex:none;white-space:nowrap}
+.fr-head-invite .ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--violet-soft);color:var(--violet);flex:none}
+.fr-head-invite .ic svg{width:15px;height:15px}
