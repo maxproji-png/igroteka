@@ -1,43 +1,17 @@
 <!doctype html>
-<html lang="ru"><head>
+<html lang="ru">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
-<title>Тапыши · Выбор персонажа</title>
-<link rel="preload" href="../shared/fonts/Nunito.woff2?v=tc11132310" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="../shared/tokens.css?v=tc11132310">
-<link rel="stylesheet" href="../shared/components.css?v=tc11132310">
-<link rel="stylesheet" href="choose.css?v=tc11141720">
+<title>Тапыши · Познакомься</title>
+<script>
+(function () {
+  var q = location.search || '';
+  if (!/[?&]v=/.test(q)) q = (q ? q + '&' : '?') + 'v=tc11151755';
+  location.replace('a/' + q + location.hash);
+})();
+</script>
 </head>
-<body class="hub no-tabs">
-<div class="app">
-  <div class="lead">
-    <span class="brand">Концепт · первый вход</span>
-    <h1>Выбери персонажа</h1>
-    <p>Без яйца. Три окна на выбор — одно и то же начало, разный жест. После «Выбрать» ты попадаешь на вкладку «Питомец» с чистого старта.</p>
-  </div>
-  <div class="vars">
-    <a class="vcard spring" href="a/?v=tc11141720">
-      <span class="let">A</span>
-      <b>Карусель</b>
-      <span>Большой 3D-питомец. Листай в стороны, читай стихию и нажми «Выбрать».</span>
-    </a>
-    <a class="vcard spring" href="b/?v=tc11141720">
-      <span class="let">B</span>
-      <b>Сетка</b>
-      <span>Живой просмотр сверху и четыре карточки 2×2. Нажми — и посмотри ближе.</span>
-    </a>
-    <a class="vcard spring" href="c/?v=tc11141720">
-      <span class="let">C</span>
-      <b>Сцена</b>
-      <span>Все четверо стоят вместе. Коснись своего — он выйдет вперёд.</span>
-    </a>
-  </div>
-  <div class="more">
-    <div class="lab">Демо приглашения</div>
-    <a href="a/?v=tc11141720&amp;inviter=%D0%A1%D0%B0%D1%88%D0%B0">A · Саша зовёт тебя в Тапышей</a>
-    <a href="b/?v=tc11141720&amp;inviter=%D0%A1%D0%B0%D1%88%D0%B0&amp;clan=%D0%94%D0%B8%D0%BA%D0%B8%D0%B9%20%D0%B7%D0%BE%D0%BE%D0%BF%D0%B0%D1%80%D0%BA">B · Саша зовёт в клан «Дикий зоопарк»</a>
-    <a href="c/?v=tc11141720&amp;inviter=%D0%9C%D0%B0%D1%88%D0%B0&amp;clan=%D0%94%D0%B8%D0%BA%D0%B8%D0%B9%20%D0%B7%D0%BE%D0%BE%D0%BF%D0%B0%D1%80%D0%BA">C · Маша зовёт в клан «Дикий зоопарк»</a>
-  </div>
-</div>
-</body></html>
+<body></body>
+</html>

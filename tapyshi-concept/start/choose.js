@@ -1,8 +1,9 @@
 // Тапыши · первый вход: общий код выбора персонажа (варианты A/B/C).
-import { petStage } from '../pet/stage.js?v=tc11141720';
-import { PETS, PET_ORDER, preloadEvo, stageName } from '../pet/evo.js?v=tc11141720';
+import { petStage } from '../pet/stage.js?v=tc11151755';
+import { PETS, PET_ORDER, preloadEvo } from '../pet/evo.js?v=tc11151755';
+import { getPlayerNick } from '../shared/nick.js?v=tc11151755';
 
-export const V = 'tc11141720';
+export const V = 'tc11151755';
 
 export const PICKS = PET_ORDER.map(id => {
   const p = PETS[id];
@@ -10,7 +11,6 @@ export const PICKS = PET_ORDER.map(id => {
   return {
     id,
     label: id === 'dragon' ? 'Дракончик' : p.label,
-    baby: stageName(id, 1),
     el: el[0],
     elId: el[1]
   };
@@ -22,6 +22,9 @@ const EL_ICON = {
   fire: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4 0 6-3 6-6 0-4-3-7-3-7s0 3-2 4c0-5-3-8-3-8s-4 5-4 10c0 3.2 2 7 6 7z"/></svg>',
   wind: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10h11a3 3 0 1 0-3-3"/><path d="M4 14h13a3 3 0 1 1-3 3"/><path d="M4 18h7"/></svg>'
 };
+
+// Ник фиксируется при первом заходе (MAX / ?nick= / «Игрок») и больше не перечитывается.
+getPlayerNick();
 
 export function inviteCopy() {
   const q = new URLSearchParams(location.search);
@@ -51,53 +54,18 @@ export function elChip(elId, label) {
   return '<span class="el el-' + elId + '">' + (EL_ICON[elId] || '') + label + '</span>';
 }
 
-export function goHome(pet, name) {
-  const data = { fresh: true, pet: pet, name: name || '' };
+export function goHome(pet) {
+  const data = { fresh: true, pet: pet };
   try { sessionStorage.setItem('tapyshi.start', JSON.stringify(data)); } catch (e) {}
   const q = new URLSearchParams();
   q.set('fresh', '1');
   q.set('pet', pet);
-  if (name) q.set('name', name);
-  location.href = '../../index.html?' + q.toString();
-}
-
-function mountNameSheet(pet, done) {
-  const p = PICKS.find(x => x.id === pet) || PICKS[0];
-  document.querySelectorAll('.sheet-bg,.sheet').forEach(n => n.remove());
-  const bg = document.createElement('div');
-  bg.className = 'sheet-bg';
-  const sh = document.createElement('div');
-  sh.className = 'sheet';
-  sh.setAttribute('role', 'dialog');
-  sh.setAttribute('aria-labelledby', 'nmTitle');
-  sh.innerHTML =
-    '<div class="grab"></div>' +
-    '<h2 id="nmTitle">Как назовёшь малыша?</h2>' +
-    '<p class="sub">Можно и потом — он и так тебя узнает</p>' +
-    '<input class="field" type="text" maxlength="18" placeholder="' + p.baby + '" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done">' +
-    '<div class="acts">' +
-      '<button type="button" class="btn btn--secondary btn--m" data-skip>Позже</button>' +
-      '<button type="button" class="btn btn--primary btn--m" data-ok>Готово</button>' +
-    '</div>';
-  document.body.appendChild(bg);
-  document.body.appendChild(sh);
-  const inp = sh.querySelector('.field');
-  const finish = name => { goHome(pet, name); };
-  const skip = () => finish('');
-  const ok = () => finish((inp.value || '').trim());
-  bg.addEventListener('click', skip);
-  sh.querySelector('[data-skip]').addEventListener('click', skip);
-  sh.querySelector('[data-ok]').addEventListener('click', ok);
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
-  requestAnimationFrame(() => {
-    bg.classList.add('on');
-    sh.classList.add('on');
-    try { inp.focus(); } catch (e) {}
-  });
+  const root = (document.documentElement.dataset.root || '../').replace(/\/?$/, '/');
+  location.href = root + 'index.html?' + q.toString();
 }
 
 export function choose(pet) {
-  mountNameSheet(pet);
+  goHome(pet);
 }
 
 export async function mountPet(canvas, opts) {
@@ -129,24 +97,44 @@ export function markReady() {
   window.__startReady = true;
 }
 
+function paintSpecies(root, p) {
+  const nameEl = root.querySelector('[data-name]');
+  const kindEl = root.querySelector('[data-kind]');
+  const elWrap = root.querySelector('[data-el]');
+  if (nameEl) nameEl.textContent = p.label;
+  if (kindEl) { kindEl.textContent = ''; kindEl.hidden = true; }
+  if (elWrap) elWrap.innerHTML = elChip(p.elId, p.el);
+}
+
+async function waitLayout() {
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch (e) {}
+  }
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+}
+
+function bindRelayout(st, host) {
+  const refit = () => st.relayout();
+  addEventListener('resize', refit);
+  requestAnimationFrame(refit);
+  setTimeout(refit, 80);
+  setTimeout(refit, 400);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+  if (host && window.ResizeObserver) new ResizeObserver(refit).observe(host);
+  return refit;
+}
+
 /* ---------- вариант A: карусель ---------- */
 export async function initA(root) {
   paintInvite(root);
   const view = root.querySelector('.view');
   const canvas = view.querySelector('canvas.scene');
-  const nameEl = root.querySelector('[data-name]');
-  const kindEl = root.querySelector('[data-kind]');
-  const elWrap = root.querySelector('[data-el]');
   const dots = root.querySelector('.dots');
   const prev = root.querySelector('[data-prev]');
   const next = root.querySelector('[data-next]');
   let i = 0;
   const qPet = new URLSearchParams(location.search).get('pet');
   if (PETS[qPet]) i = Math.max(0, PICKS.findIndex(p => p.id === qPet));
-  view.classList.add('loading');
-  const st = await mountPet(canvas, { pet: PICKS[i].id, fit: 'app' });
-  view.classList.remove('loading');
-  preloadBabies();
 
   PICKS.forEach((p, n) => {
     const b = document.createElement('button');
@@ -158,22 +146,29 @@ export async function initA(root) {
   });
 
   function paint() {
-    const p = PICKS[i];
-    nameEl.textContent = p.baby;
-    kindEl.textContent = p.label;
-    elWrap.innerHTML = elChip(p.elId, p.el);
+    paintSpecies(root, PICKS[i]);
     [...dots.children].forEach((b, n) => b.classList.toggle('on', n === i));
     prev.disabled = false;
     next.disabled = false;
   }
+
+  // Сначала собираем шапку/подвал (вид, точки, стихия), потом ставим сцену —
+  // иначе первый кадр сажает питомца ниже, а после свайпа place() поднимает его.
+  paint();
+  view.classList.add('loading');
+  await waitLayout();
+  const st = await mountPet(canvas, { pet: PICKS[i].id, fit: 'app' });
+  st.relayout();
+  bindRelayout(st, view);
+  view.classList.remove('loading');
+  preloadBabies();
+
   async function go(dir) {
     i = (i + dir + PICKS.length) % PICKS.length;
     paint();
-    view.classList.add('loading');
     await st.show(PICKS[i].id, 1);
-    view.classList.remove('loading');
+    st.relayout();
   }
-  paint();
   prev.addEventListener('click', () => go(-1));
   next.addEventListener('click', () => go(1));
   bindPick(root.querySelector('[data-pick]'), () => PICKS[i].id);
@@ -190,6 +185,7 @@ export async function initA(root) {
     if (e.key === 'ArrowLeft') go(-1);
     if (e.key === 'ArrowRight') go(1);
   });
+  window.__startStage = st;
   markReady();
   return st;
 }
@@ -200,9 +196,6 @@ export async function initB(root) {
   const preview = root.querySelector('.preview');
   const canvas = preview.querySelector('canvas.scene');
   const grid = root.querySelector('.grid');
-  const nameEl = root.querySelector('[data-name]');
-  const kindEl = root.querySelector('[data-kind]');
-  const elWrap = root.querySelector('[data-el]');
   let i = 0;
   const qPet = new URLSearchParams(location.search).get('pet');
   if (PETS[qPet]) i = Math.max(0, PICKS.findIndex(p => p.id === qPet));
@@ -218,28 +211,21 @@ export async function initB(root) {
     grid.appendChild(b);
   });
 
-  preview.classList.add('loading');
-  const st = await mountPet(canvas, { pet: PICKS[i].id, fit: 'host', padTop: 4, padBottom: 18 });
-  preview.classList.remove('loading');
-  preloadBabies();
-  const refit = () => st.relayout();
-  addEventListener('resize', refit);
-  requestAnimationFrame(refit);
-  setTimeout(refit, 80);
-  setTimeout(refit, 400);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
-  if (window.ResizeObserver) new ResizeObserver(refit).observe(preview);
-
   function paint() {
-    const p = PICKS[i];
-    nameEl.textContent = p.baby;
-    kindEl.textContent = p.label;
-    elWrap.innerHTML = elChip(p.elId, p.el);
+    paintSpecies(root, PICKS[i]);
     grid.querySelectorAll('.card').forEach((b, n) => {
       b.classList.toggle('on', n === i);
       b.setAttribute('aria-pressed', n === i ? 'true' : 'false');
     });
   }
+  paint();
+  preview.classList.add('loading');
+  await waitLayout();
+  const st = await mountPet(canvas, { pet: PICKS[i].id, fit: 'host', padTop: 4, padBottom: 18 });
+  preview.classList.remove('loading');
+  preloadBabies();
+  bindRelayout(st, preview);
+
   async function select(n) {
     if (n === i) return;
     i = n;
@@ -248,7 +234,6 @@ export async function initB(root) {
     await st.show(PICKS[i].id, 1);
     preview.classList.remove('loading');
   }
-  paint();
   bindPick(root.querySelector('[data-pick]'), () => PICKS[i].id);
   markReady();
   return st;
@@ -261,9 +246,6 @@ export async function initC(root) {
   paintInvite(root);
   const stage = root.querySelector('.stage');
   const line = root.querySelector('.line');
-  const nameEl = root.querySelector('[data-name]');
-  const kindEl = root.querySelector('[data-kind]');
-  const elWrap = root.querySelector('[data-el]');
   const pick = root.querySelector('[data-pick]');
   const hint = root.querySelector('.hint-c');
   pick.disabled = true;
@@ -285,20 +267,22 @@ export async function initC(root) {
   });
 
   const slots = [...line.querySelectorAll('.slot')];
+  await waitLayout();
   for (let n = 0; n < PICKS.length; n++) {
     const st = await mountPet(slots[n].querySelector('canvas.scene'), {
       pet: PICKS[n].id, yaw: YAWS[n], fit: 'host', padTop: 4, padBottom: 18
     });
     stages.push(st);
   }
-  requestAnimationFrame(() => {
-    stages.forEach(s => s.relayout());
-    setTimeout(() => stages.forEach(s => s.relayout()), 80);
-  });
 
   function relayoutAll() {
     stages.forEach(s => s.relayout());
   }
+  requestAnimationFrame(relayoutAll);
+  setTimeout(relayoutAll, 80);
+  setTimeout(relayoutAll, 400);
+  addEventListener('resize', relayoutAll);
+
   function paint() {
     const on = i >= 0;
     document.body.classList.toggle('is-on', on);
@@ -309,11 +293,8 @@ export async function initC(root) {
       pick.disabled = true;
       return;
     }
-    const p = PICKS[i];
     hint.hidden = true;
-    nameEl.textContent = p.baby;
-    kindEl.textContent = p.label;
-    elWrap.innerHTML = elChip(p.elId, p.el);
+    paintSpecies(root, PICKS[i]);
     pick.disabled = false;
   }
   function select(n) {
@@ -328,7 +309,6 @@ export async function initC(root) {
   paint();
   if (PETS[qPet]) select(Math.max(0, PICKS.findIndex(p => p.id === qPet)));
   bindPick(pick, () => PICKS[i].id);
-  addEventListener('resize', relayoutAll);
   markReady();
   return stages;
 }

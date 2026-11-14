@@ -16,9 +16,10 @@ body.has-invite .brand{display:none}
 .bottom{position:relative;z-index:4;flex:none;padding:8px 20px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:12px}
 .bottom .pe,.top .pe{pointer-events:auto}
 
-.who{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:52px}
+.who{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:0}
 .who b{font-size:22px;font-weight:1000;letter-spacing:-.02em;line-height:1.1}
 .who .kind{font-size:13px;font-weight:800;color:var(--ink-2)}
+.who .kind[hidden]{display:none}
 .el{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:var(--r-pill);font-size:13px;font-weight:900}
 .el svg{width:14px;height:14px}
 .el-ice{color:var(--blue-edge);background:var(--blue-soft)}

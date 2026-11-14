@@ -1,26 +1,23 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
-import { petStage } from './stage.js?v=tc11141700';
-import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11141700';
+import { petStage } from './stage.js?v=tc11151755';
+import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11151755';
+import { getPlayerNick } from '../shared/nick.js?v=tc11151755';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
 export function readStart() {
   const q = new URLSearchParams(location.search);
   const fresh = q.get('fresh') === '1' || q.get('start') === '1';
-  if (!fresh) return { fresh: false, pet: 'raccoon', name: '' };
+  if (!fresh) return { fresh: false, pet: 'raccoon' };
   let pet = q.get('pet') || '';
-  let name = (q.get('name') || '').trim().slice(0, 18);
   try {
     const raw = sessionStorage.getItem('tapyshi.start');
     const s = raw ? JSON.parse(raw) : null;
-    if (s && s.fresh) {
-      if (!PETS[pet] && PETS[s.pet]) pet = s.pet;
-      if (!name && s.name) name = String(s.name).trim().slice(0, 18);
-    }
+    if (s && s.fresh && !PETS[pet] && PETS[s.pet]) pet = s.pet;
   } catch (e) {}
   if (!PETS[pet]) pet = 'raccoon';
-  return { fresh: true, pet, name };
+  return { fresh: true, pet };
 }
 export const START = readStart();
 if (START.fresh) { S.coins = 0; S.energy = 300; S.max = 300; }
@@ -151,7 +148,7 @@ const HUD = `
       <div class="demo-pets" id="demoPets"></div>
     </div>
     <div class="bottom">
-      <div class="lvl card pe" id="lvlPlate"><span class="st"><svg><use href="#i-star"/></svg><b id="lvlN">7</b></span><span class="lvl-txt"><span id="lvlName">Иней</span> <small id="lvlLab">ур. 7</small></span></div>
+      <div class="lvl card pe" id="lvlPlate"><span class="st"><svg><use href="#i-star"/></svg><b id="lvlN">7</b></span><span class="lvl-txt"><span id="playerNick" class="pnick" hidden></span><span class="species"><span id="lvlName">Иней</span> <small id="lvlLab">ур. 7</small></span></span></div>
       <button class="up pe" id="btnUp" type="button"><svg class="ic"><use href="#i-up"/></svg>Улучшить</button>
     </div>
   </div>
@@ -165,7 +162,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   app.insertAdjacentHTML('afterbegin', HUD);
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
   const $ = id => document.getElementById(id);
-  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), demo: $('demo'), demoPets: $('demoPets') };
+  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick') };
   const ico = new Image(); ico.alt = ''; ico.src = spriteURL(coinCanvas(40)); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
 
@@ -374,8 +371,10 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
 
   /* --- эволюции: уровень, стадия, демо-переключатель --- */
   const E = { pet: START.pet, level: START.fresh ? 1 : 7 };
+  const SPECIES = { raccoon: 'Енот', capybara: 'Капибара', dragon: 'Дракончик', goose: 'Гусь' };
   function plateName(stg) {
-    return (START.fresh && START.name) ? START.name : stageName(E.pet, stg);
+    if (START.fresh) return SPECIES[E.pet] || PETS[E.pet].label;
+    return stageName(E.pet, stg);
   }
   function paintPlate() {
     const stg = stageOf(E.level);
@@ -383,7 +382,12 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     el.lvlN.textContent = E.level;
     el.lvlName.textContent = nm;
     el.lvlLab.textContent = 'ур. ' + E.level;
-    el.lvlPlate.classList.toggle('long', nm.length > 12);
+    if (START.fresh && el.playerNick) {
+      el.playerNick.hidden = false;
+      el.playerNick.textContent = getPlayerNick();
+    }
+    el.lvlPlate.classList.toggle('long', !START.fresh && nm.length > 12);
+    el.lvlPlate.classList.toggle('has-nick', START.fresh);
     el.stgLab.textContent = 'стадия ' + stg + '/6';
     el.demoPets.querySelectorAll('[data-pet]').forEach(b => b.classList.toggle('on', b.dataset.pet === E.pet));
   }
