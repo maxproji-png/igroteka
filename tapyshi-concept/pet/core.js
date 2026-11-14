@@ -68,7 +68,11 @@ export function coinCanvas(size = 64, dpr = SDPR) {
   /* оставлено для совместимости: летающие монеты и HUD берут PNG через coinSrc */
   return { _src: coinSrc(size) };
 }
-
+function star(x, cx, cy, s, col) {
+  x.fillStyle = col; x.beginPath();
+  x.moveTo(cx, cy - s); x.quadraticCurveTo(cx, cy, cx + s, cy); x.quadraticCurveTo(cx, cy, cx, cy + s); x.quadraticCurveTo(cx, cy, cx - s, cy); x.quadraticCurveTo(cx, cy, cx, cy - s); x.fill();
+}
+// Блик-звёздочка: белое ядро + тёплое свечение (запечено)
 export function glintCanvas(size = 56, dpr = SDPR) {
   const key = 'glint' + size + '@' + dpr; if (cache.has(key)) return cache.get(key);
   const [c, x] = mk(size, size, dpr); const m = size / 2;
