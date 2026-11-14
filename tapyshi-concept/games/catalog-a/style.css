@@ -150,3 +150,6 @@ body{background:linear-gradient(180deg,var(--bg-tint) 0,var(--bg) 340px,var(--bg
 .fr-pick .stk .radio{display:none}
 .fr-pick .stk .sv b{font-size:13.5px;white-space:normal}
 .fr-pick .stk .sv small{font-size:11px;white-space:nowrap}
+
+.fr-pick .opt .ot small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.fr-pick .g-opts{min-height:280px}

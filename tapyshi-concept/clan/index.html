@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Тапыши · Мой клан · «Вклад каждого»</title>
 <link rel="stylesheet" href="../shared-clan/css/styles.css?v=tc11132410">
-<link rel="stylesheet" href="../shared-clan/css/v2.css?v=tc11132410">
+<link rel="stylesheet" href="../shared-clan/css/v2.css?v=tc11152150">
 <link rel="stylesheet" href="../shared-clan/css/tokens.css?v=tc11132410">
-<link rel="stylesheet" href="../shared/components.css?v=tc11132410">
-<link rel="stylesheet" href="../shared-clan/css/clan3.css?v=tc11132410">
-<link rel="stylesheet" href="../shared-clan/css/chest-art.css?v=tc11152130">
+<link rel="stylesheet" href="../shared/components.css?v=tc11152150">
+<link rel="stylesheet" href="../shared-clan/css/clan3.css?v=tc11152150">
+<link rel="stylesheet" href="../shared-clan/css/chest-art.css?v=tc11152150">
 <style>
 /* «Мой клан» · Вклад каждого — финал. Шкала цели собрана из вкладов участников; список продолжает эту шкалу.
    Цвета — только токены из ../shared/css/tokens.css (= 2-games/shared/tokens.css). */
@@ -107,6 +107,33 @@
 
 @media (max-width:370px){.prog{padding:16px 16px 14px}.prog .pc{font-size:40px}.prog .tx b{font-size:15.5px}.prog .tx small{font-size:12.5px}.prog .ch{width:48px;height:48px}
   .seg button{font-size:13.5px;gap:5px}.seg button svg{width:16px;height:16px}.inv b{font-size:15px}.inv .btn--s{padding:0 13px}.ch-h .t>b{font-size:20px}}
+
+button.row.more{display:flex;align-items:center;width:100%;border:0;background:none;text-align:left;font:inherit;cursor:pointer;color:inherit}
+.ava img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.clan-info{padding:2px 2px 4px}
+.clan-info h3{margin:0;font-size:22px;font-weight:1000;letter-spacing:-.3px}
+.ci-head{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding-right:36px}
+.ci-head .emb{width:56px;height:56px;border-radius:18px;overflow:hidden;flex:none;background:var(--violet-soft);display:grid;place-items:center}
+.ci-head .emb img{width:48px;height:48px;object-fit:contain}
+.ci-head p{margin:4px 0 0;font-size:13px;font-weight:800;color:var(--ink-2)}
+.ci-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 16px}
+.ci-cell{background:var(--bg,var(--fill));border-radius:18px;padding:12px 14px}
+.ci-cell small{display:block;font-size:12px;font-weight:800;color:var(--ink-3);margin-bottom:4px}
+.ci-cell b{font-size:18px;font-weight:1000;letter-spacing:-.2px}
+.ci-cell.ci-wide{grid-column:1/-1}
+.ci-bar{display:block;height:8px;border-radius:99px;background:var(--line,#E9E5F6);margin-top:10px;overflow:hidden}
+.ci-bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--violet),var(--violet-edge))}
+.ci-leave{color:var(--pink,#e25);margin-top:4px}
+.ci-sub{margin:-8px 0 12px;font-size:13px;font-weight:800;color:var(--ink-3)}
+.clan-members-sheet .list{margin:0}
+.inv .coin,.inv-row .coin{width:16px;height:16px;vertical-align:-3px;margin:0 1px}
+
+
+.prize{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
+.prize .cap{grid-column:1/-1;margin:0}
+.prize .chip{justify-content:center;padding:8px 6px;font-size:11.5px;white-space:nowrap;gap:3px}
+.prize .chip b{font-size:13px}
+.prize .chip .coin{width:14px;height:14px}
 </style>
 </head>
 <body>
@@ -118,7 +145,7 @@
       <button class="ibtn tap" id="more" aria-label="О клане"></button>
     </header>
     <section class="prog">
-      <div class="top"><span class="pc num">83<small>%</small></span><span class="tx"><b>до сундука клана</b><small>1 240 560 из 1,5 млн</small></span><button type="button" class="ch-btn st-locked" data-chest="c15" aria-label="Золотой сундук, закрыт"><span class="ch ch-art"></span></button></div>
+      <div class="top"><span class="pc num">83<small>%</small></span><span class="tx"><b>до сундука клана</b><small>1 240 560 из 1,5 млн</small></span></div>
       <div class="stack" id="stack"></div>
       <div class="legend"><span class="you"><i></i>Твой вклад <b>131 250</b></span><span class="chip chip--neutral" id="left"></span></div>
     </section>
@@ -130,13 +157,15 @@
     <div id="panel"></div>
   </div>
   </div>
-<script>window.T={ROOT:'../shared-clan/'}</script>
-<script src="../shared-clan/js/data.js?v=tc11132410"></script>
-<script src="../shared-clan/js/app.js?v=tc11132410"></script>
-<script src="../shared-clan/js/v2.js?v=tc11132410"></script>
+<script src="../shared/coin.js?v=tc11152150"></script>
+<script src="../shared/pet-thumb.js?v=tc11152150"></script>
+<script>window.T=window.T||{};T.ROOT='../shared-clan/';</script>
+<script src="../shared-clan/js/data.js?v=tc11152150"></script>
+<script src="../shared-clan/js/app.js?v=tc11152150"></script>
+<script src="../shared-clan/js/v2.js?v=tc11152150"></script>
 <script src="../shared-clan/js/nav3.js?v=tc11132410"></script>
 <script src="../shared-clan/js/chest-art.js?v=tc11152130"></script>
-<script src="../shared-clan/js/clan3.js?v=tc11152130"></script>
+<script src="../shared-clan/js/clan3.js?v=tc11152150"></script>
 <script>
 var C=T.c3;
 document.getElementById('more').innerHTML=T.IC.dots;
@@ -151,12 +180,24 @@ C.members.slice(0,5).forEach(function(m,i){rest-=m.t;st.insertAdjacentHTML('befo
 st.insertAdjacentHTML('beforeend','<i style="width:'+(rest/g*100)+'%;background:'+C.rest+';animation-delay:.4s"></i>');
 C.paintMilestones();
 T.c3.tabs(document.getElementById('tabs'),{members:function(){
-  return '<button class="inv tap" data-invite><span class="max-ic">'+T.IC.max+'</span><span class="tx"><b>Позвать друга</b><small>+5000 🪙 за первый вход</small></span><span class="btn btn--max btn--s">Через MAX</span></button>'+
+  return '<button class="inv tap" data-invite><span class="max-ic">'+T.IC.max+'</span><span class="tx"><b>Позвать друга</b><small>+5000 '+(T.coin?T.coin():'')+' за первый вход</small></span><span class="btn btn--max btn--s">Через MAX</span></button>'+
     '<div class="sec"><span>Вклад за неделю</span><span>'+(C.members.length+(C.restN||0))+' '+pplWord(C.members.length+(C.restN||0))+'</span></div>'+C.members_({bars:1});}});
 function pplWord(n){var m=n%100,d=n%10;return (m>10&&m<20)||!d||d>4?'участников':d===1?'участник':'участника';}
-document.getElementById('more').addEventListener('click',function(){T.sheet('<h3>Дикий зоопарк</h3><div class="srow">Уровень клана<b>2</b></div><div class="srow">До 3-го уровня<b>64 из 100 побед</b></div><div class="srow">Мест занято<b>27 из 45</b></div><div class="srow danger" id="leave">Покинуть клан</div>');setTimeout(function(){var l=document.getElementById('leave');if(l)l.addEventListener('click',function(){location='?empty=1'})},0)});
+document.getElementById('more').addEventListener('click',function(){
+  T.sheet(
+    '<div class="clan-info">'+
+      '<div class="ci-head"><span class="emb e-raccoon"><img src="../shared-clan/img/pets/raccoon_happy_head.png" alt=""></span><div><h3>Дикий зоопарк</h3><p>Твой клан</p></div></div>'+
+      '<div class="ci-grid">'+
+        '<div class="ci-cell"><small>Уровень</small><b>2</b></div>'+
+        '<div class="ci-cell"><small>Места</small><b>27 / 45</b></div>'+
+        '<div class="ci-cell ci-wide"><small>До 3-го уровня</small><b>64 из 100 побед</b><span class="ci-bar"><i style="width:64%"></i></span></div>'+
+      '</div>'+
+      '<button type="button" class="btn btn--ghost btn--m btn--wide ci-leave" id="leave">Покинуть клан</button>'+
+    '</div>');
+  setTimeout(function(){var l=document.getElementById('leave');if(l)l.addEventListener('click',function(){location='?empty=1'})},0);
+});
 </script>
-<script src="../shared/invite.js?v=tc11132410"></script>
+<script src="../shared/invite.js?v=tc11152150"></script>
 <script src="../shared/nav.js?v=tc11132410"></script>
 <script src="../clan-create/shared.js?v=tc11132410"></script>
 <script src="../clan-create/apply.js?v=tc11132410"></script>

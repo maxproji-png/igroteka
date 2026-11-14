@@ -9,8 +9,11 @@ if(window.TAP_EV==='a'||window.TAP_EV==='b') S.ev=window.TAP_EV;
 var REACT=['😄','😂','😮','😅','🔥','👍'];
 function clear(){T.forEach(clearTimeout);T=[];}
 function later(fn,ms){T.push(setTimeout(fn,ms));}
-function go(p){clear();for(var k in p)S[k]=p[k];
-  var o=Object.assign({},S);TAP.render(o);S.enter=false;
+function go(p){var wasSheet=(S.screen==='sheet')||(S.screen==='friends'&&S.pick);
+  clear();for(var k in p)S[k]=p[k];
+  var o=Object.assign({},S);
+  if(wasSheet&&((S.screen==='sheet')||(S.screen==='friends'&&S.pick))) o.stay=true;
+  TAP.render(o);S.enter=false;
   if(S.screen==='catalog'||S.screen==='sheet'||S.screen==='friends'){if(S.screen!=='friends')applyFilter();window.scrollTo(0,S.y||0);}
   if(S.screen==='search'){var t=0,el=document.querySelector('.timer');(function tick(){el.textContent='0:'+('0'+t).slice(-2);t++;if(t<=4)later(tick,1000);})();later(startGame,4200);}
   if(S.screen==='wait')later(startGame,4500);
@@ -19,7 +22,7 @@ function go(p){clear();for(var k in p)S[k]=p[k];
 }
 function startGame(){
   if(S.friend){
-    TAP.OPP.friend={name:S.friend.name,pet:S.friend.pet||'raccoon',tag:'друг из MAX'};
+    TAP.OPP.friend={name:S.friend.name,pet:S.friend.pet||'raccoon',lvl:S.friend.lvl||1,tag:'друг из MAX'};
     S.mode='friend';
   }
   go({screen:'shellDuo',enter:true});
@@ -63,7 +66,7 @@ document.addEventListener('click',function(e){
     if(S.write){shareGame(function(){});return;}
     go({screen:'waitFriend',fromFriends:true,mode:'friend',pick:false});
   }
-  else if(a==='close'||a==='menu'||a==='pause'){go({screen:S.fromFriends?'friends':'catalog',pick:false});}
+  else if(a==='close'||a==='menu'||a==='pause'){if(S.screen==='friends'&&!S.pick)go({screen:'catalog',fromFriends:false,pick:false});else if(S.fromFriends)go({screen:'friends',pick:false});else go({screen:'catalog',pick:false});}
   else if(a==='invite-any'){if(window.TapInvite)TapInvite.share({});return;}
   else if(a==='start'){
     if(S.mode==='random')go({screen:'search'});

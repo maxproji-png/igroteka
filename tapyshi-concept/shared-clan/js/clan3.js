@@ -1,5 +1,5 @@
 /* Клан · раунд 3 — общие данные и списки (участники / топ кланов / чат) и вкладки.
-   Награды и вклад — заглушки макета; трофеи топ-3 = 60/40/20; приглашение друга в концепте — +5000 пригласившему за первый вход по ссылке. */
+   Награды и вклад — заглушки макета; награды недели топ-3 = 3 000 / 2 000 / 1 000 монет; приглашение друга в концепте — +5000 пригласившему за первый вход по ссылке. */
 (function(){
 var C = T.c3 = {};
 C.goal = { now: 1240560, goal: 1500000, left: '2 д 14 ч', place: 3,
@@ -13,6 +13,25 @@ C.members = [
   { n:'Егор', pet:'capybara', lvl:7, t:61800, on:1 }, { n:'Лиза', pet:'goose', lvl:6, t:48200 },
   { n:'Никита', pet:'dragon', lvl:5, t:39600 }, { n:'Оля', pet:'capybara', lvl:4, t:27900, on:1 } ];
 C.restN = 17; C.restT = 332410;
+
+C.prize = [3000, 2000, 1000];
+C.extra = [
+  { n:'Катя', pet:'goose', lvl:15, t:28400 }, { n:'Паша', pet:'dragon', lvl:13, t:26100, on:1 },
+  { n:'Юля', pet:'raccoon', lvl:11, t:24800 }, { n:'Тимур', pet:'capybara', lvl:10, t:23600, on:1 },
+  { n:'Света', pet:'dragon', lvl:9, t:22100 }, { n:'Рома', pet:'goose', lvl:16, t:21400 },
+  { n:'Настя', pet:'capybara', lvl:8, t:20100, on:1 }, { n:'Илья', pet:'raccoon', lvl:14, t:19800 },
+  { n:'Даша', pet:'goose', lvl:7, t:18600 }, { n:'Гоша', pet:'dragon', lvl:18, t:17900, on:1 },
+  { n:'Лена', pet:'capybara', lvl:6, t:17200 }, { n:'Вова', pet:'raccoon', lvl:10, t:16500 },
+  { n:'Ира', pet:'goose', lvl:5, t:15400 }, { n:'Женя', pet:'dragon', lvl:12, t:14800, on:1 },
+  { n:'Миша', pet:'capybara', lvl:3, t:13900 }, { n:'Таня', pet:'raccoon', lvl:7, t:12110 },
+  { n:'Кирилл', pet:'goose', lvl:4, t:19700 }
+];
+C.allMembers = function(){ return C.members.concat(C.extra||[]); };
+C.lvlOf = function(n, pet){
+  var list=C.allMembers(), i;
+  for(i=0;i<list.length;i++) if(list[i].n===n) return list[i].lvl;
+  return 8;
+};
 /* цвета вклада — только палитра: оттенки фиолетового, «ты» — жёлтым */
 C.colors = ['var(--violet-edge)','var(--violet)','var(--sun)','color-mix(in srgb,var(--violet) 60%,var(--white))','color-mix(in srgb,var(--violet) 40%,var(--white))'];
 C.rest = 'color-mix(in srgb,var(--violet) 18%,var(--white))';
@@ -32,17 +51,17 @@ C.chat = [
 var H = function(p){ return T.img('pets/'+p+'_happy_head.png'); };
 C.head = H;
 C.pct = function(){ return Math.round(C.goal.now / C.goal.goal * 100); };
-C.ava = function(p, cls){ return '<span class="ava '+p+' '+(cls||'')+'"><img src="'+H(p)+'" alt=""></span>'; };
-C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +5000 🪙 за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
-C.members_ = function(o){ o=o||{}; var max=C.members[0].t;
-  return '<div class="list">'+C.members.map(function(m,i){
+C.ava = function(p, cls, lvl){ var src=(window.TAP_petThumb?TAP_petThumb(p,lvl):H(p)); return '<span class="ava '+p+' '+(cls||'')+'"><img src="'+src+'" alt=""></span>'; };
+C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +5000 '+(T.coin?T.coin():'')+' за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
+C.members_ = function(o){ o=o||{}; var list=(o.all?C.allMembers():C.members).slice(); if(o.all) list.sort(function(a,b){return b.t-a.t;}); var max=list[0].t;
+  return '<div class="list">'+list.map(function(m,i){
     var bar = o.bars ? '<span class="cbar"><i style="width:'+(m.t/max*100).toFixed(1)+'%;background:'+(i<5?C.colors[i]:C.rest)+'"></i></span>' : '';
     var share = o.bars ? '<small class="share">'+(m.t/C.goal.now*100).toFixed(1).replace('.',',')+'%</small>' : '';
     return '<div class="row tap'+(m.me?' me':'')+'">'+(o.rank?'<span class="rk r'+(i+1)+'">'+(i+1)+'</span>':'')+
-      '<span class="avw">'+C.ava(m.pet,'sm')+(m.on?'<i class="on-dot"></i>':'')+'</span>'+
+      '<span class="avw">'+C.ava(m.pet,'sm',m.lvl)+(m.on?'<i class="on-dot"></i>':'')+'</span>'+
       '<span class="nm"><b>'+(m.me?'Ты':m.n)+(m.owner?' '+T.IC.crown:'')+'</b>'+(o.bars?bar:'<small>ур. '+m.lvl+(m.owner?' · глава':'')+'</small>')+'</span>'+
       '<span class="val"><b class="num">'+T.fmt(m.t)+'</b>'+(o.bars?share:'<small>тапов</small>')+'</span></div>';
-  }).join('')+(C.restN?'<div class="row more tap"><span class="nm"><b>Ещё '+C.restN+' участников</b><small>'+T.fmt(C.restT)+' тапов вместе</small></span><span class="go">'+T.IC.chev+'</span></div>':'')+'</div>';
+  }).join('')+((C.restN && !o.all)?'<button type="button" class="row more tap" data-members-all><span class="nm"><b>Ещё '+C.restN+' участников</b><small>'+T.fmt(C.restT)+' тапов вместе</small></span><span class="go">'+T.IC.chev+'</span></button>':'')+'</div>';
 };
 var topEmb = function(c){
   if (c.icon && window.ClanCreate) {
@@ -52,7 +71,8 @@ var topEmb = function(c){
   return '<span class="emb sm e-'+c.pet+'"><img src="'+H(c.pet)+'" alt=""></span>';
 };
 C.top_ = function(){
-  return '<div class="prize"><span class="cap">Трофеи недели</span><span class="chip chip--sun">'+T.IC.cup+'1 место — <b>60</b></span><span class="chip chip--sun">2 — <b>40</b></span><span class="chip chip--sun">3 — <b>20</b></span></div><div class="list">'+C.top.map(function(c,i){
+  var coin=T.coin?T.coin():'';
+  return '<div class="prize"><span class="cap">Награды недели</span>'+C.prize.map(function(n,i){return '<span class="chip chip--sun">'+(i+1)+'-е — '+coin+'<b>'+T.fmt(n)+'</b></span>';}).join('')+'</div><div class="list">'+C.top.map(function(c,i){
     return '<div class="row tap'+(c.me?' me':'')+'"><span class="rk r'+(i+1)+'">'+(i+1)+'</span>'+topEmb(c)+''+
       '<span class="nm"><b>'+c.n+'</b><small>ур. '+c.lvl+' · '+c.m+' игроков</small></span><span class="val"><b class="num">'+T.short(c.t)+'</b><small>за неделю</small></span></div>';
   }).join('')+'</div><p class="foot">Неделя закончится через '+C.goal.left+'</p>';
@@ -62,8 +82,13 @@ C.chat_ = function(){
     if(m.day) return '<div class="day">'+m.day+'</div>';
     if(m.sys) return '<div class="sys">'+m.sys+'</div>';
     if(m.me) return '<div class="msg me"><div class="bub">'+m.tx+'<time>'+m.tm+'</time></div></div>';
-    return '<div class="msg">'+C.ava(m.pet,'xs')+'<div class="bub"><b>'+m.n+(m.owner?T.IC.crown:'')+'</b>'+m.tx+'<time>'+m.tm+'</time></div></div>';
+    return '<div class="msg">'+C.ava(m.pet,'xs',C.lvlOf(m.n,m.pet))+'<div class="bub"><b>'+m.n+(m.owner?T.IC.crown:'')+'</b>'+m.tx+'<time>'+m.tm+'</time></div></div>';
   }).join('')+'</div>';
+};
+
+C.membersSheet = function(){
+  var html='<div class="clan-members-sheet"><h3>Участники</h3><p class="ci-sub">'+C.allMembers().length+' из '+((T.clan&&T.clan.cap)||45)+'</p>'+C.members_({all:1,rank:1})+'</div>';
+  T.sheet(html);
 };
 C.chatbar = function(){ return '<div class="chatbar"><input placeholder="Сообщение клану…"><button class="snd tap">'+T.IC.send.replace('M12 15 V3 M7 8 L12 3 L17 8"/><path d="M5 12 V19 Q5 21 7 21 H17 Q19 21 19 19 V12','M12 19 V5 M6 11 L12 5 L18 11')+'</button></div>'; };
 /* вкладки: [data-tab] кнопки внутри tabsEl, панель #panel. hash #top / #chat открывает сразу */
@@ -136,7 +161,7 @@ C.markClaimed = function(id){
   try{ sessionStorage.setItem('tapyshi.clan.chests', JSON.stringify(m)); }catch(e){}
 };
 function rwIcon(k){
-  if(k==='coin') return T.coin ? T.coin('rw-ico') : '<span class="rw-ph">🪙</span>';
+  if(k==='coin') return T.coin ? T.coin('rw-ico') : (window.TAP_COIN||'');
   if(k==='bolt') return '<span class="rw-svg bolt">'+T.IC.bolt+'</span>';
   if(k==='xp') return '<span class="rw-svg xp">'+T.IC.shield+'</span>';
   return '<span class="rw-svg rare"><svg viewBox="0 0 24 24"><path d="M12 3.5 L14.4 9.2 L20.5 10 L16 14.3 L17.2 20.4 L12 17.4 L6.8 20.4 L8 14.3 L3.5 10 L9.6 9.2Z" fill="#FFC93D" stroke="#E39200" stroke-width="1.4" stroke-linejoin="round"/></svg></span>';
@@ -196,20 +221,18 @@ C.paintMilestones = function(){
       '<span class="ms-ico">'+chestArt(ch, st==='claimed')+'<i></i></span>'+
       '<small>'+(st==='ready'&&window.CH?'Забрать':ch.lbl)+'</small></button>';
   }).join('')+'</div>';
-  var big=document.querySelector('[data-chest-big], .ch-btn, .prog .ch');
-  if(big && !big.closest('[data-chest]')){
-    var wrap=big.closest('.ch-btn')||big;
-    wrap.setAttribute('data-chest','c15');
-    wrap.classList.add('ch-btn','st-'+C.chestState(C.chests[2]));
-  }
-  var bigArt=document.querySelector('.prog .ch-art');
-  if(bigArt && window.CH){
-    var st2=C.chestState(C.chests[2]);
-    bigArt.innerHTML=chestArt(C.chests[2], st2==='claimed');
-    var bw=bigArt.closest('.ch-btn'); if(bw) bw.className='ch-btn st-'+st2;
-  }
   var hm=(location.hash||'').match(/^#chest-(c500|c1m|c15)$/);
   if(hm && !C._hashOpened){ C._hashOpened=1; setTimeout(function(){ C.chestSheet(hm[1]); }, 250); }
+
+  if(!C._membersBound){
+    C._membersBound=1;
+    document.addEventListener('click', function(e){
+      var b=e.target.closest('[data-members-all]');
+      if(!b) return;
+      e.preventDefault();
+      C.membersSheet();
+    });
+  }
   if(!C._chestBound){
     C._chestBound=1;
     document.addEventListener('click', function(e){

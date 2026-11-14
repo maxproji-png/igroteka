@@ -1,6 +1,7 @@
 /* Тапыши · Игры — экраны этапа 2. Только токены (tokens.css) и компоненты (components.css). */
 body.no-tabs .tabbar{display:none}
-body.has-sheet{overflow:hidden}
+body.has-sheet,body.is-sheet{overflow:hidden;--tabbar-space:env(safe-area-inset-bottom, 0px)}
+body.has-sheet .tabbar,body.is-sheet .tabbar{transform:translateX(-50%) translateY(110%);pointer-events:none;visibility:hidden}
 #app{min-height:100vh}
 .coin-in{fill:color-mix(in srgb,var(--sun-edge) 35%,var(--sun))}
 @keyframes fade{from{opacity:0}}
@@ -15,8 +16,8 @@ body.has-sheet{overflow:hidden}
 .gchip .gi svg{width:24px;height:24px}
 
 /* ---------- шторка ---------- */
-.scrim{position:fixed;inset:0;background:var(--scrim);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:60;animation:fade .25s ease}
-.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:440px;z-index:61;background:var(--white);border-radius:32px 32px 0 0;padding:10px 18px 22px;box-shadow:0 -10px 40px rgb(var(--shade) / .18);animation:up .45s var(--spring);max-height:96vh;overflow:auto}
+.scrim{position:fixed;inset:0;background:var(--scrim);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:200;animation:fade .25s ease}
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:440px;z-index:201;background:var(--white);border-radius:32px 32px 0 0;padding:10px 18px calc(16px + env(safe-area-inset-bottom, 0px));box-shadow:0 -10px 40px rgb(var(--shade) / .18);animation:up .45s var(--spring);max-height:calc(100dvh - 8px);overflow:auto}
 @keyframes up{from{transform:translateY(100%)}to{transform:none}}
 .grab{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
 .xbtn{position:absolute;right:14px;top:14px}
@@ -231,3 +232,9 @@ body.has-sheet{overflow:hidden}
  .re{width:36px;height:36px;font-size:22px}.tray{gap:3px}
  .rbub.l{left:46px}.rbub.r{right:46px}
 }
+
+.sheet.sheet-stay{animation:none}
+.sheet .sh-var{min-height:196px;display:flex;flex-direction:column;justify-content:center}
+.fr-pick .sh-var{min-height:148px}
+.sheet > .btn--l,.sheet > .btn--max,.sheet > .btn--primary{position:sticky;bottom:0;z-index:2;margin-top:8px;box-shadow:0 -12px 16px var(--white)}
+.fr-ava img,.sh-me img,.pl .av img,.slot img,.mepet img,.rpet img,.mini,.orb img{object-fit:contain}

@@ -53,3 +53,11 @@ body.hub .more a{display:block;font-size:14px;font-weight:800;color:var(--violet
 /* Полученная награда в «Приглашён тобой» — тихо, без зелёной плашки */
 .fr-got{display:inline-flex;align-items:center;gap:5px;padding:0;max-width:none;border-radius:0;background:none;color:var(--ink-2);font-size:13px;font-weight:800;line-height:1;text-align:right}
 .fr-got .coin{width:16px;height:16px;flex:none}
+
+/* Аккуратнее шапка Друзей: без подзаголовка, меньше зазор */
+.fr-page .fr-top{align-items:center;gap:8px;margin:0 0 8px}
+.fr-page .fr-top h1{font-size:24px;letter-spacing:-.4px;line-height:1.15;margin:0}
+.fr-page .fr-top .ttl p{display:none}
+.fr-page .fr-invite-b{margin:0 0 12px;gap:6px}
+.fr-page .fr-invite-b .invite--plain{min-height:44px;padding:6px 14px 6px 6px}
+.fr-page .fr-hint summary{width:32px;height:32px}

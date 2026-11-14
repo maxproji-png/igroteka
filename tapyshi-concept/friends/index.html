@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Тапыши · Друзья</title>
-<link rel="stylesheet" href="../games/shared/tokens.css?v=tc11152130">
-<link rel="stylesheet" href="../games/shared/components.css?v=tc11152130">
-<link rel="stylesheet" href="../games/catalog-a/style.css?v=tc11141101">
-<link rel="stylesheet" href="../games/shared/screens.css?v=tc11141101">
-<link rel="stylesheet" href="variants.css?v=tc11152130">
+<link rel="stylesheet" href="../games/shared/tokens.css?v=tc11152150">
+<link rel="stylesheet" href="../games/shared/components.css?v=tc11152150">
+<link rel="stylesheet" href="../games/catalog-a/style.css?v=tc11152150">
+<link rel="stylesheet" href="../games/shared/screens.css?v=tc11152150">
+<link rel="stylesheet" href="variants.css?v=tc11152150">
 </head>
 <body>
 <div id="app"></div>
@@ -19,7 +19,7 @@
   var empty = q.get('empty') === '1';
   if(fv !== 'a' && fv !== 'b' && fv !== 'c'){
     if(!empty){
-      location.replace('variants.html?v=tc11152130');
+      location.replace('variants.html?v=tc11152150');
       return;
     }
     fv = 'b';
@@ -33,10 +33,12 @@
   if(ev === 'a' || ev === 'b') window.TAP_EV = ev;
 })();
 </script>
+<script src="../shared/coin.js?v=tc11152150"></script>
+<script src="../shared/pet-thumb.js?v=tc11152150"></script>
 <script src="../games/shared/games.js?v=tc11141101"></script>
-<script src="../games/shared/screens.js?v=tc11152130"></script>
+<script src="../games/shared/screens.js?v=tc11152150"></script>
 <script src="../shared/nav.js?v=tc11141101"></script>
-<script src="../shared/invite.js?v=tc11141101"></script>
-<script src="../games/proto.js?v=tc11152130"></script>
+<script src="../shared/invite.js?v=tc11152150"></script>
+<script src="../games/proto.js?v=tc11152150"></script>
 </body>
 </html>

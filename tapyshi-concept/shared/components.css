@@ -113,3 +113,19 @@ body.no-tabs{--tabbar-space:0px}
 .tab{text-decoration:none;color:inherit}
 .tabbar a.tab{color:var(--ink-3)}
 .tabbar a.tab.on{color:var(--white)}
+
+/* Шторки поверх таббара или с скрытым таббаром, чтобы их можно было закрыть */
+body.has-sheet,body.is-sheet{--tabbar-space:env(safe-area-inset-bottom, 0px);overflow:hidden}
+body.has-sheet .tabbar,body.is-sheet .tabbar{transform:translateX(-50%) translateY(110%);pointer-events:none;visibility:hidden}
+.sheet-bg{position:fixed;inset:0;z-index:200;background:var(--scrim,rgb(58 51 88 / .42));opacity:0;pointer-events:none;transition:opacity .3s}
+.sheet-bg.on{opacity:1;pointer-events:auto}
+body > .sheet{position:fixed;left:50%;right:auto;bottom:0;transform:translateX(-50%) translateY(105%);z-index:201;width:100%;max-width:430px;
+  background:var(--white);border-radius:32px 32px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  box-shadow:0 -10px 40px rgb(var(--shade) / .18);max-height:calc(100dvh - 8px);overflow:auto;transition:transform .45s var(--spring,cubic-bezier(.34,1.4,.64,1))}
+body > .sheet.on{transform:translateX(-50%) translateY(0)}
+body > .sheet .xbtn, .sheet .xbtn{position:absolute;right:14px;top:14px;z-index:2}
+.inv-toast .coin,.prize .coin,.inv .coin,.inv-row .coin{width:18px;height:18px;flex:none;vertical-align:-3px;display:inline-block}
+.prize{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 12px}
+.prize .cap{width:100%;font-size:12.5px;font-weight:800;color:var(--ink-3)}
+.prize .chip{display:inline-flex;align-items:center;gap:4px}
+.prize .chip .coin{width:16px;height:16px}
