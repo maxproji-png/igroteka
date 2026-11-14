@@ -197,7 +197,7 @@ var FRIENDS=[
 TAP.FRIENDS=FRIENDS;
 function frAva(f){
   if(!f.pet) return '<span class="fr-ava empty"><b>'+f.name.replace(/[^A-Za-zА-Яа-яЁё]/g,'').slice(0,1)+'</b></span>';
-  return '<span class="fr-ava '+f.pet+'"><img src="'+petAva(f.pet,'happy',f.lvl)+'" alt=""><i class="on-dot'+(f.on?' on':'')+'"></i></span>';
+  return '<span class="avw"><span class="fr-ava '+f.pet+'"><img src="'+petAva(f.pet,'happy',f.lvl)+'" alt=""></span>'+(f.on?'<i class="on-dot" aria-hidden="true"></i>':'')+'</span>';
 }
 function frMeta(f){
   if(!f.pet) return '';
