@@ -35,7 +35,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .pet img{width:68px;height:68px;border-radius:14px;display:block;margin-bottom:3px}
 .pet small{display:block;font-size:10px;color:#8a93ab;font-weight:800}
 .pet.on{background:#fff;box-shadow:0 0 0 3px #5ccf6e,0 6px 16px rgba(40,120,60,.25)}
-.coop{display:flex;gap:8px}
+#pets{flex-wrap:wrap}
 .coop button{border:0;border-radius:16px;padding:10px 12px;font:inherit;font-weight:900;font-size:13px;background:rgba(255,255,255,.6);color:#9aa3b8;width:120px}
 .coop small{display:block;font-size:10px}
 #store{font-size:12px;font-weight:800;color:#6b7590;margin:-4px 4px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -61,7 +61,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 #hint{position:absolute;left:50%;top:calc(318px + var(--st));transform:translateX(-50%);padding:9px 16px;font-weight:800;font-size:14px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;pointer-events:none;transition:opacity .3s}
 #hint.warn{background:#fff1f1;color:#d93c55}
 #hint.hide{opacity:0}
-#toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.9);padding:16px 24px;text-align:center;font-weight:900;font-size:24px;opacity:0;transition:all .35s;pointer-events:none;white-space:nowrap}
+#toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.9);padding:16px 24px;text-align:center;font-weight:900;font-size:24px;opacity:0;transition:all .35s;pointer-events:none;width:max-content;max-width:86vw;line-height:1.15}
 #toast small{display:block;font-size:14px;font-weight:800;color:#7a849d;margin-top:4px}
 #toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
 #joy{position:absolute;left:0;bottom:0;width:50%;height:46%;touch-action:none}
@@ -112,6 +112,52 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 #dbg{position:absolute;left:50%;top:calc(4px + var(--st));transform:translateX(-50%);font:11px/1.3 monospace;background:rgba(0,0,0,.55);color:#bfffbf;padding:3px 7px;border-radius:6px;pointer-events:none;white-space:pre}
 .ft{position:absolute;left:0;top:0;font-weight:900;font-size:18px;color:#fff;text-shadow:0 2px 0 rgba(40,60,110,.5),0 0 6px rgba(40,60,110,.4);pointer-events:none;will-change:transform;white-space:nowrap}
 .ft.bad{color:#ff6b7f}
+#nOf{white-space:nowrap}
+#wx{display:flex;gap:3px;align-items:center;margin:5px 0 1px}
+#wx svg{width:20px;height:20px}
+#wx b{font-size:9px;font-weight:900;color:#5b6fe0;margin-left:2px}
+#top.special{box-shadow:0 0 0 2px #9fb0ff,0 6px 18px rgba(40,60,110,.25)}
+#muteH{position:absolute;right:calc(62px + var(--sr));top:calc(10px + var(--st));width:44px;height:44px;border:0}
+.btn.mute svg,.mute svg{width:22px;height:22px}
+.corner{position:absolute!important;right:calc(12px + var(--sr));top:calc(12px + var(--st));width:44px;height:44px;border:0;display:grid;place-items:center}
+.coin svg{width:16px;height:16px;vertical-align:-3px;margin-right:2px}
+.petcard{border:0;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;font:inherit;font-weight:900;font-size:15px;color:#33405a;text-align:left}
+.petcard img{width:48px;height:48px;border-radius:14px}
+.petcard small{display:block;font-size:11px;color:#8a93ab;font-weight:800}
+.link{border:0;background:none;font:inherit;font-weight:900;font-size:15px;color:#55607a;padding:8px 18px}
+.ov p.small{font-size:13px;margin:-4px 0 2px}
+#cells{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;width:min(100%,350px)}
+.cell{position:relative;border:0;border-radius:16px;padding:9px 2px 7px;font:inherit;background:rgba(255,255,255,.92);box-shadow:0 3px 0 #c9d2e3;color:#33405a}
+.cell b{display:block;font-size:16px;font-weight:900}
+.cell small{display:flex;align-items:center;justify-content:center;gap:2px;font-size:10px;font-weight:900;color:#3ea851}
+.cell small svg{width:12px;height:12px}
+.cell.passed small{color:#d99a1a}
+.cell.locked,.cell.soon{background:rgba(255,255,255,.5);box-shadow:none;color:#9aa3b8}
+.cell.locked small,.cell.soon small{color:#9aa3b8}
+.cell.sel{box-shadow:0 0 0 3px #5ccf6e,0 3px 0 #3ea851}
+.cell.final{grid-column:span 4}
+.cell .sv{position:absolute;right:3px;top:3px;width:16px;height:16px}
+.cell .sv svg{width:16px;height:16px}
+.cell em{position:absolute;left:4px;top:3px;font-style:normal;font-size:8px;font-weight:900;color:#5b6fe0}
+#mapInfo{padding:9px 14px;font-size:12px;font-weight:800;color:#55607a;max-width:350px}
+.lobbybox{width:min(100%,350px);padding:12px;text-align:left}
+.lrow{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:#6b7590;margin:4px 0 8px}
+.lrow b{font-size:20px;color:#33405a;letter-spacing:2px;flex:1}
+.mini{border:0;border-radius:12px;padding:6px 10px;font:inherit;font-weight:900;font-size:12px;background:#eef2f9;color:#55607a}
+.mini small{display:block;font-size:9px}
+.mini:disabled{opacity:.6}
+#slots{display:grid;gap:6px;margin-bottom:8px}
+.slot{display:flex;align-items:center;gap:8px;padding:6px;border-radius:14px;background:#f5f8fd;border-left:5px solid var(--c)}
+.slot img,.slot i{width:36px;height:36px;border-radius:10px;display:block;background:#e3e8f3}
+.slot b{display:block;font-size:13px;font-weight:900}
+.slot small{display:block;font-size:11px;font-weight:800;color:#8a93ab}
+.slot.empty{opacity:.75}
+.chk{display:flex;align-items:center;gap:10px;font-weight:900;font-size:15px;padding:6px 2px}
+.chk input{width:24px;height:24px;accent-color:#5ccf6e}
+.chk small{font-size:11px;color:#8a93ab}
+#lobbyNote{font-size:12px;margin:4px 0 0;color:#6b7590;font-weight:800}
+.big:disabled{background:#d5dbe6;box-shadow:0 5px 0 #bcc4d3;color:#fff}
+.ov h1.win{font-size:46px}
 #rot{display:none}
 @media (orientation:landscape) and (max-height:500px){#rot{display:flex;position:fixed;inset:0;z-index:9;background:#8fd3ff;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#fff;text-align:center;padding:30px}}
 </style>
@@ -120,7 +166,8 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 <canvas id="c"></canvas>
 <div class="ui" id="hud">
   <div id="top" class="card">
-    <div id="night"><span id="nIco"></span><span id="nTxt">Ночь 1</span><small>/ 10</small></div>
+    <div id="night"><span id="nIco"></span><span id="nTxt">Ночь 1</span><small id="nOf">/ 6</small></div>
+    <div id="wx" class="hide"></div>
     <div id="phase"><span id="phName">День</span><span id="phTime">0:00</span></div>
     <div class="bar" id="tbar"><i></i></div>
     <div class="stat"><span id="icHp"></span><div class="bar" id="hpb"><i></i></div><em>Силы</em></div>
@@ -128,6 +175,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
     <div class="stat"><span id="icFu"></span><div class="bar" id="fub"><i></i></div><em id="fLv">Костёр</em></div>
   </div>
   <button id="pause" class="card btn" aria-label="Пауза"></button>
+  <button id="muteH" class="card btn mute" aria-label="Звук"></button>
   <div id="inv"></div>
   <div id="hint" class="card hide"></div>
   <div id="toast" class="card"></div>
@@ -145,19 +193,50 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 </div>
 <div class="ui">
   <div id="startOv" class="ov">
+    <button class="card btn mute corner" aria-label="Звук"></button>
     <h1>99 ночей</h1>
-    <p>Выживи 10 ночей в лесу: днём собирай ветки и ягоды, ночью держись у костра.</p>
-    <div id="pets"></div>
-    <button class="big" id="bCont"><span>Продолжить</span><small id="contInfo"></small></button>
-    <button class="big alt" id="bNew">Новая игра · соло</button>
-    <div class="coop"><button disabled>Поиск соперника<small>скоро</small></button><button disabled>Игра с другом<small>скоро</small></button></div>
+    <p>Переживи ночи в лесу: днём собирай ветки и ягоды, ночью держи костёр. Этапы по 6 ночей.</p>
+    <button class="petcard card" id="myPet"></button>
+    <div id="pets" class="hide"></div>
+    <button class="big" id="bSolo">Соло</button>
+    <button class="big alt" id="bFriend">С другом</button>
+    <button class="big alt" id="bSearch" disabled>Поиск соперника<small>скоро — нужен сервер</small></button>
   </div>
-  <div id="pauseOv" class="ov hide"><h2>Пауза</h2><button class="big" id="bResume">Продолжить</button><button class="big alt" id="bMenu">В меню</button></div>
-  <div id="overOv" class="ov hide"><h2 id="overT">Костёр погас</h2><p id="overS"></p><button class="big" id="bRetry">С последнего рассвета</button><button class="big alt" id="bNew2">Новая игра</button><button class="big alt" id="bMenu2">В меню</button></div>
+  <div id="soloOv" class="ov hide">
+    <h2>Соло</h2>
+    <button class="big" id="bCont"><span>Продолжить</span><small id="contInfo"></small></button>
+    <button class="big alt" id="bNewRun">Новый забег</button>
+    <button class="big alt" id="bMap">Карта этапов</button>
+    <button class="link" id="bBack1">Назад</button>
+  </div>
+  <div id="mapOv" class="ov hide">
+    <h2 id="mapT">Карта этапов</h2>
+    <p class="small">По 6 ночей. В первой версии открыты ночи 1–12, дальше — скоро.</p>
+    <div id="cells"></div>
+    <div id="mapInfo" class="card"></div>
+    <button class="big" id="bMapGo">Начать</button>
+    <button class="link" id="bMapBack">Назад</button>
+  </div>
+  <div id="lobbyOv" class="ov hide">
+    <h2>С другом</h2>
+    <div class="card lobbybox">
+      <div class="lrow"><span>Код комнаты</span><b id="lobbyCode">----</b><button class="mini" disabled>Пригласить<small>скоро</small></button></div>
+      <div id="slots"></div>
+      <div class="lrow"><span>Этап</span><b id="lobbyStage">1–6</b><button class="mini" id="bLobbyStage">Сменить</button></div>
+      <label class="chk"><input type="checkbox" id="chkFill"><span>Добрать случайных <small>до 4 игроков</small></span></label>
+      <p id="lobbyNote"></p>
+    </div>
+    <button class="big" id="bLobbyGo" disabled>Начать<small>нужно минимум 2 игрока · сеть скоро</small></button>
+    <button class="link" id="bLobbyBack">Назад</button>
+  </div>
+  <div id="confirmOv" class="ov hide"><h2 id="cfT">Точно?</h2><p id="cfS"></p><button class="big" id="cfYes">Да</button><button class="big alt" id="cfNo">Отмена</button></div>
+  <div id="pauseOv" class="ov hide"><button class="card btn mute corner" aria-label="Звук"></button><h2>Пауза</h2><button class="big" id="bResume">Продолжить</button><button class="big alt" id="bMenu">В меню</button></div>
+  <div id="overOv" class="ov hide"><h2 id="overT">Костёр погас</h2><p id="overS"></p><button class="big" id="bRetry">Повторить ночь</button><button class="big alt" id="bMap2">Карта этапов</button><button class="big alt" id="bMenu2">В меню</button></div>
+  <div id="winOv" class="ov hide"><h1 class="win">Утро!</h1><h2 id="winT">Этап пройден</h2><p id="winS"></p><button class="big" id="bNextStage">Дальше</button><button class="big alt" id="bWinMap">Карта этапов</button><button class="link" id="bWinMenu">В меню</button></div>
   <div id="loading" class="ov" style="background:#8fd3ff"><h1>99 ночей</h1><p>Загрузка…</p></div>
 </div>
 <div id="rot">Поверни телефон вертикально</div>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
-<script type="module" src="./js/game.js"></script>
+<script type="module" src="./js/game.js?v=0.5.1"></script>
 </body>
 </html>
