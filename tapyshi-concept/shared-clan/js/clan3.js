@@ -53,6 +53,7 @@ C.chat = [
   { me:1, tm:'13:25', tx:'Вечером догоню!' } ];
 var H = function(p){ return T.img('pets/'+p+'_happy_head.png'); };
 C.head = H;
+function escAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 C.pct = function(){ return Math.round(C.goal.now / C.goal.goal * 100); };
 C.ava = function(p, cls, lvl){ var src=(window.TAP_petThumb?TAP_petThumb(p,lvl):H(p)); return '<span class="ava '+p+' '+(cls||'')+'"><img src="'+src+'" alt=""></span>'; };
 C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +5000 '+(T.coin?T.coin('',16):'')+' за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
@@ -60,7 +61,7 @@ C.members_ = function(o){ o=o||{}; var list=(o.all?C.allMembers():C.members).sli
   return '<div class="list">'+list.map(function(m,i){
     var bar = o.bars ? '<span class="cbar"><i style="width:'+(m.t/max*100).toFixed(1)+'%;background:'+(i<5?C.colors[i]:C.rest)+'"></i></span>' : '';
     var share = o.bars ? '<small class="share">'+(m.t/C.goal.now*100).toFixed(1).replace('.',',')+'%</small>' : '';
-    return '<div class="row tap'+(m.me?' me':'')+'">'+(o.rank?'<span class="rk r'+(i+1)+'">'+(i+1)+'</span>':'')+
+    return '<div class="row tap'+(m.me?' me':'')+'" data-profile="'+escAttr(m.n)+'"'+(m.me?' data-me="1"':'')+'>'+(o.rank?'<span class="rk r'+(i+1)+'">'+(i+1)+'</span>':'')+
       '<span class="avw">'+C.ava(m.pet,'sm',m.lvl)+(m.on?'<i class="on-dot"></i>':'')+'</span>'+
       '<span class="nm"><b>'+(m.me?'Ты':m.n)+(m.owner?' '+T.IC.crown:'')+'</b>'+(o.bars?bar:'<small>ур. '+m.lvl+(m.owner?' · глава':'')+'</small>')+'</span>'+
       '<span class="val"><b class="num">'+T.fmt(m.t)+'</b>'+(o.bars?share:'<small>тапов</small>')+'</span></div>';
@@ -81,7 +82,7 @@ C.chat_ = function(){
     if(m.day) return '<div class="day">'+m.day+'</div>';
     if(m.sys) return '<div class="sys">'+m.sys+'</div>';
     if(m.me) return '<div class="msg me"><div class="bub">'+m.tx+'<time>'+m.tm+'</time></div></div>';
-    return '<div class="msg">'+C.ava(m.pet,'xs',C.lvlOf(m.n,m.pet))+'<div class="bub"><b>'+m.n+(m.owner?T.IC.crown:'')+'</b>'+m.tx+'<time>'+m.tm+'</time></div></div>';
+    return '<div class="msg"><span class="pp-hit" data-profile="'+escAttr(m.n)+'">'+C.ava(m.pet,'xs',C.lvlOf(m.n,m.pet))+'</span><div class="bub"><b>'+m.n+(m.owner?T.IC.crown:'')+'</b>'+m.tx+'<time>'+m.tm+'</time></div></div>';
   }).join('')+'</div>';
 };
 

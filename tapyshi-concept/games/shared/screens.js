@@ -241,7 +241,7 @@ function friends(o){
     else if(inv && !f.joined) act='<button type="button" class="btn btn--secondary btn--s" data-act="friends-write" data-fid="'+f.id+'">Написать</button>';
     else if(f.on) act='<button type="button" class="btn btn--primary btn--s" data-act="friends-play" data-fid="'+f.id+'">Позвать играть</button>';
     else act='<button type="button" class="btn btn--secondary btn--s" data-act="friends-write" data-fid="'+f.id+'">Написать</button>';
-    return '<article class="fr-row'+(f.on?' is-on':'')+(inv?' is-inv':'')+'">'+frAva(f)+'<div class="fr-nm"><b>'+f.name+'</b>'+frMeta(f)+frStatus(f)+'</div><div class="fr-act">'+act+'</div></article>';
+    return '<article class="fr-row'+(f.on?' is-on':'')+(inv?' is-inv':'')+'" data-profile="'+f.id+'">'+frAva(f)+'<div class="fr-nm"><b>'+f.name+'</b>'+frMeta(f)+frStatus(f)+'</div><div class="fr-act">'+act+'</div></article>';
   }
   var body=earn+
     '<section class="fr-sec"><div class="sech"><h2>Друзья</h2><span>'+main.filter(function(f){return f.on;}).length+' в сети сверху</span></div><div class="fr-list">'+main.map(function(f){return row(f,0);}).join('')+'</div></section>'+
