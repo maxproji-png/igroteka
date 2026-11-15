@@ -9,6 +9,7 @@
   var SLOT = { head:'Голова', body:'Тело', back:'Спина', limbs:'Лапки и хвост' };
   var PET = { raccoon:'Енот', capybara:'Капибара', dragon:'Дракон', goose:'Гусь' };
   var PET_ORDER = ['raccoon','capybara','dragon','goose'];
+  var PET_IN = { raccoon:'на еноте', capybara:'на капибаре', dragon:'на драконе', goose:'на гусе' };
   /* ЦЕНЫ-ЗАГЛУШКИ: часть = PART[r]; полный набор = 85% от суммы частей (округление до 100) */
   var PART = { common:1500, epic:4000, legendary:9000 };
   var META = { common:{tone:'ice',theme:'Стихия · лёд'}, epic:{tone:'epic',theme:'Профессия · маг'}, legendary:{tone:'leg',theme:'Превращение · гроза'} };
@@ -16,7 +17,7 @@
   var SHORT = { mage_staff:'Рукава-колокола с золотыми манжетами и посох с золотым полумесяцем и светящимся розовым кристаллом; звёздный чехол на хвост.',
     storm_tail:'Фиолетовые рукава с кольцами-разрядами и светлыми коготками; вместо родного хвоста — светящийся хвост-молния на облачке.' };
   var SETS = ['common','epic','legendary'].map(function(id){ var m = MF.sets[id];
-    var s = { id:id, r:m.r, name:m.name, tone:META[id].tone, theme:META[id].theme, pets:m.pets, back:m.back };
+    var s = { id:id, r:m.r, name:m.name, tone:META[id].tone, theme:META[id].theme, pets:m.pets };
     s.parts = m.parts.map(function(p){ return { id:p.id, slot:p.slot, name:p.name, desc:SHORT[p.id]||p.desc, set:s, img:A+p.img+'.webp'+V, price:PART[id] }; });
     return s; });
   /* демо: Мороз собран и надет (4/4), Чародей 2/4, Гроза 0/4; баланс — общий с «Бустами» (SHOP.bal) */
@@ -30,7 +31,18 @@
   function setPrice(s){ var r = rest(s), sum = r.reduce(function(a,p){ return a+p.price; },0); return { price: r100(sum*0.85), full: sum, n: r.length }; }
   function fmt(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00A0'); }
   function render(name){ return A+name+'.webp'+V; }
-  function petImg(s, pet, back){ if (back && pet==='raccoon') return render(s.back); var p = s.pets[pet]; return p ? render(p[1]) : null; }
+  /* питомец в полном наборе (или сзади); null — рендера нет */
+  function petOf(s, pet){ return s.pets[pet] ? pet : (s.pets.raccoon ? 'raccoon' : Object.keys(s.pets)[0]); }
+  function petImg(s, pet, back){ var e = s.pets[petOf(s, pet)]; if (!e) return null; return render(back && e.back ? e.back : e.tq); }
+  /* примерка: ключ комбинации = id выбранных частей в порядке набора через «__» */
+  function comboKey(s, sel){ return s.parts.filter(function(p){ return sel[p.id]; }).map(function(p){ return p.id; }).join('__'); }
+  function comboImg(s, pet, sel){ var e = s.pets[petOf(s, pet)], k = comboKey(s, sel), n = k ? k.split('__').length : 0;
+    if (!e) return { src:null, exact:false, n:n };
+    if (!n || n === 4) return { src:render(e.tq), exact:true, n:n };
+    return e.combo[k] ? { src:render(e.combo[k]), exact:true, n:n } : { src:render(e.tq), exact:false, n:n }; }
+  /* картинка части на текущем питомце (тот же ракурс, что у сцены); нет — крупный план части */
+  function tileOf(p, pet){ var e = p.set.pets[petOf(p.set, pet)]; return e && e.tile && e.tile[p.id] ? render(e.tile[p.id]) : p.img; }
+  function partOnPet(p, pet){ var e = p.set.pets[petOf(p.set, pet)]; return e && e.combo[p.id] ? render(e.combo[p.id]) : null; }
   function stub(){ return '<span class="sk-stub" title="Цена не утверждена экономикой">цена-заглушка</span>'; }
   function pips(s, cur){ return '<span class="sk-pips">'+s.parts.map(function(p){ return '<i class="'+(S.own[p.id]?'on':'')+(cur&&cur===p.id?' cur':'')+'"></i>'; }).join('')+'</span>'; }
   function rchip(s){ return '<span class="sk-r sk-r--'+s.tone+'">'+s.r+'</span>'; }
@@ -54,42 +66,58 @@
     if (instant){ sh.classList.add('no-anim'); scrim.classList.add('no-anim'); }
     requestAnimationFrame(function(){ sh.classList.add('on'); scrim.classList.add('on'); }); }
   function close(){ if (!sh) return; sh.classList.remove('on','no-anim'); scrim.classList.remove('on','no-anim'); }
-  addEventListener('resize', place);
+  addEventListener('resize', place); addEventListener('load', place);
+  /* таб-бар строится nav.js и может поменять высоту после шрифтов — следим, чтобы зазор всегда был 8 px */
+  (function watch(){ var t=document.querySelector('.tabbar'); if (!t) return setTimeout(watch, 50); if (w.ResizeObserver) new ResizeObserver(place).observe(t); place(); })();
 
-  var view = { pet:'raccoon', back:false };
+  var view = { pet:'raccoon', back:false, set:null, sel:{} };
   function partSheet(id, instant){
     var p = partById(id), s = p.set, have = !!S.own[p.id], can = bal() >= p.price, n = owned(s);
     var act = have ? (S.worn===s.id ? '<button class="sk-btn sk-btn--ghost" disabled>'+I.check+'Надето</button>' : '<button class="sk-btn sk-btn--soft" data-wear="'+s.id+'">Надеть</button>')
       : '<button class="sk-btn '+(can?'sk-btn--buy':'sk-btn--off')+'" '+(can?'data-buy="'+p.id+'"':'disabled')+'>'+(can?'Купить за ':'')+coin(22)+'<span class="cx-num">'+fmt(p.price)+'</span></button>';
     open('<div class="sk-ps sk-tone--'+s.tone+'">'+
-      '<div class="sk-stage"><img src="'+p.img+'" alt=""><span class="sk-stage-note">на еноте · ст. 1</span></div>'+
+      (function(){ var on = partOnPet(p, view.pet), pk = petOf(s, view.pet);
+        return '<div class="sk-stage"><img class="'+(on?'':'is-item')+'" src="'+(on||p.img)+'" alt=""><span class="sk-stage-note">'+(on?PET_IN[pk]+' · ст. '+s.pets[pk].st:'крупный план')+'</span></div>'; })()+
       '<div class="sk-meta">'+rchip(s)+'<span class="sk-slot">'+SLOT[p.slot]+'</span></div>'+
       '<h3 class="sk-h">'+p.name+'</h3><p class="sk-desc">'+p.desc+'</p>'+
       '<button type="button" class="sk-setrow" data-set="'+s.id+'"><span class="sk-setrow-t"><small>Часть набора · '+n+' из 4</small><b>«'+s.name+'»</b></span>'+
-        '<span class="sk-minis">'+s.parts.map(function(q){ return '<span class="sk-mini'+(S.own[q.id]?' on':'')+(q.id===p.id?' cur':'')+'"><img src="'+q.img+'" alt=""></span>'; }).join('')+'</span>'+
+        '<span class="sk-minis">'+s.parts.map(function(q){ return '<span class="sk-mini'+(S.own[q.id]?' on':'')+(q.id===p.id?' cur':'')+'"><img src="'+tileOf(q, view.pet)+'" alt=""></span>'; }).join('')+'</span>'+
         '</button>'+
       '<div class="sk-fill"></div>'+
       '<div class="sk-buyrow">'+(have?'<span class="sk-have">'+I.check+'Уже в коллекции</span>':'<span class="sk-pr"><small>Часть отдельно</small>'+stub()+'</span>')+act+'</div>'+
     '</div>', instant);
   }
+  /* окно набора: питомец сверху (текущий, без переключателя), тап по части — примерка на питомце */
+  function selInfo(s){ var sel = view.sel, ids = s.parts.filter(function(p){ return sel[p.id]; }),
+      buy = ids.filter(function(p){ return !S.own[p.id]; }), r = rest(s), sp = setPrice(s);
+    if (!buy.length) return { all:true, k:0, price:sp.price, full:sp.full, n:sp.n, ids:r.map(function(p){ return p.id; }) };
+    if (buy.length === r.length) return { all:true, k:buy.length, price:sp.price, full:sp.full, n:sp.n, ids:r.map(function(p){ return p.id; }) };
+    return { all:false, k:buy.length, price:buy.reduce(function(a,p){ return a+p.price; },0), ids:buy.map(function(p){ return p.id; }) }; }
+  function chast(n){ return n===1?'часть':(n<5?'части':'частей'); }
   function setSheet(id, instant){
-    var s = setById(id), n = owned(s), sp = setPrice(s), done = n===4, can = bal() >= sp.price;
-    if (!s.pets[view.pet]) view.pet = 'raccoon';
-    var img = petImg(s, view.pet, view.back);
-    var pets = PET_ORDER.map(function(k){ var ok = !!s.pets[k], st = ok ? s.pets[k][0] : 1;
-      return '<button type="button" class="sk-pet'+(k===view.pet?' on':'')+(ok?'':' no')+'" '+(ok?'data-pet="'+k+'"':'disabled')+' aria-label="'+PET[k]+'"><img src="'+petThumb(k, ok?st:1)+'" alt="">'+(ok?'':'<i>'+I.lock+'</i>')+'<span class="sk-pet-n">'+PET[k]+'</span>'+'</button>'; }).join('');
+    var s = setById(id), n = owned(s), done = n===4;
+    if (view.set !== id){ view.set = id; view.sel = {}; view.back = false; }
+    var pk = petOf(s, view.pet), e = s.pets[pk], cm = comboImg(s, pk, view.sel), trying = cm.n>0 && cm.n<4;
+    var back = !trying && view.back && e && e.back, img = back ? render(e.back) : cm.src;
+    var si = selInfo(s), can = bal() >= si.price;
     var act = done ? (S.worn===s.id ? '<button class="sk-btn sk-btn--ghost" disabled>'+I.check+'Надето</button>' : '<button class="sk-btn sk-btn--soft" data-wear="'+s.id+'">Надеть набор</button>')
-      : '<button class="sk-btn '+(can?'sk-btn--buy':'sk-btn--off')+'" '+(can?'data-buyset="'+s.id+'"':'disabled')+'>'+coin(22)+'<span class="cx-num">'+fmt(sp.price)+'</span></button>';
+      : '<button class="sk-btn '+(can?'sk-btn--buy':'sk-btn--off')+'" '+(can?'data-buysel="'+si.ids.join(',')+'"':'disabled')+'>'+coin(22)+'<span class="cx-num">'+fmt(si.price)+'</span></button>';
     var lbl = done ? '<span class="sk-have">'+I.check+'Набор собран</span>' :
-      '<span class="sk-pr"><small>'+(n?'Докупить '+sp.n+' '+(sp.n===1?'часть':'части'):'Весь набор')+' · <s class="cx-num">'+fmt(sp.full)+'</s></small>'+stub()+'</span>';
+      '<span class="sk-pr"><small>'+(si.all ? (n?'Докупить '+si.n+' '+chast(si.n):'Весь набор')+' · <s class="cx-num">'+fmt(si.full)+'</s> <em>−15%</em>'
+        : 'Выбрано '+si.k+' '+chast(si.k)+' · без скидки')+'</small>'+stub()+'</span>';
+    var note = trying ? (cm.exact ? 'Примерка · '+cm.n+' из 4' : 'Нет рендера · показан весь набор') : (back ? 'Вид сзади' : 'Весь набор');
     open('<div class="sk-ss sk-tone--'+s.tone+'">'+
-      '<div class="sk-stage big"><img src="'+img+'" alt="">'+
-        (view.pet==='raccoon'?'<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
-        '<span class="sk-stage-note">'+PET[view.pet]+' · ст. '+s.pets[view.pet][0]+'</span></div>'+
-      '<div class="sk-pets">'+pets+'</div>'+
-      '<div class="sk-meta">'+rchip(s)+'<span class="sk-slot">'+s.theme+'</span><span class="sk-cnt cx-num">'+n+'/4</span></div>'+
-      '<h3 class="sk-h">'+s.name+'</h3>'+
-      '<div class="sk-parts4">'+s.parts.map(function(q){ var hv=!!S.own[q.id]; return '<button type="button" class="sk-p4'+(hv?' on':'')+'" data-part="'+q.id+'"><img src="'+q.img+'" alt=""><span class="sk-p4-b">'+(hv?I.check:coin(14)+'<b class="cx-num">'+fmt(q.price)+'</b>')+'</span></button>'; }).join('')+'</div>'+
+      '<div class="sk-stage big'+(trying&&!cm.exact?' is-fallback':'')+'"><img src="'+img+'" alt="">'+
+        '<span class="sk-try'+(trying?(cm.exact?' on':' warn'):'')+'">'+note+'</span>'+
+        (!trying && e && e.back ? '<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
+        '<span class="sk-stage-note">'+PET[pk]+' · ст. '+e.st+'</span></div>'+
+      '<div class="sk-meta">'+rchip(s)+'<span class="sk-slot">'+s.theme+'</span></div>'+
+      '<div class="sk-titlerow"><h3 class="sk-h">'+s.name+'</h3><span class="sk-cnt">'+pips(s)+'<b class="cx-num">'+n+' из 4</b></span></div>'+
+      '<p class="sk-hint">Нажми на часть — она появится на питомце</p>'+
+      '<div class="sk-parts4">'+s.parts.map(function(q){ var hv=!!S.own[q.id], on=!!view.sel[q.id];
+        return '<div class="sk-p4'+(hv?' own':'')+(on?' sel':'')+'"><button type="button" class="sk-p4-t" data-try="'+q.id+'" aria-pressed="'+on+'" aria-label="'+q.name+'"><span class="sk-p4-i"><img src="'+q.img+'" alt=""></span>'+
+          '<span class="sk-p4-b">'+(hv?'<em>'+I.check+'есть</em>':coin(14)+'<b class="cx-num">'+fmt(q.price)+'</b>')+'</span></button>'+
+          '<button type="button" class="sk-p4-x" data-part="'+q.id+'" aria-label="Подробнее">i</button></div>'; }).join('')+'</div>'+
       '<div class="sk-fill"></div>'+
       '<div class="sk-buyrow">'+lbl+act+'</div>'+
     '</div>', instant);
@@ -97,19 +125,21 @@
   function onSheetClick(e){
     var b;
     if (e.target.closest('[data-close]')) return close();
-    if ((b=e.target.closest('[data-set]'))) return setSheet(b.dataset.set);
+    if ((b=e.target.closest('[data-set]'))){ view.set=null; return setSheet(b.dataset.set); }
     if ((b=e.target.closest('[data-part]'))) return partSheet(b.dataset.part);
-    if ((b=e.target.closest('[data-pet]'))){ view.pet=b.dataset.pet; view.back=false; return setSheet(cur()); }
-    if (e.target.closest('[data-turn]')){ view.back=!view.back; return setSheet(cur()); }
+    if ((b=e.target.closest('[data-try]'))){ var t=b.dataset.try; if (view.sel[t]) delete view.sel[t]; else view.sel[t]=1; view.back=false; return setSheet(cur(), true); }
+    if (e.target.closest('[data-turn]')){ view.back=!view.back; return setSheet(cur(), true); }
+    if ((b=e.target.closest('[data-buysel]'))){ var ss=setById(cur()), ids=b.dataset.buysel.split(','), si=selInfo(ss); if(!w.SHOP.spend(si.price)) return;
+      ids.forEach(function(i){ S.own[i]=1; }); view.sel={}; changed(); toast(owned(ss)===4?'Набор «'+ss.name+'» собран!':(ids.length===1?partById(ids[0]).name+' — в коллекции':'Части в коллекции: '+ids.length)); return setSheet(ss.id, true); }
     if ((b=e.target.closest('[data-buy]'))){ var p=partById(b.dataset.buy); if(!w.SHOP.spend(p.price)) return; S.own[p.id]=1; changed(); toast(p.name+' — в коллекции'); return partSheet(p.id); }
     if ((b=e.target.closest('[data-buyset]'))){ var s=setById(b.dataset.buyset), sp=setPrice(s); if(!w.SHOP.spend(sp.price)) return; s.parts.forEach(function(q){S.own[q.id]=1;}); changed(); toast('Набор «'+s.name+'» собран!'); return setSheet(s.id); }
     if ((b=e.target.closest('[data-wear]'))){ S.worn=b.dataset.wear; changed(); toast('Надето'); return setSheet(S.worn); }
   }
-  function cur(){ var el=sh.querySelector('.sk-ss'); if(!el) return 'common'; var m=sh.innerHTML.match(/sk-tone--(ice|epic|leg)/); return {ice:'common',epic:'epic',leg:'legendary'}[m[1]]; }
+  function cur(){ return view.set || 'common'; }
   function toast(t){ if (T.toast) T.toast(t); }
   var listeners=[]; function changed(){ listeners.forEach(function(f){ f(); }); }
   function bal(){ return w.SHOP ? w.SHOP.bal() : 0; }
 
-  w.SK = { SETS:SETS, SLOT:SLOT, PET:PET, PET_ORDER:PET_ORDER, S:S, I:I, fmt:fmt, owned:owned, setPrice:setPrice, petImg:petImg, petThumb:petThumb, stub:stub, pips:pips, rchip:rchip,
-    partSheet:partSheet, setSheet:setSheet, close:close, view:view, onChange:function(f){ listeners.push(f); }, coin:coin, changed:changed, partById:partById, setById:setById, render:render };
+  w.SK = { SETS:SETS, SLOT:SLOT, PET:PET, PET_ORDER:PET_ORDER, S:S, I:I, fmt:fmt, owned:owned, setPrice:setPrice, petImg:petImg, petOf:petOf, comboImg:comboImg, selInfo:selInfo, petThumb:petThumb, stub:stub, pips:pips, rchip:rchip,
+    partSheet:partSheet, tileOf:tileOf, setSheet:setSheet, close:close, view:view, onChange:function(f){ listeners.push(f); }, coin:coin, changed:changed, partById:partById, setById:setById, render:render };
 })(window);

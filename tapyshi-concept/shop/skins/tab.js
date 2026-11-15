@@ -6,13 +6,13 @@
   function card(s){ var n=SK.owned(s), sp=SK.setPrice(s);
     return '<section class="b-set sk-tone--'+s.tone+'">'+
       '<button type="button" class="b-top" data-open-set="'+s.id+'">'+
-        '<span class="b-thumb"><img src="'+SK.petImg(s,'raccoon')+'" alt=""></span>'+
+        '<span class="b-thumb"><img src="'+SK.petImg(s,SK.view.pet)+'" alt=""></span>'+
         '<span class="b-info">'+SK.rchip(s)+'<b class="b-name">'+s.name+'</b><small class="b-theme">'+s.theme+'</small>'+
           '<span class="b-prog">'+seg(s)+'<span class="cx-num">'+(n===4?'Собран':n+' из 4')+'</span></span></span>'+
         '<span class="b-go">'+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>'+'</span>'+
       '</button>'+
       '<div class="b-parts">'+s.parts.map(function(p){ var hv=!!SK.S.own[p.id];
-        return '<button type="button" class="b-p'+(hv?' on':'')+'" data-open-part="'+p.id+'"><span class="b-pimg"><img src="'+p.img+'" alt="">'+(hv?'<i>'+SK.I.check+'</i>':'')+'</span>'+
+        return '<button type="button" class="b-p'+(hv?' on':'')+'" data-open-part="'+p.id+'"><span class="b-pimg"><img src="'+SK.tileOf(p,SK.view.pet)+'" alt="">'+(hv?'<i>'+SK.I.check+'</i>':'')+'</span>'+
           '<span class="b-pslot">'+SK.SLOT[p.slot]+'</span>'+
           '<span class="b-pp">'+(hv?'<em>есть</em>':SK.coin(14)+'<b class="cx-num">'+SK.fmt(p.price)+'</b>')+'</span></button>'; }).join('')+'</div>'+
       '<div class="b-foot">'+(n===4?(SK.S.worn===s.id?'<span class="b-worn">'+SK.I.check+'Надето на питомце</span>':'<span class="b-worn off">В коллекции</span>')+'<button type="button" class="b-btn ghost" data-open-set="'+s.id+'">Примерить</button>'
@@ -39,5 +39,6 @@
   go(/[?&]tab=skins/.test(location.search)||/^(skins|part-|set-)/.test(h)?'skins':'boosts');
   setTimeout(function(){ /* после nav.js — чтобы шторка мерила реальный таб-бар */
     if((m=h.match(/^part-(\w+)$/))) SK.partSheet(m[1],true);
-    if((m=h.match(/^set-(\w+)$/))) SK.setSheet(m[1],true); },0);
+    /* #set-<id> или #set-<id>.<часть>.<часть> — окно набора с уже выбранными для примерки частями */
+    if((m=h.match(/^set-(\w+?)((?:\.\w+)*)$/))){ SK.setSheet(m[1],true); m[2].split('.').filter(Boolean).forEach(function(i){ SK.view.sel[i]=1; }); if(m[2]) SK.setSheet(m[1],true); } },0);
 })();
