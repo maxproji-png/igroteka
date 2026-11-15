@@ -20,6 +20,9 @@
   --blue:#3F86FF; --blue-soft:#EEF5FF; --blue-edge:#2A6AE6;
   /* розовый — точки-уведомления, опасное действие */
   --pink:#FF5E99; --pink-soft:#FFE6F0; --pink-edge:#E8417E;
+  /* оранжевый и бирюзовый — 2 из 7 цветов клана (те же значения, что в shared/tokens.css) */
+  --game-goroda:#FF7A2E; --game-goroda-edge:#E9601A; --game-goroda-soft:#FFF4EA;
+  --game-ship:#18A9CE;   --game-ship-edge:#0F8FB2;   --game-ship-soft:#EAFAFF;
   /* радиусы, тени — как в Играх */
   --r-xs:10px; --r-sm:14px; --r-md:20px; --r-lg:28px; --r-xl:34px; --r-pill:999px;
   --sh-sm:0 1px 2px rgb(var(--shade) / .06),0 4px 12px rgb(var(--shade) / .08);
