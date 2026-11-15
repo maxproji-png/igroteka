@@ -73,7 +73,7 @@ export function weatherFor(s, n) {
   const w = { rain: false, fog: 0, wind: false, special: false, moths: 0, title: '' };
   if (n === s.rainNight) { w.rain = true; w.title = 'Лёгкий дождь'; }
   if (n === 10) { w.fog = 1; w.special = true; w.title = 'Ночь густого тумана'; }
-  if (n >= 11 && n <= 12) { w.fog = .6; w.wind = true; w.moths = n === 11 ? 2 : 3; w.title = 'Туман, ветер и лунные мотыльки'; }
+  if (n >= 11 && n <= 12) { w.fog = .6; w.wind = true; w.moths = n === 11 ? 3 : 4;   /* v0.7: было 2 / 3 */ w.title = 'Туман, ветер и лунные мотыльки'; }
   return w;
 }
 // Расход топлива: база уровня × этап × погода × состав (×день)
@@ -318,7 +318,7 @@ function stepEnemy(s, e, dt, g, LR) {
 // Волна ночи: от номера ночи и стартового состава (без пересчёта, если кто-то вышел). Числа — предложение GDD.
 export function waveFor(s, n) {
   const extra = startN(s) - 1, w = weatherFor(s, n);
-  const mist = 2 + extra + (n >= 4 ? 1 : 0) + (n >= 8 && n <= 10 ? 1 : 0);
+  const mist = 2 + extra + (n >= 8 ? 1 : 0);   // v0.7 (баланс ГД): база 2 в ночи 1–7, 3 в 8–12 (было +1 с 4-й и ещё +1 в 8–10)
   const crows = 1 + (extra >= 2 ? 1 : 0);
   return { mist, crows, moose: n >= 3 ? 1 : 0, moths: w.moths ? w.moths + (extra >= 2 ? 1 : 0) : 0, twoWaves: w.special };
 }

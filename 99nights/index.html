@@ -58,7 +58,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .chip.bump{animation:bump .35s}
 .chip.zero{opacity:.55}
 @keyframes bump{40%{transform:scale(1.18)}}
-#hint{position:absolute;left:50%;top:calc(318px + var(--st));transform:translateX(-50%);padding:9px 16px;font-weight:800;font-size:14px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;pointer-events:none;transition:opacity .3s}
+#hint{position:absolute;left:50%;top:calc(318px + var(--st));transform:translateX(-50%);padding:9px 16px;font-weight:800;font-size:14px;line-height:1.25;text-align:center;width:max-content;max-width:min(92vw,360px);pointer-events:none;transition:opacity .3s}
 #hint.warn{background:#fff1f1;color:#d93c55}
 #hint.hide{opacity:0}
 #toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.9);padding:16px 24px;text-align:center;font-weight:900;font-size:24px;opacity:0;transition:all .35s;pointer-events:none;width:max-content;max-width:86vw;line-height:1.15}
@@ -169,6 +169,14 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 #lobbyNote{font-size:12px;margin:4px 0 0;color:#6b7590;font-weight:800}
 .big:disabled{background:#d5dbe6;box-shadow:0 5px 0 #bcc4d3;color:#fff}
 .ov h1.win{font-size:46px}
+#tut{transform-origin:left top;position:absolute;left:calc(10px + var(--sl));top:calc(184px + var(--st));width:min(calc(100vw - 96px),330px);padding:10px 12px 10px 14px;display:flex;gap:10px;align-items:center;pointer-events:none;border:2px solid #ffd23c}
+#tut.pop{animation:tpop .35s}@keyframes tpop{0%{transform:scale(.9);opacity:.3}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+#tut div{flex:1;min-width:0}#tut small{display:block;font-size:10px;font-weight:900;color:#d99a1a;text-transform:uppercase;letter-spacing:.3px}
+#tut b{display:block;font-size:14px;font-weight:900;line-height:1.2;color:#33405a}
+#tutSkip{pointer-events:auto;border:0;border-radius:12px;padding:8px 10px;font:inherit;font-weight:900;font-size:12px;background:#eef2f9;color:#6b7590;flex:none}
+.fly{position:absolute;left:0;top:0;width:28px;height:28px;pointer-events:none;will-change:transform;filter:drop-shadow(0 2px 2px rgba(40,60,110,.35));z-index:4}
+.fly svg{width:28px;height:28px}
+div.petcard{cursor:default}
 #rot{display:none}
 @media (orientation:landscape) and (max-height:500px){#rot{display:flex;position:fixed;inset:0;z-index:9;background:#8fd3ff;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#fff;text-align:center;padding:30px}}
 </style>
@@ -189,6 +197,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
   <button id="muteH" class="card btn mute" aria-label="Звук"></button>
   <div id="inv"></div>
   <div id="hint" class="card hide"></div>
+  <div id="tut" class="card hide"><div><small id="tutN">Обучение</small><b id="tutT"></b></div><button id="tutSkip">Пропустить</button></div>
   <div id="toast" class="card"></div>
   <div id="joy"><div id="jbase"><div id="jknob"></div></div></div>
   <div id="acts">
@@ -215,8 +224,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
     <button class="card btn mute corner" aria-label="Звук"></button>
     <h1>99 ночей</h1>
     <p>Переживи ночи в лесу: днём собирай ветки и ягоды, ночью держи костёр. Этапы по 6 ночей.</p>
-    <button class="petcard card" id="myPet"></button>
-    <div id="pets" class="hide"></div>
+    <div class="petcard card" id="myPet"></div>
     <button class="big" id="bSolo">Соло</button>
     <button class="big alt" id="bFriend">С другом</button>
     <button class="big alt" id="bSearch" disabled>Поиск соперника<small>скоро — нужен сервер</small></button>
@@ -257,6 +265,6 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 </div>
 <div id="rot">Поверни телефон вертикально</div>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
-<script type="module" src="./js/game.js?v=0.6.0"></script>
+<script type="module" src="./js/game.js?v=0.7.0"></script>
 </body>
 </html>

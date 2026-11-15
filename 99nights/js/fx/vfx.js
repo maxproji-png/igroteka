@@ -12,7 +12,7 @@
  */
 import * as THREE from 'three';
 
-export const VERSION = '0.5-concept';
+export const VERSION = '0.6-concept';
 
 /**
  * Уровни костра из GDD v0.5, разделы 6–7 (те же радиусы, что в v0.2; уровней по-прежнему три).
@@ -29,8 +29,8 @@ export const CAMPFIRE_LEVELS = {
 
 /** Бюджеты частиц (активных точек). Старые ключи flames/embers/smoke/mist сохранены. */
 export const PARTICLE_BUDGET = {
-  low:  { flames: 4, embers: 16, smoke: 8,  mist: 0,  mistDense: 4,  rain: 40,  leaves: 8,  moths: 4,  puddles: 0 },
-  high: { flames: 8, embers: 36, smoke: 20, mist: 8,  mistDense: 14, rain: 110, leaves: 20, moths: 10, puddles: 4 }
+  low:  { flames: 4, embers: 16, smoke: 8,  mist: 0,  mistDense: 4,  rain: 40,  leaves: 8,  moths: 4,  puddles: 0, feedback: 28, flashes: 2, rays: 0, zzz: 1 },
+  high: { flames: 8, embers: 36, smoke: 20, mist: 8,  mistDense: 14, rain: 110, leaves: 20, moths: 10, puddles: 4, feedback: 64, flashes: 4, rays: 3, zzz: 2 }
 };
 
 /** Погода ночей 1–12 (GDD v0.5). Ночь 8 — лёгкий дождь; 10 — густой туман; 11–12 — туман, ветер, мотыльки. */
@@ -100,7 +100,9 @@ function maxSmoke() { return PARTICLE_BUDGET.high.smoke + 8; }
 /**
  * Создаёт костёр и добавляет его группу на сцену.
  * @param {import('three').Scene} scene
- * @param {{level?: 1|2|3, position?: [number,number,number]|THREE.Vector3, quality?: 'low'|'high', lit?: boolean}} [opts]
+ * @param {{level?: 1|2|3, position?: [number,number,number]|THREE.Vector3, quality?: 'low'|'high', lit?: boolean, base?: boolean, ring?: boolean}} [opts]
+ *   base (по умолч. true) — диск свечения под костром; ring — кольцо границы света.
+ *   При false объект не создаётся; setLevel/setFuel/update/dispose и setBaseVisible/setRingVisible безопасны.
  */
 export function createCampfire(scene, opts = {}) {
   const quality = opts.quality === 'low' ? 'low' : 'high';
@@ -212,25 +214,34 @@ export function createCampfire(scene, opts = {}) {
   }));
   group.add(smokePts);
 
-  const glow = new THREE.Mesh(
-    new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({
-      map: texGlow(), transparent: true, blending: THREE.AdditiveBlending,
-      depthWrite: false, fog: false
-    })
-  );
-  glow.position.y = 0.03;
-  group.add(glow);
+  const wantBase = opts.base !== false;
+  const wantRing = opts.ring !== false;
 
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.97, 1, 64).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({
-      color: 0xffa050, transparent: true, opacity: 0.18,
-      blending: THREE.AdditiveBlending, depthWrite: false
-    })
-  );
-  ring.position.y = 0.05;
-  group.add(ring);
+  let glow = null;
+  if (wantBase) {
+    glow = new THREE.Mesh(
+      new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({
+        map: texGlow(), transparent: true, blending: THREE.AdditiveBlending,
+        depthWrite: false, fog: false
+      })
+    );
+    glow.position.y = 0.03;
+    group.add(glow);
+  }
+
+  let ring = null;
+  if (wantRing) {
+    ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.97, 1, 64).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({
+        color: 0xffa050, transparent: true, opacity: 0.18,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      })
+    );
+    ring.position.y = 0.05;
+    group.add(ring);
+  }
 
   const light = new THREE.PointLight(0xff8a3a, 20, 16, 1.3);
   light.position.set(0, 1.5, 0);
@@ -250,7 +261,8 @@ export function createCampfire(scene, opts = {}) {
     t: 0,
     wind: 0,
     disposed: false,
-    flames, embers, emberPts, smoke, smokePts, glow, ring, base, stoneM, logM
+    flames, embers, emberPts, smoke, smokePts, glow, ring, base, stoneM, logM,
+    baseVis: true, ringVis: true
   };
 
   const api = {
@@ -267,6 +279,16 @@ export function createCampfire(scene, opts = {}) {
     burst() { state.burst = 1; kickEmbers(state); },
     /** 0..1, ветер клонит пламя (ночи 11–12). */
     setWind(v) { state.wind = clamp(v, 0, 1); },
+    /** Показать/скрыть диск свечения, если он был создан (иначе no-op). */
+    setBaseVisible(on) {
+      state.baseVis = !!on;
+      if (state.glow && !state.baseVis) state.glow.visible = false;
+    },
+    /** Показать/скрыть кольцо границы света, если оно было создано (иначе no-op). */
+    setRingVisible(on) {
+      state.ringVis = !!on;
+      if (state.ring && !state.ringVis) state.ring.visible = false;
+    },
     setQuality(q) { state.quality = q === 'low' ? 'low' : 'high'; applyLevel(state, state.level); },
     update(dt) { tickFire(state, dt); },
     dispose() { disposeCampfire(state); }
@@ -289,9 +311,9 @@ function applyLevel(state, n) {
   state.lightDistance = L.distance;
   state.lightRadius = L.lightRadius;
   state.light.distance = L.distance;
-  state.base.visible = level >= 3;
-  state.ring.scale.setScalar(L.lightRadius);
-  state.glow.scale.setScalar(L.lightRadius);
+  if (state.base) state.base.visible = level >= 3;
+  if (state.ring) state.ring.scale.setScalar(L.lightRadius);
+  if (state.glow) state.glow.scale.setScalar(L.lightRadius);
 }
 
 function kickEmbers(state) {
@@ -344,12 +366,20 @@ function tickFire(state, dt) {
   }
 
   const glowOp = lit ? (0.4 + 0.3 * flick) * (0.45 + 0.55 * fuel) * low : 0;
-  state.glow.visible = lit;
-  state.glow.scale.setScalar((state.lightRadius || 8) * (0.95 + 0.08 * flick + state.burst * 0.15));
-  state.glow.material.opacity = glowOp;
-  state.ring.visible = lit;
-  state.ring.scale.setScalar(Math.max(0.2, (state.lightRadius || 8) * (0.75 + 0.25 * fuel)));
-  state.ring.material.opacity = lit ? (0.1 + 0.1 * fuel) * low : 0;
+  if (state.glow) {
+    state.glow.visible = lit && state.baseVis;
+    if (state.glow.visible) {
+      state.glow.scale.setScalar((state.lightRadius || 8) * (0.95 + 0.08 * flick + state.burst * 0.15));
+      state.glow.material.opacity = glowOp;
+    }
+  }
+  if (state.ring) {
+    state.ring.visible = lit && state.ringVis;
+    if (state.ring.visible) {
+      state.ring.scale.setScalar(Math.max(0.2, (state.lightRadius || 8) * (0.75 + 0.25 * fuel)));
+      state.ring.material.opacity = lit ? (0.1 + 0.1 * fuel) * low : 0;
+    }
+  }
 
   const ea = state.emberPts.geometry.attributes.position;
   const eN = lit ? state.emberCount : 0;
@@ -825,8 +855,470 @@ export function createPingMarker(scene, opts = {}) {
   };
 }
 
+
+/* ---------- разовый фидбек: сбор, удар, рассвет/ночь, питомец, победа ---------- */
+
+function vec3of(p, d = [0, 0, 0]) {
+  if (!p) return { x: d[0], y: d[1], z: d[2] };
+  if (Array.isArray(p)) return { x: +p[0] || 0, y: p[1] == null ? d[1] : +p[1], z: p[2] == null ? d[2] : +p[2] };
+  return { x: p.x == null ? d[0] : +p.x, y: p.y == null ? d[1] : +p.y, z: p.z == null ? d[2] : +p.z };
+}
+
+let _flashTex = null, _starTex = null, _zzzTex = null, _dropTex = null, _vigNight = null, _vigDawn = null;
+function texFlash() {
+  return _flashTex || (_flashTex = makeDot(64, [
+    [0, 'rgba(255,245,200,1)'], [0.35, 'rgba(255,200,80,.7)'], [1, 'rgba(255,140,40,0)']
+  ]));
+}
+function texStar() {
+  if (_starTex) return _starTex;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 32;
+  const x = cv.getContext('2d');
+  x.translate(16, 16);
+  x.fillStyle = '#fff';
+  x.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 ? 5 : 14;
+    i ? x.lineTo(Math.cos(a) * r, Math.sin(a) * r) : x.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  x.closePath(); x.fill();
+  _starTex = new THREE.CanvasTexture(cv); _starTex.needsUpdate = true;
+  return _starTex;
+}
+function texZzz() {
+  if (_zzzTex) return _zzzTex;
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 96;
+  const x = cv.getContext('2d');
+  x.font = '900 36px Nunito, system-ui, sans-serif';
+  x.lineWidth = 6; x.strokeStyle = '#6a74b8'; x.fillStyle = '#fffaf0';
+  x.strokeText('Zzz', 10, 62); x.fillText('Zzz', 10, 62);
+  _zzzTex = new THREE.CanvasTexture(cv); _zzzTex.needsUpdate = true;
+  return _zzzTex;
+}
+function texDrop() {
+  if (_dropTex) return _dropTex;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 32;
+  const x = cv.getContext('2d');
+  x.fillStyle = 'rgba(140,190,255,.95)';
+  x.beginPath(); x.moveTo(16, 4); x.bezierCurveTo(28, 16, 24, 28, 16, 28); x.bezierCurveTo(8, 28, 4, 16, 16, 4); x.fill();
+  x.fillStyle = 'rgba(255,255,255,.55)'; x.beginPath(); x.ellipse(13, 16, 3, 5, 0, 0, 7); x.fill();
+  _dropTex = new THREE.CanvasTexture(cv); _dropTex.needsUpdate = true;
+  return _dropTex;
+}
+function texVig(rgb) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const x = cv.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 18, 64, 64, 64);
+  g.addColorStop(0, `rgba(${rgb},0)`);
+  g.addColorStop(0.55, `rgba(${rgb},0)`);
+  g.addColorStop(0.82, `rgba(${rgb},.35)`);
+  g.addColorStop(1, `rgba(${rgb},.7)`);
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(cv); tex.needsUpdate = true;
+  return tex;
+}
+function texVigNight() { return _vigNight || (_vigNight = texVig('18,24,56')); }
+function texVigDawn() { return _vigDawn || (_vigDawn = texVig('255,170,90')); }
+
+const COLLECT_COL = {
+  stick: [0.79, 0.51, 0.29], sticks: [0.79, 0.51, 0.29],
+  stone: [0.73, 0.75, 0.84], stones: [0.73, 0.75, 0.84],
+  berry: [1, 0.31, 0.43], berries: [1, 0.31, 0.43],
+  cloth: [1, 0.56, 0.72], scraps: [1, 0.56, 0.72]
+};
+
+/**
+ * Пул разовых частиц и спрайтов (сбор, удар, рассвет, победа, poof, Zzz).
+ * Дешёвый: один Points + несколько спрайтов, без постобработки.
+ */
+export function createFeedback(scene, opts = {}) {
+  const quality = opts.quality === 'low' ? 'low' : 'high';
+  const cap = PARTICLE_BUDGET[quality].feedback;
+  const pos = new Float32Array(cap * 3);
+  const col = new Float32Array(cap * 3);
+  const bits = [];
+  for (let i = 0; i < cap; i++) bits.push({
+    on: false, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
+    life: 0, max: 1, r: 1, g: 1, b: 1, mode: 'ball',
+    sx: 0, sy: 0, sz: 0, tx: 0, ty: 0, tz: 0, arc: 0
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({
+    map: texStar(), vertexColors: true, size: 0.22, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, fog: false, sizeAttenuation: true
+  }));
+  pts.frustumCulled = false;
+  scene.add(pts);
+
+  const flashes = [];
+  const flashN = PARTICLE_BUDGET[quality].flashes;
+  for (let i = 0; i < flashN; i++) {
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: texFlash(), transparent: true, blending: THREE.AdditiveBlending,
+      depthWrite: false, fog: false, opacity: 0
+    }));
+    m.visible = false; m.userData.life = 0; scene.add(m); flashes.push(m);
+  }
+
+  const rays = [];
+  const rayN = PARTICLE_BUDGET[quality].rays;
+  for (let i = 0; i < rayN; i++) {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.55, 9),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe4a8, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide
+      })
+    );
+    m.position.set((i - 1) * 1.1, 3.2, (i - 1) * 0.4);
+    m.rotation.z = (i - 1) * 0.22;
+    m.visible = false;
+    scene.add(m);
+    rays.push(m);
+  }
+
+  const vig = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 2),
+    new THREE.MeshBasicMaterial({
+      map: texVigNight(), transparent: true, opacity: 0,
+      depthTest: false, depthWrite: false, fog: false, toneMapped: false
+    })
+  );
+  vig.frustumCulled = false;
+  vig.renderOrder = 1000;
+  vig.visible = false;
+  const vigState = { on: false, kind: 'night', t: 0, dur: 2.2, peak: 0.55 };
+
+  const zzzList = [];
+
+  const state = {
+    scene, quality, cap, bits, pos, col, pts, flashes, rays,
+    vig, vigState, zzzList, camera: opts.camera || null,
+    dawnT: 0, disposed: false, t: 0
+  };
+
+  function spawn(n, fn) {
+    let left = n;
+    for (let i = 0; i < state.bits.length && left > 0; i++) {
+      if (!state.bits[i].on) { fn(state.bits[i]); state.bits[i].on = true; left--; }
+    }
+    if (left <= 0) return;
+    // переиспользуем самых старых
+    const aged = state.bits.slice().sort((a, b) => a.life - b.life);
+    for (let i = 0; i < aged.length && left > 0; i++) {
+      fn(aged[i]); aged[i].on = true; left--;
+    }
+  }
+
+  function flashAt(p, scale, life) {
+    let s = state.flashes[0];
+    for (const f of state.flashes) if (f.userData.life <= 0) { s = f; break; }
+    if (!s) return;
+    s.position.set(p.x, p.y, p.z);
+    s.scale.setScalar(scale || 1.2);
+    s.material.opacity = 0.9;
+    s.visible = true;
+    s.userData.life = life || 0.28;
+    s.userData.max = s.userData.life;
+  }
+
+  function attachVig(kind) {
+    const cam = state.camera;
+    if (!cam) return;
+    if (vig.parent !== cam) {
+      if (vig.parent) vig.parent.remove(vig);
+      cam.add(vig);
+      vig.position.set(0, 0, -0.45);
+    }
+    vig.material.map = kind === 'dawn' ? texVigDawn() : texVigNight();
+    vig.material.needsUpdate = true;
+    vig.visible = true;
+    const fov = ((cam.fov || 60) * Math.PI) / 180;
+    const h = 2 * Math.tan(fov / 2) * 0.45;
+    const aspect = cam.aspect || 1;
+    vig.scale.set(h * aspect, h, 1);
+    state.vigState.on = true;
+    state.vigState.kind = kind;
+    state.vigState.t = 0;
+    state.vigState.dur = kind === 'dawn' ? 2.6 : 2.0;
+    state.vigState.peak = kind === 'dawn' ? 0.42 : 0.5;
+  }
+
+  const api = {
+    setCamera(cam) { state.camera = cam || null; },
+    setQuality(q) { state.quality = q === 'low' ? 'low' : 'high'; },
+
+    hit(pos, opts = {}) {
+      const p = vec3of(pos, [0, 1, 0]);
+      const kind = opts.kind || 'tree';
+      const n = state.quality === 'low' ? 6 : 12;
+      flashAt({ x: p.x, y: p.y, z: p.z }, kind === 'enemy' ? 1.6 : 1.2, 0.22);
+      if (kind === 'enemy') {
+        spawn(n, (b) => {
+          const a = R(0, 6.28), sp = R(2.2, 4.5);
+          b.mode = 'ball'; b.x = p.x; b.y = p.y; b.z = p.z;
+          b.vx = Math.cos(a) * sp; b.vy = R(1.5, 3.5); b.vz = Math.sin(a) * sp;
+          b.life = 0; b.max = R(0.28, 0.5);
+          b.r = 1; b.g = R(0.85, 1); b.b = R(0.5, 0.75);
+        });
+      } else {
+        spawn(n, (b) => {
+          const a = R(0, 6.28), sp = R(1.4, 3.2);
+          b.mode = 'ball'; b.x = p.x; b.y = p.y + R(0, 0.4); b.z = p.z;
+          b.vx = Math.cos(a) * sp; b.vy = R(1.8, 3.8); b.vz = Math.sin(a) * sp;
+          b.life = 0; b.max = R(0.4, 0.7);
+          if (Math.random() < 0.35) { b.r = 0.4; b.g = 0.7; b.b = 0.35; } // листок
+          else { b.r = 0.72; b.g = 0.48; b.b = 0.28; }
+        });
+      }
+    },
+
+    collect(from, to, opts = {}) {
+      const a = vec3of(from, [0, 0.5, 0]);
+      const b = vec3of(to, [0, 1.2, 0]);
+      const c = COLLECT_COL[opts.item] || COLLECT_COL[opts.color] || [1, 0.85, 0.4];
+      const n = state.quality === 'low' ? 5 : 10;
+      flashAt(a, 0.7, 0.18);
+      spawn(n, (p) => {
+        p.mode = 'arc';
+        p.sx = a.x + R(-0.15, 0.15); p.sy = a.y + R(0, 0.2); p.sz = a.z + R(-0.15, 0.15);
+        p.tx = b.x + R(-0.1, 0.1); p.ty = b.y + R(-0.1, 0.15); p.tz = b.z + R(-0.1, 0.1);
+        p.x = p.sx; p.y = p.sy; p.z = p.sz;
+        p.arc = R(0.6, 1.2);
+        p.life = 0; p.max = R(0.35, 0.55);
+        p.r = c[0]; p.g = c[1]; p.b = c[2];
+        p.vx = p.vy = p.vz = 0;
+      });
+    },
+
+    poof(pos, opts = {}) {
+      const p = vec3of(pos, [0, 0.8, 0]);
+      const moth = (opts.kind || '') === 'moth';
+      const n = state.quality === 'low' ? 6 : 12;
+      flashAt(p, moth ? 1.1 : 1.4, 0.3);
+      spawn(n, (b) => {
+        const a = R(0, 6.28), sp = R(1.2, 2.8);
+        b.mode = 'ball'; b.x = p.x; b.y = p.y; b.z = p.z;
+        b.vx = Math.cos(a) * sp; b.vy = R(0.8, 2.4); b.vz = Math.sin(a) * sp;
+        b.life = 0; b.max = R(0.4, 0.7);
+        if (moth) { b.r = 0.9; b.g = 0.93; b.b = 1; }
+        else { b.r = 0.85; b.g = 0.8; b.b = 1; }
+      });
+    },
+
+    dawn(camera) {
+      if (camera) state.camera = camera;
+      attachVig('dawn');
+      state.dawnT = 2.4;
+      const n = state.quality === 'low' ? 6 : 14;
+      spawn(n, (b) => {
+        const a = R(0, 6.28), r = R(1.5, 5);
+        b.mode = 'spark';
+        b.x = Math.cos(a) * r; b.y = R(0.4, 1.2); b.z = Math.sin(a) * r;
+        b.vx = R(-0.15, 0.15); b.vy = R(0.35, 0.9); b.vz = R(-0.15, 0.15);
+        b.life = 0; b.max = R(1.2, 2.0);
+        b.r = 1; b.g = R(0.82, 0.95); b.b = R(0.45, 0.65);
+      });
+      state.rays.forEach((m, i) => {
+        m.visible = true;
+        m.userData.phase = i * 0.7;
+        m.material.opacity = 0;
+      });
+    },
+
+    nightfall(camera) {
+      if (camera) state.camera = camera;
+      attachVig('night');
+    },
+
+    petTired(obj3d, opts = {}) {
+      const host = obj3d || state.scene;
+      const g = new THREE.Group();
+      const off = vec3of(opts.offset, [0, opts.y == null ? 1.7 : opts.y, 0]);
+      if (!obj3d && opts.position) {
+        const p = vec3of(opts.position);
+        g.position.set(p.x + off.x, p.y + off.y, p.z + off.z);
+      } else {
+        g.position.set(off.x, off.y, off.z);
+      }
+      const zN = state.quality === 'low' ? 1 : PARTICLE_BUDGET.high.zzz;
+      const sprites = [];
+      for (let i = 0; i < zN; i++) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: texZzz(), transparent: true, depthWrite: false, fog: false, opacity: 0
+        }));
+        sp.scale.set(0.9, 0.68, 1);
+        sp.position.set(i * 0.15, i * 0.25, 0);
+        g.add(sp); sprites.push(sp);
+      }
+      const drop = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: texDrop(), transparent: true, depthWrite: false, fog: false, opacity: 0
+      }));
+      drop.scale.set(0.22, 0.28, 1);
+      drop.position.set(0.35, 0.1, 0.1);
+      g.add(drop);
+      host.add(g);
+      const rec = { g, host, sprites, drop, t: 0, life: 2.8, disposed: false };
+      state.zzzList.push(rec);
+      return rec;
+    },
+
+    stageWin(pos) {
+      const p = vec3of(pos, [0, 1.2, 0]);
+      const n = state.quality === 'low' ? 12 : 26;
+      flashAt(p, 2.2, 0.4);
+      const pal = [
+        [1, 0.85, 0.3], [1, 0.55, 0.45], [0.6, 0.95, 0.7], [1, 0.95, 0.85], [0.7, 0.8, 1]
+      ];
+      spawn(n, (b) => {
+        const a = R(0, 6.28), sp = R(1.6, 4.2);
+        b.mode = 'confetti';
+        b.x = p.x; b.y = p.y; b.z = p.z;
+        b.vx = Math.cos(a) * sp; b.vy = R(3.0, 6.0); b.vz = Math.sin(a) * sp;
+        b.life = 0; b.max = R(1.1, 1.8);
+        const c = pal[(Math.random() * pal.length) | 0];
+        b.r = c[0]; b.g = c[1]; b.b = c[2];
+      });
+    },
+
+    update(dt) {
+      if (state.disposed) return;
+      const d = Math.min(0.05, dt || 0.016);
+      state.t += d;
+      const attrP = state.pts.geometry.attributes.position;
+      const attrC = state.pts.geometry.attributes.color;
+      let live = 0;
+      for (let i = 0; i < state.bits.length; i++) {
+        const b = state.bits[i];
+        if (!b.on) { attrP.setXYZ(i, 0, -40, 0); continue; }
+        b.life += d;
+        const u = b.life / b.max;
+        if (u >= 1) { b.on = false; attrP.setXYZ(i, 0, -40, 0); continue; }
+        if (b.mode === 'arc') {
+          const e = u * u * (3 - 2 * u);
+          b.x = b.sx + (b.tx - b.sx) * e;
+          b.z = b.sz + (b.tz - b.sz) * e;
+          b.y = b.sy + (b.ty - b.sy) * e + Math.sin(u * Math.PI) * b.arc;
+        } else if (b.mode === 'spark') {
+          b.x += b.vx * d; b.y += b.vy * d; b.z += b.vz * d;
+        } else if (b.mode === 'confetti') {
+          b.vy -= 7.5 * d;
+          b.x += b.vx * d; b.y += b.vy * d; b.z += b.vz * d;
+          b.vx *= 0.98; b.vz *= 0.98;
+          if (b.y < 0.05) { b.y = 0.05; b.vy *= -0.25; b.vx *= 0.6; }
+        } else {
+          b.vy -= 8.5 * d;
+          b.x += b.vx * d; b.y += b.vy * d; b.z += b.vz * d;
+          if (b.y < 0.04) { b.y = 0.04; b.vy *= -0.3; }
+        }
+        const fade = u < 0.7 ? 1 : 1 - (u - 0.7) / 0.3;
+        attrP.setXYZ(i, b.x, b.y, b.z);
+        attrC.setXYZ(i, b.r * fade, b.g * fade, b.b * fade);
+        live++;
+      }
+      attrP.needsUpdate = true;
+      attrC.needsUpdate = true;
+      state.pts.geometry.setDrawRange(0, state.bits.length);
+      state.pts.visible = live > 0;
+
+      state.flashes.forEach((s) => {
+        if (s.userData.life <= 0) { s.visible = false; return; }
+        s.userData.life -= d;
+        const u = Math.max(0, s.userData.life / (s.userData.max || 0.28));
+        s.material.opacity = u * 0.9;
+        const sc = s.scale.x * (1 + d * 2.2);
+        s.scale.setScalar(sc);
+        s.visible = u > 0;
+      });
+
+      if (state.dawnT > 0) {
+        state.dawnT -= d;
+        const k = state.dawnT > 1.6 ? (2.4 - state.dawnT) / 0.8 : state.dawnT / 1.6;
+        const op = Math.max(0, Math.min(1, k)) * 0.22;
+        state.rays.forEach((m, i) => {
+          m.visible = op > 0.01;
+          m.material.opacity = op * (0.7 + 0.3 * Math.sin(state.t * 1.3 + m.userData.phase));
+          m.rotation.y = 0.15 * Math.sin(state.t * 0.4 + i);
+        });
+        if (state.dawnT <= 0) state.rays.forEach((m) => { m.visible = false; m.material.opacity = 0; });
+      }
+
+      if (state.vigState.on) {
+        state.vigState.t += d;
+        const u = state.vigState.t / state.vigState.dur;
+        let op = 0;
+        if (u < 0.25) op = u / 0.25;
+        else if (u < 0.55) op = 1;
+        else if (u < 1) op = 1 - (u - 0.55) / 0.45;
+        else { state.vigState.on = false; op = 0; }
+        vig.material.opacity = op * state.vigState.peak;
+        vig.visible = op > 0.01;
+        if (state.camera && vig.parent === state.camera) {
+          const fov = ((state.camera.fov || 60) * Math.PI) / 180;
+          const h = 2 * Math.tan(fov / 2) * 0.45;
+          vig.scale.set(h * (state.camera.aspect || 1), h, 1);
+        }
+      }
+
+      for (let i = state.zzzList.length - 1; i >= 0; i--) {
+        const z = state.zzzList[i];
+        if (z.disposed) { state.zzzList.splice(i, 1); continue; }
+        z.t += d;
+        const u = z.t / z.life;
+        if (u >= 1) {
+          if (z.g.parent) z.g.parent.remove(z.g);
+          z.sprites.forEach((s) => s.material.dispose());
+          z.drop.material.dispose();
+          z.disposed = true;
+          state.zzzList.splice(i, 1);
+          continue;
+        }
+        const fade = u < 0.15 ? u / 0.15 : u > 0.7 ? 1 - (u - 0.7) / 0.3 : 1;
+        z.sprites.forEach((s, k) => {
+          s.material.opacity = fade * 0.95;
+          s.position.y = k * 0.25 + u * 0.55 + Math.sin((z.t + k) * 3) * 0.05;
+          s.position.x = k * 0.18 + Math.sin((z.t + k) * 2) * 0.08;
+          const sc = 0.75 + k * 0.12;
+          s.scale.set(sc * 0.95, sc * 0.72, 1);
+        });
+        z.drop.material.opacity = fade * (u < 0.6 ? 0.9 : 0.9 * (1 - (u - 0.6) / 0.4));
+        z.drop.position.y = 0.1 - u * 0.55;
+      }
+    },
+
+    dispose() {
+      if (state.disposed) return;
+      state.disposed = true;
+      if (pts.parent) pts.parent.remove(pts);
+      pts.geometry.dispose();
+      pts.material.dispose();
+      flashes.forEach((s) => { if (s.parent) s.parent.remove(s); s.material.dispose(); });
+      rays.forEach((m) => {
+        if (m.parent) m.parent.remove(m);
+        m.geometry.dispose();
+        m.material.dispose();
+      });
+      if (vig.parent) vig.parent.remove(vig);
+      vig.geometry.dispose();
+      vig.material.dispose();
+      zzzList.forEach((z) => {
+        if (z.g.parent) z.g.parent.remove(z.g);
+        z.sprites.forEach((s) => s.material.dispose());
+        z.drop.material.dispose();
+      });
+      zzzList.length = 0;
+    }
+  };
+  return api;
+}
+
+
 /**
  * Фасад для движка: один объект, createCampfire / createNightFog / setLevel / update / setQuality / dispose.
+ * Новое в v0.6: hit/collect/dawn/nightfall/petTired/stageWin/poof, setCamera, setBaseVisible/setRingVisible.
  * Новое в v0.5: applyNight(n), setWeather, createRain / createLeaves / createMoths / createPingMarker.
  */
 export class GameVFX {
@@ -839,9 +1331,36 @@ export class GameVFX {
     this.moths = null;
     this.markers = [];
     this._scene = null;
+    this._camera = opts.camera || null;
+    this._fb = null;
     this._nightIndex = 0;
     this._weather = { rain: false, wind: false, fog: 'off', moths: false };
   }
+
+  _ensureFb(scene) {
+    const sc = scene || this._scene;
+    if (!sc) return null;
+    this._scene = sc;
+    if (!this._fb) this._fb = createFeedback(sc, { quality: this.quality, camera: this._camera });
+    else if (this._camera && this._fb.setCamera) this._fb.setCamera(this._camera);
+    return this._fb;
+  }
+
+  setCamera(cam) {
+    this._camera = cam || null;
+    if (this._fb) this._fb.setCamera(this._camera);
+  }
+
+  hit(pos, opts = {}) { const fb = this._ensureFb(opts.scene); if (fb) fb.hit(pos, opts); }
+  collect(from, to, opts = {}) { const fb = this._ensureFb(opts.scene); if (fb) fb.collect(from, to, opts); }
+  poof(pos, opts = {}) { const fb = this._ensureFb(opts.scene); if (fb) fb.poof(pos, opts); }
+  dawn(camera) { if (camera && camera.isCamera) this.setCamera(camera); const fb = this._ensureFb(); if (fb) fb.dawn(this._camera); }
+  nightfall(camera) { if (camera && camera.isCamera) this.setCamera(camera); const fb = this._ensureFb(); if (fb) fb.nightfall(this._camera); }
+  petTired(obj3d, opts = {}) { const fb = this._ensureFb(opts.scene); if (fb) return fb.petTired(obj3d, opts); }
+  stageWin(pos, opts = {}) { const fb = this._ensureFb(opts && opts.scene); if (fb) fb.stageWin(pos); }
+
+  setBaseVisible(on) { if (this.campfire && this.campfire.setBaseVisible) this.campfire.setBaseVisible(on); }
+  setRingVisible(on) { if (this.campfire && this.campfire.setRingVisible) this.campfire.setRingVisible(on); }
 
   createCampfire(scene, opts = {}) {
     if (this.campfire) this.campfire.dispose();
@@ -925,6 +1444,7 @@ export class GameVFX {
     if (this.rain) this.rain.setQuality(this.quality);
     if (this.leaves) this.leaves.setQuality(this.quality);
     if (this.moths) this.moths.setQuality(this.quality);
+    if (this._fb) this._fb.setQuality(this.quality);
   }
   update(dt) {
     if (this.campfire) this.campfire.update(dt);
@@ -932,6 +1452,7 @@ export class GameVFX {
     if (this.rain) this.rain.update(dt);
     if (this.leaves) this.leaves.update(dt);
     if (this.moths) this.moths.update(dt);
+    if (this._fb) this._fb.update(dt);
     this.markers = this.markers.filter((m) => {
       m.update(dt);
       return m.alive;
@@ -943,12 +1464,14 @@ export class GameVFX {
     if (this.rain) this.rain.dispose();
     if (this.leaves) this.leaves.dispose();
     if (this.moths) this.moths.dispose();
+    if (this._fb) this._fb.dispose();
     this.markers.forEach((m) => m.dispose());
     this.campfire = null;
     this.fog = null;
     this.rain = null;
     this.leaves = null;
     this.moths = null;
+    this._fb = null;
     this.markers = [];
   }
 }

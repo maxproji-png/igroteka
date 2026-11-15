@@ -39,8 +39,8 @@ export const ASSETS = {
   basket:   { url: A + 'basket.glb',   scale: 1 },     // за спиной питомца, когда скрафчена корзинка
   wood_log: { url: A + 'wood_log.glb', scale: 1, decor: [[-2.5, 1.7, 1.0], [2.6, 1.9, -1.1]] },   // декор: брёвна-лавочки у костра (x, z, ry)
   // ночные существа (анимации)
-  mist:     { url: A + 'mist.glb',     scale: 1.3, anim: true },   // idle, walk · ×1.3 — читаемость на телефоне
+  mist:     { url: A + 'mist.glb',     scale: 1, anim: true },   // idle, walk · v0.7: ×1.3 запечён в модель художником
   crow:     { url: A + 'crow.glb',     scale: 1, anim: true },   // idle, fly, peck
-  moose:    { url: A + 'moose.glb',    scale: 1, anim: true },   // idle, walk
-  moth:     { url: A + 'moth.glb',     scale: 1.7, anim: true },   // idle, fly · ×1.7 — иначе на 390 px почти не видно
+  moose:    { url: A + 'moose.glb',    scale: 1, anim: true },   // idle, walk · v0.7: новый, коренастый, 2,25 м
+  moth:     { url: A + 'moth.glb',     scale: 1, anim: true },   // idle, fly · v0.7: ×1.7 запечён в модель художником
 };

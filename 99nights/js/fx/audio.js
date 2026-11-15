@@ -11,13 +11,14 @@
  *   audio.update(dt);
  *   audio.dispose();
  */
-export const VERSION = '0.5-concept';
+export const VERSION = '0.6-concept';
 
 const VOICES = { low: 8, high: 14 };
 const GROUP_LIMIT = {
   step: 2, chop: 2, collect: 2, fire: 2, night: 1, moose: 2, ping: 1,
   crow: 2, mist: 2, moth: 2, rain: 2, wind: 1, chat: 1, ui: 2,
-  chest: 2, craft: 1, lamp: 1, push: 2, eat: 1, pet: 2, jingle: 1
+  chest: 2, craft: 1, lamp: 1, push: 2, eat: 1, pet: 2, jingle: 1,
+  poof: 2, hit: 2, dream: 1
 };
 
 /** Погода ночей 1–12 (GDD v0.5, раздел 4). Ночь 8 — «лёгкий дождь» (одна из 7–9). */
@@ -152,7 +153,7 @@ export class GameAudio {
   }
 
   /**
-   * @param {'step'|'chop'|'collect'|'fire'|'night'|'moose'|'ping'} name
+   * @param {'step'|'chop'|'collect'|'fire'|'night'|'moose'|'ping'|string} name
    * @param {object} [opts]
    *   step:    { surface?: 'grass'|'stone'|'wood', remote?: boolean }
    *   collect: { item?: 'sticks'|'stones'|'berries'|'scraps' }
@@ -190,6 +191,9 @@ export class GameAudio {
       case 'morning': return this._jingle('morning');
       case 'win': return this._jingle('win');
       case 'lose': return this._jingle('lose');
+      case 'poof': return this._poof(opts);
+      case 'hit': return this._hit(opts);
+      case 'dream': return this._dream(opts);
       default: return false;
     }
   }
@@ -836,6 +840,32 @@ export class GameAudio {
     } else {
       this._tone({ type: 'sine', f0: 480, f1: 400, dur: 0.1, peak: 0.04, group: 'pet' });
     }
+    return true;
+  }
+
+
+  _poof() {
+    // тень/мотылёк рассыпались в блёстки (прототип: sfx.play('poof'))
+    [1046, 1318, 1568].forEach((f, i) => this._tone({ type: 'sine', f0: f, f1: f * 1.15, dur: 0.14, peak: 0.028, shift: i * 0.05, group: 'poof' }));
+    this._noiseBurst({ dur: 0.16, peak: 0.03, type: 'bandpass', freq: 2400, Qv: 0.8, group: 'poof' });
+    return true;
+  }
+
+  _hit(opts) {
+    const kind = opts.kind || 'tree';
+    if (kind === 'enemy') {
+      this._noiseBurst({ dur: 0.1, peak: 0.05, type: 'bandpass', freq: 1600, Qv: 1.1, group: 'hit' });
+      this._tone({ type: 'sine', f0: 880, f1: 360, dur: 0.1, peak: 0.04, group: 'hit' });
+      return true;
+    }
+    return this._chop(opts);
+  }
+
+  _dream() {
+    // «Грёзы унесли к костру» — мягкий свист и две тёплые ноты, без stinger
+    this._noiseBurst({ dur: 0.45, peak: 0.03, type: 'bandpass', freq: 900, Qv: 0.6, buf: this._brown, group: 'dream' });
+    this._tone({ type: 'sine', f0: 392, f1: 523, dur: 0.35, peak: 0.035, group: 'dream' });
+    this._tone({ type: 'sine', f0: 523, f1: 659, dur: 0.4, peak: 0.03, shift: 0.18, group: 'dream' });
     return true;
   }
 
