@@ -1,0 +1,70 @@
+/* Б «Стекло» — только токены; цвет клана из каталога: --cc / --ce / --cs */
+:root{--sheet-h:450px}
+.cx-h{display:block;position:relative;padding:14px 0 2px;z-index:1}
+.b-blobs{position:absolute;left:-16px;right:-16px;top:-40px;height:300px;pointer-events:none;z-index:-1;overflow:hidden}
+.b-blobs i{position:absolute;border-radius:50%;filter:blur(26px)}
+.b-blobs i:nth-child(1){width:230px;height:230px;left:-50px;top:-30px;background:color-mix(in srgb,var(--cc) 55%,transparent)}
+.b-blobs i:nth-child(2){width:200px;height:200px;right:-40px;top:10px;background:color-mix(in srgb,var(--violet) 30%,transparent)}
+.b-blobs i:nth-child(3){width:160px;height:160px;left:40%;top:120px;background:color-mix(in srgb,var(--sun) 35%,transparent)}
+.b-card{position:relative;padding:14px;border-radius:var(--r-lg);background:rgb(var(--white-rgb) / .62);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  box-shadow:inset 0 0 0 1.5px rgb(var(--white-rgb) / .9),var(--sh-md)}
+.b-row{display:flex;align-items:center;gap:12px}
+.b-crest{position:relative;flex:none}
+.b-crest .emb{width:60px;height:60px;border-radius:20px}
+.b-lvl{position:absolute;right:-6px;bottom:-6px;min-width:26px;height:26px;padding:0 6px;border-radius:13px;display:grid;place-items:center;background:var(--sun);color:var(--ink);font-size:14px;font-weight:1000;box-shadow:0 0 0 3px var(--white),0 2px 0 3px var(--sun-edge)}
+.b-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.b-t b{display:block;font-size:22px;font-weight:1000;letter-spacing:-.4px;line-height:27px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-t small{display:block;font-size:13px;font-weight:800;line-height:18px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-more{width:40px;height:40px;border-radius:50%;flex:none;align-self:flex-start;display:grid;place-items:center;color:var(--ink-2);background:rgb(var(--white-rgb) / .8);box-shadow:var(--sh-sm)}
+.b-more svg{width:20px;height:20px}
+.b-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.b-tl{display:flex;flex-direction:column;justify-content:space-between;height:78px;padding:10px 12px;border-radius:var(--r-md);background:rgb(var(--white-rgb) / .78);box-shadow:inset 0 0 0 1.5px rgb(var(--white-rgb) / .95);min-width:0}
+.b-tl small{height:16px;line-height:16px;font-size:12px;font-weight:900;color:var(--ink-3);white-space:nowrap}
+.b-tl b{display:flex;align-items:center;gap:4px;height:26px;line-height:26px;font-size:21px;font-weight:1000;letter-spacing:-.3px;white-space:nowrap}
+.b-tl b em{font-style:normal;font-size:13px;font-weight:900;color:var(--ink-3)}
+.b-mini{display:block;height:8px;border-radius:var(--r-pill);background:var(--fill);overflow:hidden}
+.b-mini i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--cc) 70%,var(--white)),var(--cc))}
+.b-mini.v i{background:linear-gradient(90deg,color-mix(in srgb,var(--violet) 60%,var(--white)),var(--violet))}
+.b-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 0 2px var(--white);flex:none}
+.b-heads{height:8px;align-items:center;overflow:visible}
+.b-heads .cx-head{width:20px;height:20px;margin-top:-6px}
+.b-heads .cx-head+.cx-head{margin-left:-6px}
+.prog{margin-top:12px}
+@media (max-width:370px){.b-card{padding:12px}.b-t b{font-size:20px}.b-crest .emb{width:54px;height:54px;border-radius:18px}.b-tl{padding:9px 10px;height:74px}.b-tl b{font-size:19px}.b-tiles{gap:6px}}
+/* шторка «О клане» */
+.b-s{position:absolute;inset:0;display:flex;flex-direction:column;padding:22px 16px 16px}
+.b-shead{display:flex;align-items:center;gap:12px;height:52px;padding-right:44px;flex:none}
+.b-semb{width:52px!important;height:52px!important;border-radius:18px!important}
+.b-lvcard{margin-top:14px;padding:14px;border-radius:var(--r-md);background:linear-gradient(135deg,var(--cs),var(--white));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--cc) 22%,var(--white));flex:none}
+.b-lvtop{display:flex;align-items:center;gap:12px}
+.b-lvbig{width:46px;height:46px;border-radius:16px;flex:none;display:grid;place-items:center;font-size:24px;font-weight:1000;background:var(--sun);color:var(--ink);box-shadow:0 3px 0 var(--sun-edge)}
+.b-lvtx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.b-lvtx b{font-size:16px;font-weight:1000;line-height:20px}
+.b-lvtx small{font-size:13px;font-weight:800;line-height:18px;color:var(--ink-2)}
+.b-segs{display:flex;gap:4px;margin:12px 0 10px;height:12px}
+.b-segs i{flex:1;border-radius:4px;background:var(--white);box-shadow:inset 0 0 0 1.5px var(--line);overflow:hidden;display:block}
+.b-segs i b{display:block;height:100%;background:linear-gradient(180deg,color-mix(in srgb,var(--cc) 75%,var(--white)),var(--cc))}
+.b-next{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--ink-2);line-height:18px}
+.b-next svg{width:16px;height:16px;color:var(--cc)}
+.b-next b{color:var(--ink);font-weight:1000}
+.b-list{margin-top:10px;border-radius:var(--r-md);background:var(--bg);padding:2px 0;flex:none}
+.b-li{position:relative;display:flex;align-items:center;gap:10px;height:46px;padding:0 14px}
+.b-li+.b-li::before{content:"";position:absolute;left:52px;right:14px;top:0;height:1px;background:var(--line)}
+.b-li-ic{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--white);color:var(--violet);box-shadow:var(--sh-sm);flex:none}
+.b-li-ic svg{width:16px;height:16px}
+.b-li:first-child .b-li-ic{color:var(--sun-edge)}
+.b-li-l{flex:1;font-size:14.5px;font-weight:800;color:var(--ink-2)}
+.b-li-r{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:1000;white-space:nowrap}
+.b-li-r .cx-head{width:24px;height:24px}
+.b-fill{flex:1;min-height:12px}
+.b-leave{background:var(--white);color:var(--pink-edge);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pink) 45%,var(--white)),0 3px 0 color-mix(in srgb,var(--pink) 30%,var(--white))}
+/* диалог подтверждения */
+.b-dl-ic{width:64px;height:64px;margin:0 auto;border-radius:22px;display:grid;place-items:center;background:var(--pink-soft);color:var(--pink-edge);box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--pink) 25%,transparent)}
+.b-dl-ic svg{width:32px;height:32px}
+.b-dl-h{margin:14px 0 0;font-size:22px;font-weight:1000;letter-spacing:-.3px}
+.b-dl-p{margin:8px 4px 18px;font-size:14.5px;font-weight:800;line-height:1.4;color:var(--ink-2)}
+.b-dl-p b{color:var(--ink);font-weight:1000}
+.b-dl-p .coin{display:inline-block;vertical-align:-3px;margin-left:3px}
+.b-dl-no{margin-top:10px}
+
+.b-dl-p .nm{white-space:nowrap}

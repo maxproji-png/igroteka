@@ -1,0 +1,51 @@
+/* Шапка «Мой клан» · общие стили трёх концептов. Только токены; цвет клана — --cc / --ce / --cs из каталога. */
+:root{--tb:72px;--cink:var(--white)}
+/* шторка над таб-баром: таб-бар остаётся видимым, затемнение его не накрывает */
+.cx-scrim{position:fixed;left:0;right:0;top:0;bottom:var(--tb);z-index:220;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .3s}
+.cx-scrim.on{opacity:1;pointer-events:auto}
+.cx-sheet{position:fixed;z-index:221;left:8px;right:8px;margin:0 auto;max-width:414px;bottom:calc(var(--tb) + 8px);height:var(--sheet-h,480px);
+  background:var(--white);border-radius:var(--r-lg);box-shadow:var(--sh-lg);overflow:hidden;transform:translateY(calc(100% + var(--tb) + 20px));
+  transition:transform .45s var(--spring,cubic-bezier(.34,1.3,.64,1))}
+.cx-sheet.on{transform:none}
+.cx-sheet.no-anim,.cx-scrim.no-anim,.cx-dlg-wrap.no-anim,.cx-dlg-wrap.no-anim .cx-dlg{transition:none!important}
+.cx-page{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .36s var(--out,cubic-bezier(.2,.8,.2,1)),opacity .3s}
+.cx-page.in-fwd{transform:translateX(40px);opacity:0}.cx-page.in-back{transform:translateX(-40px);opacity:0}
+.cx-page.out-fwd{transform:translateX(-40px);opacity:0;pointer-events:none}.cx-page.out-back{transform:translateX(40px);opacity:0;pointer-events:none}
+.cx-grab{width:44px;height:5px;border-radius:3px;background:var(--fill);margin:10px auto 0;flex:none}
+.cx-x{position:absolute;right:14px;top:14px;z-index:3;width:36px;height:36px;border-radius:50%;border:0;padding:0;background:var(--fill);color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+.cx-x.glass{background:rgb(var(--white-rgb) / .28);color:var(--cink);box-shadow:inset 0 0 0 1.5px rgb(var(--white-rgb) / .35)}
+.cx-back{position:absolute;left:14px;top:14px;z-index:3;width:36px;height:36px;border-radius:50%;border:0;padding:0;background:var(--fill);color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+/* диалог по центру */
+.cx-dlg-wrap{position:fixed;left:0;right:0;top:0;bottom:var(--tb);z-index:240;display:grid;place-items:center;padding:16px;background:rgb(var(--ink-rgb) / .28);opacity:0;pointer-events:none;transition:opacity .25s}
+.cx-dlg-wrap.on{opacity:1;pointer-events:auto}
+.cx-dlg{width:100%;max-width:330px;background:var(--white);border-radius:var(--r-xl);box-shadow:var(--sh-lg);padding:22px 18px 18px;text-align:center;transform:scale(.92);transition:transform .35s var(--spring,cubic-bezier(.34,1.4,.64,1))}
+.cx-dlg-wrap.on .cx-dlg{transform:none}
+/* щит-подложка и герб */
+.cx-shield{position:relative;display:block;width:var(--sz);height:calc(var(--sz) * 1.125);flex:none;filter:drop-shadow(0 6px 10px rgb(var(--shade) / .22))}
+.cx-shield-bg{position:absolute;inset:0;width:100%;height:100%}
+.cx-shield-ic{position:absolute;left:0;right:0;top:20%;height:52%;display:grid;place-items:center;color:var(--cink)}
+.cx-shield-ic svg{height:100%;width:auto;filter:drop-shadow(0 2px 0 color-mix(in srgb,var(--ce) 55%,transparent))}
+.cx-badge svg{width:58%;height:58%}
+/* кольцо прогресса */
+.cx-ring{position:relative;display:grid;place-items:center;width:var(--rs);height:var(--rs);flex:none}
+.cx-ring>svg{position:absolute;inset:0;width:100%;height:100%}
+.cx-ring-p{transition:stroke-dashoffset 1s var(--out,ease)}
+/* узор из герба */
+.cx-pat{position:absolute;inset:0;pointer-events:none;color:var(--cink);opacity:.14;overflow:hidden}
+.cx-pat i{position:absolute;display:block}
+.cx-pat i svg{width:100%;height:100%;display:block}
+/* мордочки онлайн */
+.cx-heads{display:flex;align-items:center}
+.cx-head{width:26px;height:26px;border-radius:50%;overflow:hidden;background:var(--violet-soft);box-shadow:0 0 0 2px var(--white);flex:none}
+.cx-head+.cx-head{margin-left:-8px}
+.cx-head img{width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block}
+/* кнопки выхода и подтверждения */
+.cx-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;border-radius:var(--r-pill);border:0;font:inherit;font-size:16px;font-weight:1000;cursor:pointer;flex:none;white-space:nowrap}
+.cx-btn svg{width:20px;height:20px;flex:none}
+.cx-btn:active{transform:translateY(2px)}
+.cx-btn--leave{background:var(--pink-soft);color:var(--pink-edge);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pink) 28%,var(--white)),0 3px 0 color-mix(in srgb,var(--pink) 22%,var(--white))}
+.cx-btn--danger{background:linear-gradient(180deg,color-mix(in srgb,var(--pink) 80%,var(--white)),var(--pink));color:var(--white);box-shadow:0 4px 0 var(--pink-edge),0 8px 16px color-mix(in srgb,var(--pink) 30%,transparent)}
+.cx-btn--stay{background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 80%,var(--white)),var(--violet));color:var(--white);box-shadow:0 4px 0 var(--violet-edge),0 8px 16px color-mix(in srgb,var(--violet) 28%,transparent)}
+.cx-btn--soft{background:var(--white);color:var(--ink);box-shadow:inset 0 0 0 2px var(--line),0 3px 0 var(--line)}
+.cx-num{font-variant-numeric:tabular-nums}
+.toast{z-index:260}

@@ -35,15 +35,6 @@
     var badge = '<span class="emb clan-badge" style="' + ClanCreate.badgeStyle(col) + '">' + ClanCreate.svg(ic) + '</span>';
     var badgeSm = '<span class="emb sm clan-badge" style="' + ClanCreate.badgeStyle(col) + '">' + ClanCreate.svg(ic) + '</span>';
 
-    var emb = document.querySelector('.ch-h .emb');
-    if (emb) {
-      emb.outerHTML = badge;
-    }
-    var title = document.querySelector('.ch-h .t > b');
-    if (title) title.textContent = name;
-    var sub = document.querySelector('.ch-h .t small');
-    if (sub) sub.innerHTML = '<span class="chip chip--sun"><b>ур. 1</b></span>1 из 45 · <i class="gdot"></i> 1 онлайн';
-
     C.goal.now = 12500;
     C.goal.goal = 1500000;
     var pc = document.querySelector('.prog .pc');
@@ -79,21 +70,14 @@
 
     document.title = 'Тапыши · ' + name + ' · «Вклад каждого»';
 
-    var more = document.getElementById('more');
-    if (more) {
-      var next = more.cloneNode(true);
-      more.parentNode.replaceChild(next, more);
-      next.addEventListener('click', function () {
-        T.sheet(
-          '<h3>' + esc(name) + '</h3>' +
-          '<div class="srow">Уровень клана<b>1</b></div>' +
-          '<div class="srow">Мест занято<b>1 из 45</b></div>' +
-          '<div class="srow" id="to-demo">Демо-клан «Дикий зоопарк»</div>' +
-          '<div class="srow danger" id="leave">Покинуть клан</div>'
-        );
-        bindLeave('leave', '?empty=1');
-        bindLeave('to-demo', './');
+    if (window.CX && CX.applyClan) {
+      CX.applyClan({
+        name: name, icon: clan.icon, color: clan.color,
+        lvl: 1, members: 1, cap: 40, online: 1,
+        wins: 0, nextWins: 30, nextCap: 45,
+        owner: 'Ты', my: 12500
       });
+      if (window.CXC && CXC.paint) CXC.paint();
     }
 
     // перерисовать открытую вкладку
@@ -134,33 +118,8 @@
     document.head.appendChild(st);
   }
 
-  function paintDemoHeader() {
-    var emb = document.querySelector('.ch-h .emb');
-    if (!emb || !window.ClanCreate || !ClanCreate.embHTML) return;
-    var st = (window.T && T.clan) || ClanCreate.demoByName('Дикий зоопарк');
-    emb.outerHTML = ClanCreate.embHTML(st);
-  }
-
   function enhanceDemo() {
-    paintDemoHeader();
-    var mine = window.ClanCreate && ClanCreate.load();
-    if (!mine) return;
-    var more = document.getElementById('more');
-    if (!more) return;
-    more.addEventListener('click', function () {
-      setTimeout(function () {
-        var sheet = document.querySelector('.sheet');
-        if (!sheet || sheet.querySelector('#to-mine')) return;
-        var row = document.createElement('div');
-        row.className = 'srow';
-        row.id = 'to-mine';
-        row.textContent = 'Мой клан «' + mine.name + '»';
-        var leave = sheet.querySelector('#leave');
-        if (leave) leave.parentNode.insertBefore(row, leave);
-        else sheet.appendChild(row);
-        row.addEventListener('click', function () { location.href = '?mine=1'; });
-      }, 0);
-    });
+    /* шапка и шторка «О клане» рисуются из каталога гербов (CX / CXC). */
   }
 
   injectStyle();
