@@ -263,7 +263,11 @@ function stepPlayer(s, p, dt, g, LR, OR, night) {
   else if (df < Math.max(LR, 3)) p.flash.charge = Math.min(100, p.flash.charge + g * 20);
   p.str = clamp(p.str, 0, 100);
   if (p.str <= 0) { p.sleep = startN(s) > 1 ? 20 : 5; p.flash.on = false; ev(s, { t: 'sleep', pid: p.id }); return; }
-  const spd = CFG.SPEED * P.speed * (p.hunger <= 0 ? .8 : 1), k = 1 - Math.exp(-12 * dt);
+  moveP(s, p, dt, OR);
+}
+// Движение питомца (то же на сервере и в клиентском предсказании своего питомца в коопе)
+export function moveP(s, p, dt, OR = openR(s)) {
+  const P = PETS[p.pet]; const spd = CFG.SPEED * P.speed * (p.hunger <= 0 ? .8 : 1), k = 1 - Math.exp(-12 * dt);
   p.vx += (p.in.x * spd - p.vx) * k; p.vz += (p.in.z * spd - p.vz) * k;
   p.x += p.vx * dt; p.z += p.vz * dt; collide(s, p, CFG.PLAYER_R, OR - .4);
   if (hyp(p.in.x, p.in.z) > .1) { let d = Math.atan2(p.in.x, p.in.z) - p.face; d = Math.atan2(Math.sin(d), Math.cos(d)); p.face += d * Math.min(1, dt * 12); }

@@ -1,10 +1,10 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.5.2';
-import * as SIM from './sim.js?v=0.5.2';
-import { GameSfx } from './sfx.js?v=0.5.2';
-import { GameVFX } from './fx/vfx.js?v=0.5.2';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.6.0';
+import * as SIM from './sim.js?v=0.6.0';
+import { GameSfx } from './sfx.js?v=0.6.0';
+import { GameVFX } from './fx/vfx.js?v=0.6.0';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
@@ -12,7 +12,9 @@ const Q = new URLSearchParams(location.search);
 const FAST = Q.has('fast') ? Math.max(2, +Q.get('fast') || 6) : 1;   // ?fast=1 — время ×6 (или ?fast=10)
 const DEBUG = Q.get('debug') === '1';
 const NOADAPT = Q.has('noadapt');
-const SAVE_KEY = '99n_v2_save', PET_KEY = '99n_v1_pet', ACC_KEY = '99n_acc', MUTE_KEY = '99n_mute', PID = 'p1';
+const SAVE_KEY = '99n_v2_save', PET_KEY = '99n_v1_pet', ACC_KEY = '99n_acc', MUTE_KEY = '99n_mute'; let PID = 'p1';
+// Кооп только с флагом ?server=ws://127.0.0.1:2567 — без него сборка остаётся соло (кнопки сети «скоро»)
+const NET = /^wss?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d{2,5})?\/?$/.test(Q.get('server') || '') ? Q.get('server') : null; let COOP = null;
 const QUALITY = Q.get('q') || (matchMedia('(pointer:coarse)').matches ? 'low' : 'high');   // слабый телефон — 'low' (по README пака)
 const $ = id => document.getElementById(id);
 let seed = 7; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;   // только для декора
@@ -372,7 +374,7 @@ let S = null;                 // состояние мира (из sim.js)
 let mode = 'menu';            // menu | play | pause | over
 let pet = localStorage.getItem(PET_KEY) || Q.get('pet') || 'raccoon'; if (!PETS[pet]) pet = 'raccoon';   // в Тапышах питомец приходит из профиля
 const cmdQ = [];              // очередь команд → step()
-const send = c => cmdQ.push({ pid: PID, ...c });
+const send = c => COOP && COOP.active() ? COOP.send(c) : cmdQ.push({ pid: PID, ...c });
 const ico = (el, k) => { if (el) el.innerHTML = IC[k]; };
 function initWorld(state) { S = state; OCC.set.clear(); for (const k in OCC.ghosts) OCC.ghosts[k].count = 0; S.timeScale = FAST; for (const im of Object.values(NV.ims)) scene.remove(im); NV.map.clear(); NV.ims = {}; buildNodeViews(S); syncBuilds(S); for (const [id, v] of PV) { scene.remove(v.g); } PV.clear(); for (const [, v] of EV) scene.remove(v.g); EV.clear(); audioSig = ''; }
 
@@ -624,7 +626,8 @@ function frame(dt) {
   if (mode === 'menu') { const a = performance.now() * .00006; camera.position.set(Math.sin(a) * 13, 6.5, Math.cos(a) * 13); camera.lookAt(0, 1.2, 0); applyLight(0, dt); animFire(dt); updWeather(dt); syncAudio(); if (S) { syncPlayers(S, dt); } return; }
   if (mode !== 'play') return;
   const moveAmt = readInput(); if (input.hold && me().cd <= 0 && cmdQ.length === 0) send({ t: 'act' });
-  acc += dt; let n = 0; while (acc >= STEP && n < 5) { SIM.step(S, STEP, cmdQ.splice(0)); acc -= STEP; n++; handleEvents(); if (mode !== 'play') return; } if (n >= 5) acc = 0;
+  if (COOP && COOP.active()) { cmdQ.length = 0; COOP.frame(dt); handleEvents(); if (mode !== 'play') return; }   // кооп: мир с сервера, свой питомец — предсказание
+  else { acc += dt; let n = 0; while (acc >= STEP && n < 5) { SIM.step(S, STEP, cmdQ.splice(0)); acc -= STEP; n++; handleEvents(); if (mode !== 'play') return; } if (n >= 5) acc = 0; }
   for (const [id, sh] of SHAKE) { const nn = SHAKE.get(id) - dt; if (nn <= 0) SHAKE.delete(id); else SHAKE.set(id, nn); const node = S.nodes.find(q => q.id === id); if (node) { NV.sig.delete(id); } } if (SHAKE.size || NV.dirty) syncNodes(S);
   syncPlayers(S, dt); syncEnemies(S, dt); updCamera(dt, moveAmt);
   if ((tgtT -= dt) <= 0) { tgtT = .08; target = SIM.context(S, PID); updActBtn(); }
@@ -693,17 +696,17 @@ function gameOver() { $('toast').classList.remove('on'); $('hint').classList.add
   mode = 'over'; input.hold = false; openCraft(false); const r = S.result || {};
   $('overT').textContent = 'Костёр погас';
   $('overS').innerHTML = `Ночь ${r.night - STAGES[(r.stage || 1) - 1].from + 1} / 6 этапа ${stageName(r.stage || 1)}. Открытые этапы не теряются.<br><span class="coin">${IC.coin}</span> за пережитые ночи: ${r.coins || 0}`;
-  const d = loadSave(); $('bRetry').classList.toggle('hide', !d); if (d) $('bRetry').innerHTML = 'Повторить ночь<small>с утра ночи ' + SIM.stageNight(d) + ' / 6</small>';
+  const d = S.mode === 'solo' ? loadSave() : null; $('bRetry').classList.toggle('hide', !d); $('bMap2').classList.toggle('hide', S.mode !== 'solo'); if (d) $('bRetry').innerHTML = 'Повторить ночь<small>с утра ночи ' + SIM.stageNight(d) + ' / 6</small>';
   only('overOv');
 }
 // победа этапа: открывает следующий; соло может сразу идти дальше с тем же лагерем
 function stageWin() { $('toast').classList.remove('on'); $('hint').classList.add('hide');
   mode = 'over'; input.hold = false; openCraft(false); const r = S.result, a = account();
   if (!a.passed.includes(r.stage)) a.passed.push(r.stage); a.open = Math.max(a.open, Math.min(CFG.MVP_STAGES + 1, r.stage + 1)); a.coins += 100; saveAcc(a);
-  localStorage.removeItem(SAVE_KEY); sfx.play('win');
+  if (S.mode === 'solo') localStorage.removeItem(SAVE_KEY); sfx.play('win'); const coop = S.mode !== 'solo';
   $('winT').textContent = 'Этап ' + stageName(r.stage) + ' пройден!';
   $('winS').innerHTML = `Утро после ${r.night}-й ночи, костёр горит.<br><span class="coin">${IC.coin}</span> за этап: ${r.coins} (вместе с бонусом +100)` + (r.mvpEnd ? '<br>Этапы 13–99 — скоро.' : '');
-  $('bNextStage').classList.toggle('hide', !!r.mvpEnd); if (!r.mvpEnd) $('bNextStage').innerHTML = 'Дальше: этап ' + stageName(r.stage + 1) + '<small>лагерь и рюкзак остаются</small>';
+  $('bNextStage').classList.toggle('hide', !!r.mvpEnd || coop); $('bWinMap').classList.toggle('hide', coop); if (coop) $('winS').innerHTML += '<br>Командный забег: один этап за заход.'; if (!r.mvpEnd) $('bNextStage').innerHTML = 'Дальше: этап ' + stageName(r.stage + 1) + '<small>лагерь и рюкзак остаются</small>';
   only('winOv');
 }
 $('bNextStage').onclick = () => { if (SIM.continueNextStage(S)) { save(); startPlay(); toast('Этап ' + stageName(S.stage), 'Лагерь остался с тобой'); } };
@@ -712,7 +715,7 @@ $('bNewRun').onclick = () => { const d = loadSave(); confirmBox('Новый за
 $('bCont').onclick = continueGame; $('bRetry').onclick = continueGame; $('bResume').onclick = () => setPause(false);
 $('bMenu').onclick = showMenu; $('bMenu2').onclick = showMenu; $('bMap2').onclick = () => showMap(); $('bWinMap').onclick = () => showMap(); $('bWinMenu').onclick = showMenu;
 document.querySelectorAll('.mute').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); setMute(!sfx.muted); })); setMute(sfx.muted);
-document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') setPause(true); if (sfx._ctx) { if (document.hidden) sfx._ctx.suspend().catch(() => {}); else if (sfx.ready) sfx._ctx.resume().catch(() => {}); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play' && !(COOP && COOP.active())) setPause(true); if (sfx._ctx) { if (document.hidden) sfx._ctx.suspend().catch(() => {}); else if (sfx.ready) sfx._ctx.resume().catch(() => {}); } });
 
 // ---------- цикл, FPS, адаптивное качество ----------
 const clock = new THREE.Clock(); let fpsAcc = 0, fpsN = 0, fps = 60, lowT = 0; const dbg = $('dbg'); if (DEBUG) dbg.classList.remove('hide');
@@ -724,7 +727,7 @@ function loop() {
     if (DEBUG) { const i = renderer.info.render; dbg.textContent = `FPS ${fps.toFixed(0)}  calls ${i.calls}  tris ${i.triangles}  px ${pixelRatio.toFixed(2)}  врагов ${S ? S.enemies.length : 0}  ×${FAST}`; } }
 }
 // API для тестов и отладки (только чтение/служебное)
-window.__g = { scene, input, SIM, get S() { return S; }, get mode() { return mode; }, send, save, loadSave, startStage, continueGame, showMap, showMenu, account, saveAcc, sfx, vfx, fireFx, setMute, renderer, camera, cam, quality: QUALITY, assets: ASSET_STATE, occ: OCC,
+window.__g = { scene, input, SIM, get S() { return S; }, get mode() { return mode; }, send, save, loadSave, startStage, continueGame, showMap, showMenu, account, saveAcc, sfx, vfx, fireFx, setMute, renderer, camera, cam, quality: QUALITY, assets: ASSET_STATE, occ: OCC, get coop() { return COOP; }, get PID() { return PID; },
   teleport: (x, z) => { const p = me(); p.x = x; p.z = z; const cp = Math.cos(cam.pitch); camera.position.set(x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, z + Math.cos(cam.yaw) * cp * cam.dist); cam.look.set(x, 1.1, z); },
   look: (yaw, pitch) => { cam.yaw = yaw; if (pitch) cam.pitch = pitch; dragT = performance.now(); },
   stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };
@@ -745,8 +748,12 @@ async function loadStaticAssets() {
   // виды врагов, созданные до загрузки, пересоздаём уже с моделями
   for (const [, v] of EV) scene.remove(v.g); EV.clear();
 }
+// API для кооп-модуля (грузится только с ?server=)
+const API = { get S() { return S; }, setS: v => { S = v; }, get PID() { return PID; }, setPID: id => { PID = id; }, get mode() { return mode; }, setMode: m => { mode = m; }, get pet() { return pet; },
+  initWorld, startPlay, only, toast, hint, showMenu, handleEvents, syncNodes, syncBuilds, account, stageName, PV, scene, camera, THREE, sfx, IC, me, input, setPause };
 (async () => {
-  showMenu(); loop(); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
+  showMenu(); loop();
+  if (NET) import('./coop.js?v=0.6.0').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
   try { await Promise.race([loadPet(pet), new Promise(r => setTimeout(r, 6000))]); } catch (e) { console.warn('pet', e.message); }
   await Promise.race([assetsP, new Promise(r => setTimeout(r, 8000))]); $('loading').classList.add('hide'); window.__g.ready = true;
 })();

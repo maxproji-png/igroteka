@@ -147,6 +147,17 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .mini small{display:block;font-size:9px}
 .mini:disabled{opacity:.6}
 #slots{display:grid;gap:6px;margin-bottom:8px}
+#joinRow input,#chatIn{flex:1;min-width:0;border:2px solid #e3e8f2;border-radius:12px;padding:7px 10px;font:inherit;font-weight:800;font-size:14px;color:#33405a;background:#fff}
+#bChat,#bPing{position:absolute;left:calc(12px + var(--sl,0px));width:58px;height:54px;border:0;display:grid;place-items:center;font-weight:900;font-size:10px;color:#55607a;padding:2px}
+#bChat b,#bPing b{font-size:18px;line-height:1}#bChat{bottom:calc(214px + var(--sb))}#bPing{bottom:calc(274px + var(--sb))}
+#bChat .n{position:absolute;right:-4px;top:-4px;background:#ff6b7f;color:#fff;border-radius:9px;padding:1px 5px;font-style:normal}
+#chatPanel{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(200px + var(--sb));width:min(92vw,420px);padding:10px;z-index:6}
+.chHead{display:flex;align-items:center;gap:8px;margin-bottom:6px}.chHead b{flex:1;color:#33405a}.mini2{font-size:12px;margin:0}
+#chatFeed{max-height:26vh;overflow:auto;display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:700;color:#33405a;margin-bottom:6px}
+#chatFeed p{margin:0}#chatFeed b{color:var(--c)}
+#chatTpl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}#chatTpl button{border:0;border-radius:10px;padding:5px 8px;font:inherit;font-size:11px;font-weight:800;background:#eef2f9;color:#55607a}
+.chRow{display:flex;gap:6px}
+.slot .tag{display:inline-block;vertical-align:2px;font-style:normal;line-height:15px;font-size:10px;font-weight:900;color:#fff;background:var(--c);border-radius:8px;padding:1px 6px;margin-left:4px}
 .slot{display:flex;align-items:center;gap:8px;padding:6px;border-radius:14px;background:#f5f8fd;border-left:5px solid var(--c)}
 .slot img,.slot i{width:36px;height:36px;border-radius:10px;display:block;background:#e3e8f3}
 .slot b{display:block;font-size:13px;font-weight:900}
@@ -187,6 +198,14 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
     <button class="btn" id="bAct"><b class="ico"></b><span>Действие</span></button>
   </div>
   <div id="vig"></div>
+  <button id="bChat" class="card btn hide" aria-label="Чат"><b>💬</b><span>Чат</span><i class="n hide">0</i></button>
+  <button id="bPing" class="card btn hide" aria-label="Пинг"><b>📍</b><span>Сюда!</span></button>
+  <div id="chatPanel" class="card hide">
+    <div class="chHead"><b>Чат команды</b><label class="chk mini2"><input type="checkbox" id="chatOff"><span>выкл.</span></label><button id="chatClose" class="mini">✕</button></div>
+    <div id="chatFeed"></div>
+    <div id="chatTpl"></div>
+    <div class="chRow"><input id="chatIn" maxlength="80" placeholder="Сообщение (до 80)" autocomplete="off"><button id="chatSend" class="mini">➤</button></div>
+  </div>
   <div id="sheet" class="card"><h3>Крафт <button id="sClose">✕</button></h3><div id="store"></div><div id="recipes"></div></div>
   <div id="sleepCard" class="card hide"><b id="sleepT">Енот устал и уснул</b><small id="sleepS"></small></div>
   <div id="dbg" class="hide"></div>
@@ -221,6 +240,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
     <h2>С другом</h2>
     <div class="card lobbybox">
       <div class="lrow"><span>Код комнаты</span><b id="lobbyCode">----</b><button class="mini" disabled>Пригласить<small>скоро</small></button></div>
+      <div class="lrow hide" id="joinRow"><input id="joinCode" placeholder="Код друга" maxlength="16" autocomplete="off" autocapitalize="off"><button class="mini" id="bJoin">Войти</button></div>
       <div id="slots"></div>
       <div class="lrow"><span>Этап</span><b id="lobbyStage">1–6</b><button class="mini" id="bLobbyStage">Сменить</button></div>
       <label class="chk"><input type="checkbox" id="chkFill"><span>Добрать случайных <small>до 4 игроков</small></span></label>
@@ -237,6 +257,6 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 </div>
 <div id="rot">Поверни телефон вертикально</div>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
-<script type="module" src="./js/game.js?v=0.5.2"></script>
+<script type="module" src="./js/game.js?v=0.6.0"></script>
 </body>
 </html>
