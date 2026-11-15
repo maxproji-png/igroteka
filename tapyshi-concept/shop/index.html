@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Тапыши · Магазин · Бусты</title>
+<title>Тапыши · Магазин · Бусты и скины</title>
 <link rel="stylesheet" href="../shared-clan/css/styles.css?v=tc11150155">
 <link rel="stylesheet" href="../shared-clan/css/v2.css?v=tc11132310">
 <link rel="stylesheet" href="../shared-clan/css/tokens.css?v=tc11132310">
 <link rel="stylesheet" href="../shared/components.css?v=tc11150155">
 <link rel="stylesheet" href="../shared/coin.css?v=tc11150155">
-<link rel="stylesheet" href="boosts.css?v=tc11151125">
+<link rel="stylesheet" href="boosts.css?v=tc11152125">
+<link rel="stylesheet" href="skins/skins.css?v=tc11152125">
 <style>
 /* Магазин: раздел «Бусты» + тизер «скоро». Цвета — только токены. */
 .scroll{padding:0 16px calc(var(--tabbar-space,72px) + 28px)}
@@ -22,9 +23,13 @@
 <div class="app" id="app">
   <div class="scroll">
     <header class="hd"><b>Магазин</b><span class="coins tap" id="bal"></span></header>
+    <nav class="sk-seg" id="shoptabs"><button type="button" data-t="boosts">Бусты</button><button type="button" data-t="skins">Скины<em>новое</em></button></nav>
+    <div id="tab-boosts">
     <div class="bsec"><span><b>Бусты</b><small>Улучшения навсегда · за монеты</small></span><span class="chip chip--violet" id="demo">демо: 4 200</span></div>
     <div class="bl" id="boosts"></div>
-    <div class="soon-card"><img src="../shared-clan/img/pets/capybara_neutral.webp" alt=""><span class="tx"><b>Скоро в магазине</b><small>Скины, иконки, цвета ника</small></span><button class="ibtn tap" id="notify" aria-label="Сообщить об открытии"></button></div>
+    <div class="soon-card"><img src="../shared-clan/img/pets/capybara_neutral.webp" alt=""><span class="tx"><b>Скоро в магазине</b><small>Иконки и цвета ника</small></span><button class="ibtn tap" id="notify" aria-label="Сообщить об открытии"></button></div>
+    </div>
+    <div id="tab-skins" hidden></div>
   </div>
 </div>
 <script>window.T=window.T||{};T.ROOT='../shared-clan/'</script>
@@ -34,7 +39,7 @@
 <script src="../shared-clan/js/v2.js?v=tc11152210"></script>
 <script src="../shared-clan/js/nav3.js?v=tc11132310"></script>
 <script src="../shared/boost-art.js?v=tc11150155"></script>
-<script src="boosts.js?v=tc11151125"></script>
+<script src="boosts.js?v=tc11152125"></script>
 <script>
 var bell='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.5 15.5A1 1 0 0 0 5.4 17h13.2a1 1 0 0 0 .9-1.5L18 12.6V9a6 6 0 0 0-6-6z"/><path d="M9.5 18.5a2.5 2.5 0 0 0 5 0z"/></svg>';
 SHOP.mount(document.getElementById('boosts'),document.getElementById('bal'));
@@ -42,6 +47,10 @@ document.getElementById('demo').addEventListener('click',function(){SHOP.reset()
 var n=document.getElementById('notify');n.innerHTML=bell;
 n.addEventListener('click',function(){n.classList.add('done');n.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';if(T.toast)T.toast('Напомним в MAX, когда откроемся');});
 </script>
+<script src="../shared/pet-thumb.js?v=tc11152125"></script>
+<script src="skins/manifest.js?v=tc11152125"></script>
+<script src="skins/skins.js?v=tc11152125"></script>
+<script src="skins/tab.js?v=tc11152125"></script>
 <script src="../shared/nav.js?v=tc11150140"></script>
 </body>
 </html>

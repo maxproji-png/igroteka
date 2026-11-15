@@ -55,11 +55,16 @@ function buy(id){var b=byId(id),lv=S.lv[id];if(lv>=b.lv.length||S.bal<b.lv[lv].p
   var c=document.querySelector('.bc[data-id="'+id+'"]');if(c){c.classList.add('bump');}
   if(T.toast)T.toast(b.n+' — ур. '+(lv+1)+'!');}
 var host,balEl;
-function render(){if(balEl)balEl.innerHTML=coin(24)+'<span class="num">'+fmt(S.bal)+'</span>';
+var balFns=[];
+function render(){balFns.forEach(function(f){f(S.bal)});if(balEl)balEl.innerHTML=coin(24)+'<span class="num">'+fmt(S.bal)+'</span>';
   if(host)host.innerHTML=BOOSTS.map(function(b){return card(b,S.lv[b.id],S.bal)}).join('');}
 window.SHOP={BOOSTS:BOOSTS,card:card,state:state,
   mount:function(h,bal){host=h;balEl=bal;render();
     h.addEventListener('click',function(e){var c=e.target.closest('.bc');if(c)sheet(c.dataset.id);});
     var m=(location.hash||'').match(/^#buy-(\w+)$/);if(m&&byId(m[1]))setTimeout(function(){sheet(m[1])},300);},
-  reset:function(){S=JSON.parse(JSON.stringify(DEMO));render();}};
+  reset:function(){S=JSON.parse(JSON.stringify(DEMO));render();},
+  /* общий баланс магазина — его же тратит вкладка «Скины» (skins/skins.js) */
+  bal:function(){return S.bal;},
+  spend:function(n){if(S.bal<n)return false;S.bal-=n;render();return true;},
+  onBal:function(f){balFns.push(f);}};
 })();
