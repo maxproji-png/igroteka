@@ -1,0 +1,248 @@
+{
+ "spec": "/workspace/tapyshi-redesign/3-clan-shop/skins-shop/order-evolution-a.md — вариант Б1",
+ "coords": "glTF Y-up, метры; морда смотрит на +Z; ось вращения (центр головы/тела) в начале координат; лапы питомца на y = 0",
+ "files": {
+  "skin_common_raccoon_s1.glb": {
+   "bytes": 583596,
+   "kb": 570,
+   "triangles": 31456,
+   "root": "skin_common_raccoon_s1",
+   "bbox_all": {
+    "min": [
+     -0.44,
+     -0.008,
+     -0.558
+    ],
+    "max": [
+     0.482,
+     1.251,
+     0.302
+    ]
+   },
+   "bbox_pet": {
+    "min": [
+     -0.364,
+     0,
+     -0.302
+    ],
+    "max": [
+     0.458,
+     1.026,
+     0.302
+    ]
+   },
+   "emissive_materials": [],
+   "toggle_nodes": [
+    "body_base",
+    "part_ice_hood",
+    "part_ice_mittens",
+    "part_ice_pack",
+    "part_ice_parka"
+   ],
+   "part_nodes": [
+    "part_ice_hood",
+    "part_ice_parka",
+    "part_ice_pack",
+    "part_ice_mittens"
+   ],
+   "part_names_ru": {
+    "part_ice_hood": "Кристальный Капюшон",
+    "part_ice_parka": "Пуховая Парка",
+    "part_ice_pack": "Ледяной Ранец",
+    "part_ice_mittens": "Варежки и Хвост-Сосулька"
+   },
+   "node_tree": [
+    "skin_common_raccoon_s1 / body_base",
+    "body_base / base_arm_l",
+    "body_base / base_arm_r",
+    "body_base / base_body",
+    "body_base / base_head",
+    "body_base / base_tail_mesh",
+    "skin_common_raccoon_s1 / part_ice_hood",
+    "part_ice_hood / part_ice_hood_main",
+    "skin_common_raccoon_s1 / part_ice_mittens",
+    "part_ice_mittens / part_ice_mittens_arm_l",
+    "part_ice_mittens / part_ice_mittens_arm_r",
+    "part_ice_mittens / part_ice_mittens_tail",
+    "skin_common_raccoon_s1 / part_ice_pack",
+    "part_ice_pack / part_ice_pack_main",
+    "skin_common_raccoon_s1 / part_ice_parka",
+    "part_ice_parka / part_ice_parka_main"
+   ]
+  },
+  "skin_epic_raccoon_s1.glb": {
+   "bytes": 658024,
+   "kb": 643,
+   "triangles": 35900,
+   "root": "skin_epic_raccoon_s1",
+   "bbox_all": {
+    "min": [
+     -0.448,
+     -0.002,
+     -0.488
+    ],
+    "max": [
+     0.593,
+     1.575,
+     0.35
+    ]
+   },
+   "bbox_pet": {
+    "min": [
+     -0.364,
+     0,
+     -0.302
+    ],
+    "max": [
+     0.458,
+     1.026,
+     0.302
+    ]
+   },
+   "emissive_materials": [
+    "M_Cos_orb:2.20"
+   ],
+   "toggle_nodes": [
+    "body_base",
+    "part_mage_cloak",
+    "part_mage_hat",
+    "part_mage_robe",
+    "part_mage_staff"
+   ],
+   "part_nodes": [
+    "part_mage_hat",
+    "part_mage_robe",
+    "part_mage_cloak",
+    "part_mage_staff"
+   ],
+   "part_names_ru": {
+    "part_mage_hat": "Шляпа Звездочёта",
+    "part_mage_robe": "Мантия Чародея",
+    "part_mage_cloak": "Плащ с Высоким Воротником",
+    "part_mage_staff": "Посох и Колдовские Рукава"
+   },
+   "node_tree": [
+    "skin_epic_raccoon_s1 / body_base",
+    "body_base / base_arm_l",
+    "body_base / base_arm_r",
+    "body_base / base_body",
+    "body_base / base_head",
+    "body_base / base_tail_mesh",
+    "skin_epic_raccoon_s1 / part_mage_cloak",
+    "part_mage_cloak / part_mage_cloak_main",
+    "skin_epic_raccoon_s1 / part_mage_hat",
+    "part_mage_hat / part_mage_hat_main",
+    "skin_epic_raccoon_s1 / part_mage_robe",
+    "part_mage_robe / part_mage_robe_main",
+    "skin_epic_raccoon_s1 / part_mage_staff",
+    "part_mage_staff / part_mage_staff_arm_l",
+    "part_mage_staff / part_mage_staff_arm_r",
+    "part_mage_staff / part_mage_staff_tail"
+   ]
+  },
+  "skin_legendary_raccoon_s1.glb": {
+   "bytes": 807016,
+   "kb": 788,
+   "triangles": 45096,
+   "root": "skin_legendary_raccoon_s1",
+   "bbox_all": {
+    "min": [
+     -1.033,
+     -0.008,
+     -0.625
+    ],
+    "max": [
+     1.041,
+     1.225,
+     0.302
+    ]
+   },
+   "bbox_pet": {
+    "min": [
+     -0.364,
+     0,
+     -0.302
+    ],
+    "max": [
+     0.458,
+     1.026,
+     0.302
+    ]
+   },
+   "emissive_materials": [
+    "M_Cos_bolt:1.50",
+    "M_Cos_core:1.80",
+    "M_Cos_spark:2.50"
+   ],
+   "toggle_nodes": [
+    "base_tail",
+    "base_wings",
+    "body_base",
+    "body_storm",
+    "part_storm_body",
+    "part_storm_crown",
+    "part_storm_tail",
+    "part_storm_wings"
+   ],
+   "part_nodes": [
+    "part_storm_crown",
+    "part_storm_body",
+    "part_storm_wings",
+    "part_storm_tail"
+   ],
+   "part_names_ru": {
+    "part_storm_crown": "Рога и Корона Грозы",
+    "part_storm_body": "Облик Грозового Дракона",
+    "part_storm_wings": "Крылья Грозовой Тучи",
+    "part_storm_tail": "Хвост-Молния и Когти"
+   },
+   "node_tree": [
+    "skin_legendary_raccoon_s1 / base_tail",
+    "base_tail / base_tail_mesh",
+    "skin_legendary_raccoon_s1 / base_wings",
+    "skin_legendary_raccoon_s1 / body_base",
+    "body_base / base_arm_l",
+    "body_base / base_arm_r",
+    "body_base / base_body",
+    "body_base / base_head",
+    "skin_legendary_raccoon_s1 / body_storm",
+    "body_storm / body_storm_main",
+    "body_storm_main / body_storm_arm_l",
+    "body_storm_main / body_storm_arm_r",
+    "body_storm_main / body_storm_body",
+    "body_storm_main / body_storm_head",
+    "body_storm / body_storm_tail",
+    "body_storm_tail / body_storm_tail_mesh",
+    "skin_legendary_raccoon_s1 / part_storm_body",
+    "part_storm_body / part_storm_body_main",
+    "skin_legendary_raccoon_s1 / part_storm_crown",
+    "part_storm_crown / part_storm_crown_main",
+    "skin_legendary_raccoon_s1 / part_storm_tail",
+    "part_storm_tail / part_storm_tail_arm_l",
+    "part_storm_tail / part_storm_tail_arm_r",
+    "part_storm_tail / part_storm_tail_tail",
+    "skin_legendary_raccoon_s1 / part_storm_wings",
+    "part_storm_wings / part_storm_wings_main"
+   ]
+  }
+ },
+ "rules": {
+  "common/epic": [
+   "body_base — всегда виден (енот с родным хвостом)",
+   "part_* — любая комбинация, независимо"
+  ],
+  "legendary": [
+   "body_base.visible = !part_storm_body",
+   "body_storm.visible = part_storm_body",
+   "body_storm_tail.visible = !part_storm_tail (вложен в body_storm)",
+   "base_tail.visible = !part_storm_tail && !part_storm_body",
+   "base_wings.visible = !part_storm_wings (у енота ст.1 пустой нод)",
+   "part_* — любая комбинация"
+  ]
+ },
+ "default_state": {
+  "common": "всё видно",
+  "epic": "всё видно",
+  "legendary": "в файле видно ВСЁ (в glTF нет флага скрытия) — после загрузки применить правила; полный набор: body_base, base_tail, base_wings, body_storm_tail скрыты"
+ }
+}

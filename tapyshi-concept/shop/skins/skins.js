@@ -62,16 +62,20 @@
   function ensure(){ if (sh) return; scrim=document.createElement('div'); scrim.className='sk-scrim'; sh=document.createElement('div'); sh.className='sk-sheet'; sh.setAttribute('role','dialog');
     document.body.appendChild(scrim); document.body.appendChild(sh); scrim.addEventListener('click', close);
     sh.addEventListener('click', onSheetClick); }
-  function open(html, instant){ ensure(); place(); sh.innerHTML='<div class="sk-grab"></div><button type="button" class="sk-x" data-close aria-label="Закрыть">'+I.x+'</button>'+html;
+  function open(html, instant){ isOpen = true; ensure(); place(); sh.innerHTML='<div class="sk-grab"></div><button type="button" class="sk-x" data-close aria-label="Закрыть">'+I.x+'</button>'+html;
     if (instant){ sh.classList.add('no-anim'); scrim.classList.add('no-anim'); }
     requestAnimationFrame(function(){ sh.classList.add('on'); scrim.classList.add('on'); }); }
-  function close(){ if (!sh) return; sh.classList.remove('on','no-anim'); scrim.classList.remove('on','no-anim'); }
+  function close(){ isOpen = false; if (w.SK3D) w.SK3D.dispose(); if (!sh) return; sh.classList.remove('on','no-anim'); scrim.classList.remove('on','no-anim'); }
   addEventListener('resize', place); addEventListener('load', place);
   /* таб-бар строится nav.js и может поменять высоту после шрифтов — следим, чтобы зазор всегда был 8 px */
   (function watch(){ var t=document.querySelector('.tabbar'); if (!t) return setTimeout(watch, 50); if (w.ResizeObserver) new ResizeObserver(place).observe(t); place(); })();
 
-  var view = { pet:'raccoon', back:false, set:null, sel:{} };
+  var view = { pet:'raccoon', back:false, set:null, sel:{}, angle:null };
+  /* модуль 3D грузится позже классических скриптов: если окно набора уже открыто — перерисовать его в 3D */
+  addEventListener('sk3d-ready', function(){ if (isOpen && sh.querySelector('.sk-ss')) setSheet(view.set, true); });
+  var isOpen = false;
   function partSheet(id, instant){
+    if (w.SK3D) w.SK3D.detach();
     var p = partById(id), s = p.set, have = !!S.own[p.id], can = bal() >= p.price, n = owned(s);
     var act = have ? (S.worn===s.id ? '<button class="sk-btn sk-btn--ghost" disabled>'+I.check+'Надето</button>' : '<button class="sk-btn sk-btn--soft" data-wear="'+s.id+'">Надеть</button>')
       : '<button class="sk-btn '+(can?'sk-btn--buy':'sk-btn--off')+'" '+(can?'data-buy="'+p.id+'"':'disabled')+'>'+(can?'Купить за ':'')+coin(22)+'<span class="cx-num">'+fmt(p.price)+'</span></button>';
@@ -96,7 +100,7 @@
   function chast(n){ return n===1?'часть':(n<5?'части':'частей'); }
   function setSheet(id, instant){
     var s = setById(id), n = owned(s), done = n===4;
-    if (view.set !== id){ view.set = id; view.sel = {}; view.back = false; }
+    if (view.set !== id){ view.set = id; view.sel = {}; s.parts.forEach(function(p){ view.sel[p.id] = 1; }); view.back = false; }  /* v3: при открытии надет весь набор — видно то, что выбрано */
     var pk = petOf(s, view.pet), e = s.pets[pk], cm = comboImg(s, pk, view.sel), trying = cm.n>0 && cm.n<4;
     var back = !trying && view.back && e && e.back, img = back ? render(e.back) : cm.src;
     var si = selInfo(s), can = bal() >= si.price;
@@ -105,11 +109,15 @@
     var lbl = done ? '<span class="sk-have">'+I.check+'Набор собран</span>' :
       '<span class="sk-pr"><small>'+(si.all ? (n?'Докупить '+si.n+' '+chast(si.n):'Весь набор')+' · <s class="cx-num">'+fmt(si.full)+'</s> <em>−15%</em>'
         : 'Выбрано '+si.k+' '+chast(si.k)+' · без скидки')+'</small>'+stub()+'</span>';
-    var note = trying ? (cm.exact ? 'Примерка · '+cm.n+' из 4' : 'Нет рендера · показан весь набор') : (back ? 'Вид сзади' : 'Весь набор');
+    var D3 = !!(w.SK3D && w.SK3D.ok);
+    var note = D3 ? (cm.n===4 ? 'Весь набор' : cm.n ? 'Примерка · '+cm.n+' из 4' : 'Без костюма')
+      : trying ? (cm.exact ? 'Примерка · '+cm.n+' из 4' : 'Нет рендера · показан весь набор') : (back ? 'Вид сзади' : 'Весь набор');
+    if (D3){ back = false; img = cm.n===0 ? (MF.base && MF.base[pk] ? render(MF.base[pk]) : render(e.tq)) : (cm.exact ? cm.src : render(e.tq)); }  /* постер, пока грузится GLB */
     open('<div class="sk-ss sk-tone--'+s.tone+'">'+
-      '<div class="sk-stage big'+(trying&&!cm.exact?' is-fallback':'')+'"><img src="'+img+'" alt="">'+
-        '<span class="sk-try'+(trying?(cm.exact?' on':' warn'):'')+'">'+note+'</span>'+
-        (!trying && e && e.back ? '<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
+      '<div class="sk-stage big'+(!D3&&trying&&!cm.exact?' is-fallback':'')+(D3?' sk3d':'')+'"><img class="sk-poster" src="'+img+'" alt="">'+
+        '<span class="sk-try'+(trying?(D3||cm.exact?' on':' warn'):'')+'">'+note+'</span>'+
+        (D3 ? '<span class="sk-spin" aria-hidden="true">'+I.turn+'<span>Крути пальцем</span></span>' : '')+
+        (!D3 && !trying && e && e.back ? '<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
         '<span class="sk-stage-note">'+PET[pk]+' · ст. '+e.st+'</span></div>'+
       '<div class="sk-meta">'+rchip(s)+'<span class="sk-slot">'+s.theme+'</span></div>'+
       '<div class="sk-titlerow"><h3 class="sk-h">'+s.name+'</h3><span class="sk-cnt">'+pips(s)+'<b class="cx-num">'+n+' из 4</b></span></div>'+
@@ -121,6 +129,7 @@
       '<div class="sk-fill"></div>'+
       '<div class="sk-buyrow">'+lbl+act+'</div>'+
     '</div>', instant);
+    if (D3) w.SK3D.attach(sh.querySelector('.sk-stage'), s.id, Object.keys(view.sel), view.angle != null ? view.angle : null), view.angle = null;
   }
   function onSheetClick(e){
     var b;

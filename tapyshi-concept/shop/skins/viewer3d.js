@@ -1,0 +1,101 @@
+/* v3-3d · 3D-примерка в окне набора: three.js r160 (локально, ../lib) + GLTFLoader.
+   GLB от Эволюции А: skins/glb/skin_<set>_raccoon_s1.glb, части = ноды part_<id>, правила видимости — glb/tryon_rules.mjs.
+   Один общий кадр для всех наборов (ортокамера, радиус по самому широкому набору при вращении) → размер не меняется
+   ни при переключении частей, ни между наборами. Рендер только по требованию; при закрытии окна — dispose. */
+import * as THREE from 'three';
+import { GLTFLoader } from '../../lib/addons/loaders/GLTFLoader.js?v=tc11132310';
+import { applyRules } from './glb/tryon_rules.mjs?v=tc11152225';
+
+const V = '?v=tc11152225';
+const FILES = { common:'skin_common_raccoon_s1', epic:'skin_epic_raccoon_s1', legendary:'skin_legendary_raccoon_s1' };
+/* общий кадр: из glb/manifest.json (bbox_all). R — макс. радиус в плоскости XZ (Гроза с крыльями, 1,21 м), H — макс. высота (шляпа мага, 1,58 м) */
+const BOX = { common:{min:[-0.44,-0.008,-0.558],max:[0.482,1.251,0.302]}, epic:{min:[-0.448,-0.002,-0.488],max:[0.593,1.575,0.35]}, legendary:{min:[-1.033,-0.008,-0.625],max:[1.041,1.225,0.302]} };
+let R = 0, H = 0;
+for (const b of Object.values(BOX)) { for (const x of [b.min[0], b.max[0]]) for (const z of [b.min[2], b.max[2]]) R = Math.max(R, Math.hypot(x, z)); H = Math.max(H, b.max[1]); }
+const EL = THREE.MathUtils.degToRad(14);          // лёгкий взгляд сверху, как у рендеров 3/4
+const TQ = 328;                                   // стартовый ракурс 3/4 = −32°: мордой влево-к нам, как у webp-рендеров (без скачка после загрузки)
+
+function webglOK(){ try { const c = document.createElement('canvas'); const g = c.getContext('webgl2') || c.getContext('webgl'); if (!g) return false; const l = g.getExtension('WEBGL_lose_context'); l && l.loseContext(); return true; } catch (e) { return false; } }
+const OK = webglOK();
+
+let ren, scene, cam, pivot, shadow, canvas, host, ro, cur = null, want = null, parts = new Set(), yaw = TQ, vel = 0, raf = 0, dirty = false, loadTok = 0;
+const cache = {};   // gltf по набору (живёт, пока открыто окно)
+
+function shadowTex(){ const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64,64,0,64,64,64); gr.addColorStop(0,'rgba(40,30,90,.42)'); gr.addColorStop(.55,'rgba(40,30,90,.16)'); gr.addColorStop(1,'rgba(40,30,90,0)');
+  g.fillStyle = gr; g.fillRect(0,0,128,128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+
+function init(){
+  ren = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:'low-power' });
+  ren.setPixelRatio(Math.min(2, devicePixelRatio || 1)); ren.setClearColor(0x000000, 0);
+  ren.outputColorSpace = THREE.SRGBColorSpace; ren.toneMapping = THREE.NoToneMapping;
+  canvas = ren.domElement; canvas.className = 'sk3d-canvas'; canvas.setAttribute('aria-label','Питомец в наборе — крути пальцем');
+  scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d2f5, 2.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.9); key.position.set(2.2, 3.2, 3.4); scene.add(key);
+  const fill = new THREE.DirectionalLight(0xf2eeff, 0.7); fill.position.set(-3, 1.2, 1.5); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.6); rim.position.set(0, 2.5, -3); scene.add(rim);
+  cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 50);
+  const d = 8; cam.position.set(0, Math.sin(EL) * d + H * 0.45, Math.cos(EL) * d); cam.lookAt(0, H * 0.45, 0);
+  pivot = new THREE.Group(); scene.add(pivot);
+  shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.25), new THREE.MeshBasicMaterial({ map:shadowTex(), transparent:true, depthWrite:false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.001; scene.add(shadow);
+  /* вращение пальцем по Y, лёгкая инерция; без зума и без вертикального наклона */
+  let px = null, lt = 0;
+  canvas.addEventListener('pointerdown', e => { px = e.clientX; lt = performance.now(); vel = 0; canvas.setPointerCapture(e.pointerId); stop(); });
+  canvas.addEventListener('pointermove', e => { if (px === null) return; const dx = e.clientX - px, t = performance.now(); px = e.clientX;
+    const dy = dx * 0.55; yaw += dy; vel = dy / Math.max(8, t - lt) * 16; lt = t; draw(); });
+  const up = () => { if (px === null) return; px = null; if (Math.abs(vel) > 0.3) spin(); };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  ro = new ResizeObserver(() => { size(); draw(); });
+}
+function spin(){ stop(); const step = () => { vel *= 0.93; yaw += vel; draw(); if (Math.abs(vel) > 0.05) raf = requestAnimationFrame(step); else raf = 0; }; raf = requestAnimationFrame(step); }
+function stop(){ if (raf) cancelAnimationFrame(raf); raf = 0; }
+function size(){ if (!host) return; const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; ren.setSize(w, h, false);
+  /* кадр: ширина 2R (любой угол поворота), высота — проекция бокса 0…H с учётом наклона; запас 6% */
+  const needW = 2 * R * 1.06, needH = (H * Math.cos(EL) + 2 * R * Math.sin(EL)) * 1.06, asp = w / h;
+  let hw = needW / 2, hh = hw / asp; if (hh * 2 < needH) { hh = needH / 2; hw = hh * asp; }
+  cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.updateProjectionMatrix(); }
+function draw(){ if (dirty) return; dirty = true; requestAnimationFrame(() => { dirty = false; if (!ren || !host) return; pivot.rotation.y = THREE.MathUtils.degToRad(yaw); ren.render(scene, cam); }); }
+
+/* центр по bbox: голова+тело енота (без хвоста) → x,z = 0; лапы на полу → y = 0 */
+function center(root){ const b = new THREE.Box3(); ['base_head','base_body'].forEach(n => { const o = root.getObjectByName(n); if (o) b.expandByObject(o); });
+  if (b.isEmpty()) b.expandByObject(root.getObjectByName('body_base') || root);
+  const c = b.getCenter(new THREE.Vector3()); root.position.set(-c.x, -0, -c.z); return { dx:-c.x, dz:-c.z }; }
+
+async function load(set){
+  if (cache[set]) return cache[set];
+  const g = await new GLTFLoader().loadAsync('skins/glb/' + FILES[set] + '.glb' + V);
+  const off = center(g.scene); g.userData = off; cache[set] = g.scene; return g.scene;
+}
+function show(set){ for (const k in cache) cache[k].visible = (k === set); }
+
+/* attach: окно набора перерисовалось — переносим канвас в новую сцену, грузим/переключаем модель, применяем правила */
+async function attach(stage, set, sel, angle){
+  if (!OK) return false;
+  if (!ren) init();
+  if (host !== stage){ if (ro && host) ro.unobserve(host); host = stage; stage.appendChild(canvas); ro.observe(stage); size(); }
+  if (angle != null) { yaw = angle; vel = 0; stop(); }
+  parts = new Set(sel); want = set;
+  if (cur !== set){ stage.classList.remove('is-3d'); const tok = ++loadTok;
+    try { const root = await load(set); if (tok !== loadTok || !ren) return; if (!root.parent) pivot.add(root); cur = set; }
+    catch (e) { console.warn('3D: не загрузилось', set, e); stage.classList.add('is-3d-fail'); return false; } }
+  show(cur); applyRules(cache[cur], parts);
+  host.classList.add('is-3d'); host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); draw(); return true;
+}
+function update(sel){ if (!cur || !cache[cur]) return; parts = new Set(sel); applyRules(cache[cur], parts); if (host) host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); draw(); }
+function detach(){ if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas); if (ro && host) ro.unobserve(host); host = null; stop(); }
+function dispose(){
+  detach(); loadTok++;
+  for (const k in cache){ cache[k].traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach(m => { for (const p in m) if (m[p] && m[p].isTexture) m[p].dispose(); m.dispose(); }); }); delete cache[k]; }
+  if (shadow){ shadow.geometry.dispose(); shadow.material.map.dispose(); shadow.material.dispose(); }
+  if (ren){ ren.dispose(); ren.forceContextLoss(); }
+  if (ro) ro.disconnect();
+  ren = scene = cam = pivot = shadow = canvas = ro = null; cur = want = null; yaw = TQ;
+}
+function state(){ return { ok:OK, ready:!!(cur && host && host.classList.contains('is-3d')), set:cur, yaw:Math.round(((yaw % 360) + 360) % 360),
+  visible: cur ? (() => { const r = []; cache[cur].traverse(o => { if (o.isMesh) { let v = true, p = o; while (p) { if (!p.visible) { v = false; break; } p = p.parent; } if (v) r.push(o.parent.name || o.name); } }); return [...new Set(r)]; })() : [],
+  pixelRatio: ren ? ren.getPixelRatio() : 0 }; }
+
+window.SK3D = { ok:OK, TQ, attach, update, detach, dispose, state };
+window.dispatchEvent(new Event('sk3d-ready'));

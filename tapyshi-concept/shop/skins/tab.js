@@ -40,5 +40,7 @@
   setTimeout(function(){ /* после nav.js — чтобы шторка мерила реальный таб-бар */
     if((m=h.match(/^part-(\w+)$/))) SK.partSheet(m[1],true);
     /* #set-<id> или #set-<id>.<часть>.<часть> — окно набора с уже выбранными для примерки частями */
-    if((m=h.match(/^set-(\w+?)((?:\.\w+)*)$/))){ SK.setSheet(m[1],true); m[2].split('.').filter(Boolean).forEach(function(i){ SK.view.sel[i]=1; }); if(m[2]) SK.setSheet(m[1],true); } },0);
+    /* v3: #set-<id>[.<часть>…|.none][~<угол°>] — состояние примерки и угол поворота 3D (0 = мордой к нам, 90 = бок, 180 = сзади) */
+    if((m=h.match(/^set-(\w+?)((?:\.\w+)*)(?:~(\d+))?$/))){ if(m[3]!=null) SK.view.angle=+m[3]; SK.setSheet(m[1],true);
+      if(m[2]){ SK.view.sel={}; m[2].split('.').filter(function(x){ return x && x!=='none'; }).forEach(function(i){ SK.view.sel[i]=1; }); if(m[3]!=null) SK.view.angle=+m[3]; SK.setSheet(m[1],true); } } },0);
 })();
