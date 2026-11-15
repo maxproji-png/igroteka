@@ -11,19 +11,19 @@ var BOOSTS=[
 /* демо: баланс 4 200 → видны все три состояния */
 var DEMO={bal:4200,lv:{tap:1,energy:2,regen:2,offline:2}};
 var S=JSON.parse(JSON.stringify(DEMO));
-var BOLT='<svg class="bolt" viewBox="0 0 24 24"><path d="M13.5 2 L4.5 13.5 H11 L9.8 22 L19.5 9.8 H13 Z" style="fill:var(--sun);stroke:var(--sun-edge)" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+var BOLT='<svg class="bolt" width="14" height="14" viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M13.5 2 L4.5 13.5 H11 L9.8 22 L19.5 9.8 H13 Z" style="fill:var(--sun);stroke:var(--sun-edge)" stroke-width="1.8" stroke-linejoin="round"/></svg>';
 var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
 var ARR='<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 H18 M13 6 L19 12 L13 18"/></svg>';
 function fmt(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00A0');}
 function coin(px){return T.coin('',px||16);}
 function word(n){n=+String(n).replace(',','.');return n===1?'монета':(n>=2&&n<=4)?'монеты':'монет';}
 /* эффект: from/to — индексы уровней; to=null → только текущий */
-function eff(b,f,t,px){var A=b.lv[f],B=t!=null?b.lv[t]:null,v=function(x,cls){return '<b'+(cls?' class="'+cls+'"':'')+'>'+x.v+'</b>'},ar=' <span class="ar">→</span> ';
+function eff(b,f,t,px){var A=b.lv[f],B=t!=null?b.lv[t]:null,v=function(x,cls){return '<b'+(cls?' class="'+cls+'"':'')+'>'+x.v+'</b>'},ar='<span class="ar">→</span>';
   var mid=B?v(A)+ar+v(B,'to'):v(A),sub='';
-  if(b.unit==='coin-tap') mid+=' '+coin(px||16)+' за тап';
-  if(b.unit==='energy'){mid+=' '+BOLT;sub='максимум энергии';}
-  if(b.unit==='regen'){mid+=' мин';sub='полная шкала';}
-  if(b.unit==='offline'){mid+=' '+coin(px||16)+' в сек.';}
+  if(b.unit==='coin-tap') mid+='<span class="unit">'+coin(px||16)+' за тап</span>';
+  if(b.unit==='energy'){mid+=BOLT;sub='максимум энергии';}
+  if(b.unit==='regen'){mid+='<span class="unit">мин</span>';sub='полная шкала';}
+  if(b.unit==='offline'){mid+='<span class="unit">'+coin(px||16)+' в сек.</span>';}
   return {mid:mid,sub:sub};}
 function state(b,lv,bal){if(lv>=b.lv.length)return 'max';return bal>=b.lv[lv].p?'buy':'lack';}
 function card(b,lv,bal){var st=state(b,lv,bal),max=b.lv.length,e=st==='max'?eff(b,lv-1):eff(b,lv-1,lv),act;
@@ -41,7 +41,7 @@ function sheet(id){var b=byId(id),lv=S.lv[id],max=b.lv.length,st=state(b,lv,S.ba
   var top=st==='max'?'<span class="b">'+BA.svg(id,lv,{badge:1,max:1})+'</span>':'<span class="a">'+BA.svg(id,lv,{badge:1})+'</span>'+ARR+'<span class="b">'+BA.svg(id,lv+1,{badge:1,max:lv+1===max})+'</span>';
   var e=st==='max'?eff(b,lv-1,null,22):eff(b,lv-1,lv,22);
   var rows=b.lv.map(function(L,i){var ee=eff(b,i),cls=i<lv?'have':i===lv?'next':'';
-    return '<li class="'+cls+'"><b>Ур. '+(i+1)+'</b><span>'+ee.mid.replace(/<b[^>]*>/g,'').replace(/<\/b>/g,'')+'</span><span class="p">'+(i===0?'старт':i<lv?CHECK.replace('<svg','<svg width="16" height="16"')+'есть':coin()+fmt(L.p))+'</span></li>'}).join('');
+    return '<li class="'+cls+'"><b>Ур. '+(i+1)+'</b><span class="val">'+ee.mid.replace(/<b[^>]*>/g,'').replace(/<\/b>/g,'')+'</span><span class="p">'+(i===0?'старт':i<lv?CHECK.replace('<svg','<svg class="tick" width="14" height="14"')+'есть':coin(14)+fmt(L.p))+'</span></li>'}).join('');
   var btn=st==='max'?'<button class="btn btn--secondary btn--m btn--wide" disabled>Всё куплено</button>':
     st==='buy'?'<button class="btn btn--primary btn--l" data-confirm="'+id+'">Купить за '+coin(20)+fmt(b.lv[lv].p)+'</button>':
     '<button class="btn btn--l" disabled>'+coin(20)+fmt(b.lv[lv].p)+'</button>';
