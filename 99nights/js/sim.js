@@ -8,7 +8,11 @@ export const CFG = {
   MAP: 24,                                       // поле 48×48 м, играем в круге R=24
   OPEN: [0, 16, 24, 24], LIGHT: [0, 8, 12, 16],  // открытая зона и круг света по уровню костра
   FUEL_MAX: [0, 100, 130, 160], BURN: [0, 1, .85, .7], FUEL_STICK: 8,
-  STACK: 5, BAG: 8, BAG_BASKET: 12, BAG_BASKET2: 16,
+  STACK: 5, CHEST_SLOTS: 24, BAG: 8,                 // v0.8 (баланс §9.4): общий сундук — 24 слота по 5
+  FIRST_LIGHT: .5, RELIGHT_STICKS: 2,             // v0.8 (§9.1): первый розжиг → 50%; погасший костёр — 2 ветки = +16, без бонуса
+  REVIVE_HOLD: 2.5,                               // v0.8 (§9.4): подъём союзника — удержание 2,5 с
+  // v0.8 (баланс §10, заменяет §9.2; гипотеза, проверка — test/balance-sim.mjs): по группам ночей 1–3 / 4–9 / 10–12
+  MIST_DMG: [1.5, 2.5, 3.5], MIST_MAX_BLOW: [8, 0, 20], MOTH_DMG: 1, CROW_STAY: 15,   // 0 — без лимита (как v0.7.0) BAG_BASKET: 12, BAG_BASKET2: 16,
   SPEED: 4.4, PLAYER_R: .38,
   FIRE: { x: 0, z: 0 }, BENCH: { x: 3.6, z: -2.4 }, CHEST: { x: -3.6, z: -2.4 }, BED: { x: 0, z: 2.8 }, LAMP: { x: 0, z: -4.2 },
   FENCE_MAX: 6, TRAP_MAX: 3,
@@ -23,13 +27,19 @@ export const KITS = {
   2: { chest: { stick: 10, stone: 6, berry: 4, cloth: 2 }, fireLv: 3, fuel: .6, bench: 2, open: true },
 };
 export const RES = ['stick', 'stone', 'berry', 'cloth'];
+// v0.8: роли по GDD §5 доделаны (старые цифры не трогали; новые умения — лёгкие флаги):
+//  spot — енот подсвечивает кусты с ягодами и пни с лутом (клиент); calm — капибара: клубочки рядом катятся вдвое медленнее;
+//  farPoor — капибара далеко от лагеря (> 14 м) не находит «двойных» веток и камешков; ember — дракончик: огонёк толкает дальше
+//  и подзаряжает фонарик где угодно (медленно); loud — гусь шумный: Лось замечает его издалека (10 м вместо 8).
 export const PETS = {
-  raccoon:  { name: 'Енот',      gatherHits: 2, dark: 1.2, speed: 1,   bag: 0,  regen: 1,   pushCd: .8, fireSave: 1 },
-  capybara: { name: 'Капибара',  gatherHits: 3, dark: 1,   speed: .88, bag: 0,  regen: 1.4, pushCd: .8, fireSave: 1 },
-  dragon:   { name: 'Дракончик', gatherHits: 3, dark: 1,   speed: 1,   bag: -2, regen: 1,   pushCd: .8, fireSave: .85 },
-  goose:    { name: 'Гусь',      gatherHits: 3, dark: 1,   speed: 1.05, bag: 0, regen: 1,   pushCd: .55, fireSave: 1, warn: true },
+  raccoon:  { name: 'Енот',      gatherHits: 2, dark: 1.2, speed: 1,   bag: 0,  regen: 1,   pushCd: .8, fireSave: 1, spot: true },
+  capybara: { name: 'Капибара',  gatherHits: 3, dark: 1,   speed: .88, bag: 0,  regen: 1.4, pushCd: .8, fireSave: 1, calm: 2.5, farPoor: 14 },
+  dragon:   { name: 'Дракончик', gatherHits: 3, dark: 1,   speed: 1,   bag: -2, regen: 1,   pushCd: .8, fireSave: .85, ember: true },
+  goose:    { name: 'Гусь',      gatherHits: 3, dark: 1,   speed: 1.05, bag: 0, regen: 1,   pushCd: .55, fireSave: 1, warn: true, loud: 10, dash: 1.2 },   // v0.8 (GDD §5): рывок-толчок до 1,2 м
 };
-export const SLOT_COLORS = ['#ff6b7f', '#4f9dff', '#ffc83c', '#5ccf6e'];
+const pushR = p => PETS[p.pet].ember ? 3.4 : 2.6;
+const pushReach = p => pushR(p) + (PETS[p.pet].dash || 0);   // гусь дотягивается рывком     // дальность толчка (у дракончика — огонёк)
+export const SLOT_COLORS = ['#ff6b7f', '#4f9dff', '#ffc83c', '#9b6bff'];   // v0.8: 4-й слот фиолетовый (зелёный терялся в листве)
 // Рецепты GDD v0.5 (соло-стоимости). at: где крафтится; bench: нужный уровень верстака; upg: масштабируется в коопе.
 export const RECIPES = [
   { id: 'pie',     name: 'Пирожок',            at: 'fire',  cost: { berry: 3 }, desc: '+70% сытости и немного сил' },
@@ -64,6 +74,11 @@ export const bagCap = p => (p.has.basket2 ? CFG.BAG_BASKET2 : p.has.basket ? CFG
 export const bagSlots = inv => RES.reduce((a, k) => a + Math.ceil((inv[k] || 0) / CFG.STACK), 0);
 export const canAdd = (p, k, n) => bagSlots({ ...p.inv, [k]: (p.inv[k] || 0) + n }) <= bagCap(p);
 export const have = (s, p, k) => (p.inv[k] || 0) + (s.chest[k] || 0);
+export const chestFree = (s, k) => { let n = 0; while (bagSlots({ ...s.chest, [k]: (s.chest[k] || 0) + n + 1 }) <= CFG.CHEST_SLOTS) n++; return n; };
+export const nightTier = n => n <= 3 ? 0 : n <= 9 ? 1 : 2;   // §10: 1–3 облегчены, 4–9 как v0.7.0, 10–12 сильнее
+export const mistDmg = n => CFG.MIST_DMG[nightTier(n)];
+export const mistMaxBlow = n => CFG.MIST_MAX_BLOW[nightTier(n)];
+const crowV07 = n => nightTier(n) === 1;   // ночи 4–9: ворон как в v0.7.0 (подход спугивает, без таймера 15 с, клюёт топливо)
 export const costOf = (s, r) => { if (!r.upg) return r.cost; const m = CFG.UPG_MUL[Math.min(4, startN(s))]; const c = {}; for (const [k, v] of Object.entries(r.cost)) c[k] = Math.ceil(v * m); return c; };
 export const canPay = (s, p, cost) => Object.entries(cost).every(([k, v]) => have(s, p, k) >= v);
 function pay(s, p, cost) { const fromChest = {}; for (const [k, v] of Object.entries(cost)) { const a = Math.min(p.inv[k] || 0, v); p.inv[k] -= a; if (v > a) { s.chest[k] -= v - a; fromChest[k] = v - a; } } return fromChest; }
@@ -120,11 +135,13 @@ export function continueNextStage(s) {
 }
 export function addPlayer(s, id, pet = 'raccoon', name = '') {
   const slot = Object.keys(s.players).length + 1;
-  s.players[id] = { id, pet, name: name || PETS[pet].name, slot, color: SLOT_COLORS[(slot - 1) % 4], x: (slot - 1) * 1.2 - .6 * (slot > 1), z: 4.2, face: Math.PI, vx: 0, vz: 0, in: { x: 0, z: 0 }, str: 100, hunger: 100,
+  s.players[id] = { id, pet, name: name || PETS[pet].name, slot, color: SLOT_COLORS[(slot - 1) % 4], x: SPAWN[(slot - 1) % 4][0], z: SPAWN[(slot - 1) % 4][1], face: Math.PI, vx: 0, vz: 0, in: { x: 0, z: 0 }, str: 100, hunger: 100,
     inv: { stick: 0, stone: 0, berry: 0, cloth: 0, pie: 0 }, has: { flash: false, basket: false, basket2: false }, flash: { on: false, charge: 100 },
     sleep: 0, rest: 0, cd: 0, swing: 0, scareCd: 0 };
   return s.players[id];
 }
+// v0.8 (QA1-10): стартовые точки по дуге за костром, между питомцами ≥ 1,6 м (слот 1 — как раньше, 0;4,2)
+const SPAWN = [[0, 4.2], [-1.7, 3.9], [1.7, 3.9], [0, 5.9]];
 export const serialize = s => JSON.stringify({ ...s, ev: [] });
 export const deserialize = str => { const s = JSON.parse(str); s.ev = []; return s; };
 
@@ -150,10 +167,13 @@ export function context(s, pid) {
   let best = null, bd = 1e9;
   for (const q of Object.values(s.players)) if (q !== p && q.sleep > 0) { const d = dist(p, q); if (d < 2 && d < bd) { bd = d; best = { kind: 'wake', id: q.id, x: q.x, z: q.z }; } }
   if (best) return best;
-  for (const e of s.enemies) { if (!pushable(e)) continue; const d = dist(p, e); if (d < 2.4 && d < bd) { bd = d; best = { kind: 'push', id: e.id, x: e.x, z: e.z }; } }
+  const pr = pushReach(p) - .2;
+  for (const e of s.enemies) { if (!pushable(e)) continue; const d = dist(p, e); if (d < pr && d < bd) { bd = d; best = { kind: 'push', id: e.id, x: e.x, z: e.z }; } }
   if (best) return best;
   const df = hyp(p.x, p.z);
-  if (df < 2.9 && (p.inv.stick > 0 || (s.fire.fuel <= 0 && s.chest.stick > 0)) && s.fire.fuel < fireMax(s) - 3) return { kind: s.fire.fuel <= 0 ? 'ignite' : 'fuel', x: 0, z: 0 };
+  // v0.8 (QA1-02): ветки берутся сначала из рюкзака, потом из сундука — и для розжига, и для подкидывания
+  if (df < 2.9 && s.fire.fuel < fireMax(s) - 3) { const sticks = have(s, p, 'stick');
+    if (s.fire.fuel > 0 ? sticks > 0 : sticks >= (s.firstLight ? 1 : CFG.RELIGHT_STICKS)) return { kind: s.fire.fuel <= 0 ? 'ignite' : 'fuel', x: 0, z: 0 }; }
   if (dist(p, CFG.CHEST) < 2.3 && RES.some(k => p.inv[k] > 0)) return { kind: 'deposit', x: CFG.CHEST.x, z: CFG.CHEST.z };
   for (const n of s.nodes) { if (!n.alive || n.k === 'rock' || (n.k === 'bush' && !n.berry) || (n.k === 'stump' && !n.loot)) continue;
     const d = dist(p, n) - (n.r || 0) * (n.s || 1); if (d < 1.4 && d < bd) { bd = d; best = { kind: n.k, id: n.id, x: n.x, z: n.z }; } }
@@ -177,6 +197,7 @@ export function apply(s, c) {
   }
 }
 function gain(s, p, k, n, x, z) { if (!canAdd(p, k, n)) { n = 0; while (canAdd(p, k, n + 1)) n++; if (!n) { ev(s, { t: 'full', pid: p.id }); return 0; } } p.inv[k] = (p.inv[k] || 0) + n; ev(s, { t: 'gain', pid: p.id, k, n, x, z }); return n; }
+const far = p => PETS[p.pet].farPoor && hyp(p.x, p.z) > PETS[p.pet].farPoor;
 function act(s, p) {
   if (p.cd > 0) return; const c = context(s, p.id); if (!c) return;
   p.cd = .32; p.swing = 1; p.face = Math.atan2(c.x - p.x, c.z - p.z);
@@ -184,17 +205,28 @@ function act(s, p) {
   switch (c.kind) {
     case 'tree': { if (!canAdd(p, 'stick', 1)) return ev(s, { t: 'full', pid: p.id }); n.hp -= 3 / PETS[p.pet].gatherHits; ev(s, { t: 'hit', pid: p.id, id: n.id, x: n.x, z: n.z });
       if (n.hp <= .01) { n.alive = false; n.back = s.night + 2; markDirty(s); gain(s, p, 'stick', 3, n.x, n.z); ev(s, { t: 'node', id: n.id }); } break; }
-    case 'branch': if (gain(s, p, 'stick', rand(s) < .4 ? 2 : 1, n.x, n.z)) { n.alive = false; ev(s, { t: 'node', id: n.id }); } break;
-    case 'stone': if (gain(s, p, 'stone', rand(s) < .3 ? 2 : 1, n.x, n.z)) { n.alive = false; ev(s, { t: 'node', id: n.id }); } break;
+    case 'branch': if (gain(s, p, 'stick', rand(s) < .4 && !far(p) ? 2 : 1, n.x, n.z)) { n.alive = false; ev(s, { t: 'node', id: n.id }); } break;
+    case 'stone': if (gain(s, p, 'stone', rand(s) < .3 && !far(p) ? 2 : 1, n.x, n.z)) { n.alive = false; ev(s, { t: 'node', id: n.id }); } break;
     case 'bush': if (gain(s, p, 'berry', 2, n.x, n.z)) { n.berry = false; ev(s, { t: 'node', id: n.id }); } break;
     case 'stump': if (gain(s, p, 'cloth', 1, n.x, n.z)) { n.loot = false; n.back = s.night + 2; ev(s, { t: 'node', id: n.id }); } break;
-    case 'ignite': case 'fuel': { const was = s.fire.fuel; if (p.inv.stick > 0) p.inv.stick--; else s.chest.stick--; s.fire.fuel = Math.min(fireMax(s), s.fire.fuel + CFG.FUEL_STICK * (was <= 0 ? 2 : 1)); if (was <= 0) s.firstLight = false; ev(s, { t: 'fuel', pid: p.id, n: Math.round(s.fire.fuel - was), relit: was <= 0 }); break; }
-    case 'deposit': { const moved = {}; for (const k of RES) if (p.inv[k] > 0) { s.chest[k] += p.inv[k]; moved[k] = p.inv[k]; p.inv[k] = 0; } ev(s, { t: 'deposit', pid: p.id, moved }); break; }
+    case 'ignite': case 'fuel': { const was = s.fire.fuel, first = was <= 0 && s.firstLight, n = was > 0 || first ? 1 : CFG.RELIGHT_STICKS;
+      const fromChest = pay(s, p, { stick: n }).stick || 0;
+      s.fire.fuel = Math.min(fireMax(s), first ? Math.round(fireMax(s) * CFG.FIRST_LIGHT) : s.fire.fuel + CFG.FUEL_STICK * n);
+      if (was <= 0) s.firstLight = false; ev(s, { t: 'fuel', pid: p.id, n: Math.round(s.fire.fuel - was), relit: was <= 0, sticks: n, fromChest }); break; }
+    case 'deposit': { const moved = {}; let left = 0;
+      for (const k of RES) if (p.inv[k] > 0) { const m = Math.min(p.inv[k], chestFree(s, k)); if (m > 0) { s.chest[k] += m; moved[k] = m; p.inv[k] -= m; } left += p.inv[k]; }
+      if (!Object.keys(moved).length) return ev(s, { t: 'msg', pid: p.id, text: 'Сундук полон (' + CFG.CHEST_SLOTS + ' слота) — потрать запасы', warn: true });
+      ev(s, { t: 'deposit', pid: p.id, moved, full: left > 0 }); break; }
     case 'push': { if (p.str < 2) return; p.cd = PETS[p.pet].pushCd; p.str = Math.max(0, p.str - 3);
-      for (const e of s.enemies) { if (!pushable(e) || dist(p, e) > 2.6) continue;
-        if (e.k === 'mist' || e.k === 'moth') { e.dead = 1; ev(s, { t: 'poof', k: e.k, x: e.x, z: e.z }); } else if (e.k === 'crow') { e.st = 'flee'; e.tt = 8; ev(s, { t: 'shoo', x: e.x, z: e.z }); } }
+      if (PETS[p.pet].dash) { let tg = null, td = 1e9; for (const e of s.enemies) { if (!pushable(e)) continue; const d = dist(p, e); if (d < pushReach(p) && d < td) { td = d; tg = e; } }
+        if (tg && td > pushR(p) - .6) { const m = Math.min(PETS[p.pet].dash, td - (pushR(p) - .6)); p.x += (tg.x - p.x) / td * m; p.z += (tg.z - p.z) / td * m; ev(s, { t: 'dash', pid: p.id, x: p.x, z: p.z }); } }
+      for (const e of s.enemies) { if (!pushable(e) || dist(p, e) > pushR(p)) continue;
+        if (e.k === 'mist' || e.k === 'moth') { e.dead = 1; ev(s, { t: 'poof', k: e.k, x: e.x, z: e.z }); } else if (e.k === 'crow') { if (crowV07(s.night)) { e.st = 'flee'; e.tt = 8; } else e.leave = true; ev(s, { t: 'shoo', x: e.x, z: e.z }); } }   // 4–9: как v0.7.0 — улетает и возвращается
       ev(s, { t: 'push', pid: p.id }); break; }
-    case 'wake': { const q = s.players[c.id]; if (q && q.sleep > 0) { q.sleep = 0; q.str = 30; ev(s, { t: 'wake', pid: q.id, by: p.id }); } break; }
+    case 'wake': { const q = s.players[c.id]; if (!q || q.sleep <= 0) break;   // v0.8: удержание 2,5 с (кнопку держат — act идёт каждые 0,25 с)
+      p.cd = .25; p.swing = 0; if (q.wakeBy !== p.id) q.wakeP = 0; q.wakeBy = p.id; q.wakeIdle = 0; q.wakeP = (q.wakeP || 0) + .25;
+      if (q.wakeP >= CFG.REVIVE_HOLD - 1e-6) { q.sleep = 0; q.str = 30; q.wakeP = 0; q.wakeBy = null; ev(s, { t: 'wake', pid: q.id, by: p.id }); }
+      else ev(s, { t: 'waking', pid: q.id, by: p.id, p: +(q.wakeP / CFG.REVIVE_HOLD).toFixed(2) }); break; }
     case 'bench': ev(s, { t: 'openBench', pid: p.id }); break;
   }
 }
@@ -225,10 +257,10 @@ function craft(s, p, id) {
 function eat(s, p) {
   if (p.sleep > 0 || p.rest > 0) return;
   const pie = () => { p.inv.pie--; p.hunger = Math.min(100, p.hunger + 70); p.str = Math.min(100, p.str + 15); ev(s, { t: 'eat', pid: p.id, k: 'pie' }); };
+  if (p.hunger > 97) return ev(s, { t: 'msg', pid: p.id, text: PETS[p.pet].name + ' сыт' });   // v0.8 (QA1-12): сытость — до любого поедания
   if (p.inv.pie > 0 && p.hunger < 60) return pie();
   const fromChest = !(p.inv.berry > 0) && s.chest.berry > 0 && dist(p, CFG.CHEST) < 2.5;
   if (!(p.inv.berry > 0) && !fromChest) { if (p.inv.pie > 0) return pie(); return ev(s, { t: 'msg', pid: p.id, text: 'Нет еды — собери ягоды', warn: true }); }
-  if (p.hunger > 97) return ev(s, { t: 'msg', pid: p.id, text: PETS[p.pet].name + ' сыт' });
   if (fromChest) s.chest.berry--; else p.inv.berry--; p.hunger = Math.min(100, p.hunger + 25); ev(s, { t: 'eat', pid: p.id, k: 'berry' });
 }
 
@@ -255,12 +287,14 @@ function stepPlayer(s, p, dt, g, LR, OR, night) {
   const df = hyp(p.x, p.z), inLight = df < LR;
   const moving = hyp(p.vx, p.vz) > .5; p.hunger = Math.max(0, p.hunger - g * (100 / 180) * (moving ? 1.25 : 1) * (night ? 1.1 : 1));
   if (p.rest > 0) { p.rest -= g; p.vx = p.vz = 0; if (p.rest <= 0) { p.rest = 0; p.str = 50; ev(s, { t: 'wake', pid: p.id }); } return; }
-  if (p.sleep > 0) { p.sleep -= g; p.vx = p.vz = 0; if (p.sleep <= 0) { p.sleep = 0; p.x = CFG.BED.x; p.z = CFG.BED.z; p.rest = 15; p.flash.on = false; ev(s, { t: 'dream', pid: p.id }); } return; }
+  if (p.sleep > 0) { if (p.wakeP > 0 && (p.wakeIdle = (p.wakeIdle || 0) + dt) > .6) { p.wakeP = 0; p.wakeBy = null; }
+    p.sleep -= g; p.vx = p.vz = 0; if (p.sleep <= 0) { p.sleep = 0; p.x = CFG.BED.x; p.z = CFG.BED.z; p.rest = 15; p.flash.on = false; ev(s, { t: 'dream', pid: p.id }); } return; }
   if (night && !inLight) p.str -= g * 4 * P.dark;
   else if (p.hunger > 0 && inLight) p.str += g * 8 * P.regen;
   if (p.hunger <= 0 && !(night && !inLight)) p.str -= g * 1;
   if (p.flash.on) { p.flash.charge -= g * 5; if (p.flash.charge <= 0) { p.flash.charge = 0; p.flash.on = false; ev(s, { t: 'flash', pid: p.id, on: false, empty: true }); } }
   else if (df < Math.max(LR, 3)) p.flash.charge = Math.min(100, p.flash.charge + g * 20);
+  else if (P.ember) p.flash.charge = Math.min(100, p.flash.charge + g * 4);
   p.str = clamp(p.str, 0, 100);
   if (p.str <= 0) { p.sleep = startN(s) > 1 ? 20 : 5; p.flash.on = false; ev(s, { t: 'sleep', pid: p.id }); return; }
   moveP(s, p, dt, OR);
@@ -289,27 +323,34 @@ function stepEnemy(s, e, dt, g, LR) {
   const nb = beams(s, e);
   if (e.k === 'mist') { // клубочек мглы: катится к костру и задувает его
     if (nb) { e.lit += dt; if (e.lit > .5) { e.dead = 1; ev(s, { t: 'poof', k: 'mist', x: e.x, z: e.z }); return; } } else e.lit = Math.max(0, e.lit - dt);
-    const d = moveTo(s, e, 0, 0, 1.7, dt); e.st = d < (s.fire.lv === 3 ? 2 : 1.7) ? 'blow' : 'go';
-    if (e.st === 'blow' && s.fire.fuel > 0) { s.fire.fuel = Math.max(0, s.fire.fuel - 2.5 * g); if ((e.cd -= dt) <= 0) { e.cd = 1.2; ev(s, { t: 'blow', id: e.id }); } }
+    const calm = ps.some(p => PETS[p.pet].calm && hyp(p.x - e.x, p.z - e.z) < PETS[p.pet].calm);
+    const d = moveTo(s, e, 0, 0, calm ? .85 : 1.7, dt); e.st = d < (s.fire.lv === 3 ? 2 : 1.7) ? 'blow' : 'go';
+    // v0.8 (§10): урон 1,5 / 2,5 / 3,5 ед/с; дует до толчка, но не дольше 8 с (ночи 1–3) / 20 с (10–12); 4–9 — без лимита, как v0.7.0
+    if (e.st === 'blow' && s.fire.fuel > 0) { s.fire.fuel = Math.max(0, s.fire.fuel - mistDmg(s.night) * g); if ((e.cd -= dt) <= 0) { e.cd = 1.2; ev(s, { t: 'blow', id: e.id }); }
+      const mb = mistMaxBlow(s.night); if (mb && (e.bt = (e.bt || 0) + g) >= mb) { e.leave = true; ev(s, { t: 'tired', k: 'mist', id: e.id, x: e.x, z: e.z }); } }
   } else if (e.k === 'moth') { // лунный мотылёк: летит на свет, садится на костёр и окутывает пламя
     if (nb) { e.lit += dt; if (e.lit > .3) { e.dead = 1; ev(s, { t: 'poof', k: 'moth', x: e.x, z: e.z }); return; } } else e.lit = Math.max(0, e.lit - dt);
     const tx = Math.cos(e.ph) * .5, tz = Math.sin(e.ph) * .5, d = moveTo(s, e, tx, tz, e.st === 'land' ? .3 : 2.1, dt, 30); e.ph += dt * .8;
-    if (d < 1.1 && s.fire.fuel > 0) { if (e.st !== 'land') ev(s, { t: 'mothLand', id: e.id }); e.st = 'land'; e.y = Math.max(1.25, e.y - dt * 2); s.fire.fuel = Math.max(0, s.fire.fuel - .7 * g); }
+    if (d < 1.1 && s.fire.fuel > 0) { if (e.st !== 'land') ev(s, { t: 'mothLand', id: e.id }); e.st = 'land'; e.y = Math.max(1.25, e.y - dt * 2); s.fire.fuel = Math.max(0, s.fire.fuel - CFG.MOTH_DMG * g); }
     else { e.st = 'go'; e.y = 1.8 + Math.sin(s.t * 3 + e.id) * .4; }
   } else if (e.k === 'crow') { // сонный ворон: садится на сундук или костёр и таскает запасы
-    const near = ps.find(p => hyp(p.x - e.x, p.z - e.z) < 2.6);
-    if (nb || (near && e.st !== 'flee')) { if (e.st !== 'flee') ev(s, { t: 'shoo', x: e.x, z: e.z }); e.st = 'flee'; e.tt = 8; }
+    // v0.8 (§10): ночи 1–3 и 10–12 — улетает насовсем только после толчка либо через 15 с у цели, подход не спугивает;
+    //   ночи 4–9 — как v0.7.0 (подошёл ближе 2,6 м — улетает и возвращается). Луч фонарика спугивает (улетает и возвращается) во все ночи.
+    const v07 = crowV07(s.night), near = v07 && ps.find(p => hyp(p.x - e.x, p.z - e.z) < 2.6);
+    if ((nb || near) && e.st !== 'flee') { ev(s, { t: 'shoo', x: e.x, z: e.z }); e.st = 'flee'; e.tt = 8; }
     if (e.st === 'flee') { e.tt -= dt; e.y = Math.min(6, e.y + dt * 4); moveTo(s, e, rx * 20, rz * 20, 5, dt, 30); if (e.tt <= 0) e.st = 'go'; return; }
-    const chestHas = RES.some(k => s.chest[k] > 0), T = chestHas ? CFG.CHEST : { x: .8, z: .8 };
-    const d = moveTo(s, e, T.x, T.z, 4, dt, 30); e.y = d > 3 ? Math.min(4, e.y + dt * 2) : Math.max(chestHas ? 1.1 : 1.3, e.y - dt * 3);
-    if (d < .3) { e.st = 'peck'; if ((e.cd -= g) <= 0) { e.cd = 2.5; if (chestHas) { const ks = RES.filter(k => s.chest[k] > 0), k = ks[Math.floor(rand(s) * ks.length)]; s.chest[k]--; ev(s, { t: 'steal', k, x: e.x, z: e.z }); } else if (s.fire.fuel > 0) { s.fire.fuel = Math.max(0, s.fire.fuel - 4); ev(s, { t: 'peck', x: e.x, z: e.z }); } } }
+    // §10: в ночи 1–3 ворон крадёт только из сундука и топливо не клюёт — сидит на сундуке
+    const early = nightTier(s.night) === 0, chestHas = RES.some(k => s.chest[k] > 0), onChest = chestHas || early, T = onChest ? CFG.CHEST : { x: .8, z: .8 };
+    const d = moveTo(s, e, T.x, T.z, 4, dt, 30); e.y = d > 3 ? Math.min(4, e.y + dt * 2) : Math.max(onChest ? 1.1 : 1.3, e.y - dt * 3);
+    if (!v07 && d < .3 && (e.pt = (e.pt || 0) + g) >= CFG.CROW_STAY) { e.leave = true; ev(s, { t: 'tired', k: 'crow', id: e.id, x: e.x, z: e.z }); return; }
+    if (d < .3) { e.st = 'peck'; if ((e.cd -= g) <= 0) { e.cd = 2.5; if (chestHas) { const ks = RES.filter(k => s.chest[k] > 0), k = ks[Math.floor(rand(s) * ks.length)]; s.chest[k]--; ev(s, { t: 'steal', k, x: e.x, z: e.z }); } else if (!early && s.fire.fuel > 0) { s.fire.fuel = Math.max(0, s.fire.fuel - 4); ev(s, { t: 'peck', x: e.x, z: e.z }); } } }
   } else if (e.k === 'moose') { // Лунный Лось: держится у края света, пугает во тьме, задувает слабый костёр
     e.cd -= dt; const late = s.night >= 7, weak = s.fire.fuel / fireMax(s) < .15;
     // на этапе 7–12 Лось чуть дольше не отступает от одного фонарика; два фонарика — сразу
     if (nb) { e.lit += dt; if (e.st !== 'flee' && (nb >= 2 || e.lit > (late ? .8 : 0))) { e.st = 'flee'; e.tt = 3; ev(s, { t: 'mooseLit', x: e.x, z: e.z }); } } else e.lit = Math.max(0, e.lit - dt * .5);
     if (e.st === 'flee') { e.tt -= dt; moveTo(s, e, rx * 30, rz * 30, 2.6, dt); if (e.tt <= 0) { e.st = 'go'; e.lit = 0; } return; }
     if (df < LR - 1 && !weak) { moveTo(s, e, rx * 30, rz * 30, 2.2, dt); e.st = 'shy'; return; }
-    const prey = ps.filter(p => hyp(p.x, p.z) > LR && hyp(p.x - e.x, p.z - e.z) < 8).sort((a, b) => hyp(a.x - e.x, a.z - e.z) - hyp(b.x - e.x, b.z - e.z))[0];
+    const prey = ps.filter(p => hyp(p.x, p.z) > LR && hyp(p.x - e.x, p.z - e.z) < (PETS[p.pet].loud || 8)).sort((a, b) => hyp(a.x - e.x, a.z - e.z) - hyp(b.x - e.x, b.z - e.z))[0];
     if (weak) { const d = moveTo(s, e, rx * 1.8, rz * 1.8, 1.4, dt); e.st = 'blow'; if (d < .4 && s.fire.fuel > 0) s.fire.fuel = Math.max(0, s.fire.fuel - 4 * g); }
     else if (prey && e.cd <= 0) { const d = moveTo(s, e, prey.x, prey.z, 2.4, dt); e.st = 'hunt'; if (d < 2.2) { prey.str = Math.max(0, prey.str - 27); e.cd = 6; ev(s, { t: 'scare', pid: prey.id, x: e.x, z: e.z }); } }
     else { const want = Math.max(LR, 3) + (s.wx.special ? 1.2 : late ? 1.5 : 4); const a = Math.atan2(e.z, e.x) + e.orbit * dt * (s.wx.special ? .12 : .06); moveTo(s, e, Math.cos(a) * want, Math.sin(a) * want, .9, dt); e.st = 'watch'; }
@@ -325,7 +366,8 @@ export function waveFor(s, n) {
 function startNight(s) {
   s.phase = 'night'; s.t = 0; const n = s.night, L = nightLen(s); s.spawnQ = []; s.wx = weatherFor(s, n);
   const w = waveFor(s, n);
-  if (w.twoWaves) { const h = Math.ceil(w.mist * .6); for (let i = 0; i < h; i++) s.spawnQ.push([3 + i * (L * .3 / h), 'mist']); for (let i = 0; i < w.mist; i++) s.spawnQ.push([L * .5 + i * (L * .35 / w.mist), 'mist']); }
+  // v0.8 (§9.3/9.5, QA1-03): ночь 10 — общее число на всю ночь: первая волна ceil(60%) к 30% ночи, вторая — остаток с середины
+  if (w.twoWaves) { const h = Math.ceil(w.mist * .6 - 1e-9), r = w.mist - h; for (let i = 0; i < h; i++) s.spawnQ.push([3 + i * (L * .3 / h), 'mist']); for (let i = 0; i < r; i++) s.spawnQ.push([L * .5 + i * (L * .35 / Math.max(1, r)), 'mist']); }
   else for (let i = 0; i < w.mist; i++) s.spawnQ.push([3 + i * (L * .6 / w.mist), 'mist']);
   for (let i = 0; i < w.crows; i++) s.spawnQ.push([7 + i * 9, 'crow']);
   if (w.moose) s.spawnQ.push([w.twoWaves ? 1 : 4, 'moose']);

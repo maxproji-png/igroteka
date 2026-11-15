@@ -12,7 +12,7 @@
  */
 import * as THREE from 'three';
 
-export const VERSION = '0.6-concept';
+export const VERSION = '0.6.2-concept';
 
 /**
  * Уровни костра из GDD v0.5, разделы 6–7 (те же радиусы, что в v0.2; уровней по-прежнему три).
@@ -29,8 +29,8 @@ export const CAMPFIRE_LEVELS = {
 
 /** Бюджеты частиц (активных точек). Старые ключи flames/embers/smoke/mist сохранены. */
 export const PARTICLE_BUDGET = {
-  low:  { flames: 4, embers: 16, smoke: 8,  mist: 0,  mistDense: 4,  rain: 40,  leaves: 8,  moths: 4,  puddles: 0, feedback: 28, flashes: 2, rays: 0, zzz: 1 },
-  high: { flames: 8, embers: 36, smoke: 20, mist: 8,  mistDense: 14, rain: 110, leaves: 20, moths: 10, puddles: 4, feedback: 64, flashes: 4, rays: 3, zzz: 2 }
+  low:  { flames: 4, embers: 16, smoke: 8,  mist: 0,  mistDense: 4,  rain: 96,  leaves: 8,  moths: 4,  puddles: 0, feedback: 28, flashes: 2, rays: 0, zzz: 1 },
+  high: { flames: 8, embers: 36, smoke: 20, mist: 8,  mistDense: 14, rain: 180, leaves: 20, moths: 10, puddles: 4, feedback: 64, flashes: 4, rays: 3, zzz: 2 }
 };
 
 /** Погода ночей 1–12 (GDD v0.5). Ночь 8 — лёгкий дождь; 10 — густой туман; 11–12 — туман, ветер, мотыльки. */
@@ -53,6 +53,46 @@ export function weatherForNight(n) {
   const i = Math.max(1, Math.min(12, n | 0));
   return Object.assign({}, NIGHT_WEATHER[i]);
 }
+
+/**
+ * Рекомендуемый ореол у пламени (спрайт в игре, не круг света на земле).
+ * В v0.7.0 `glow.scale = 2.5 + lightRv * 0.35` на ур. 3 даёт билборд ~8 м (QA1-17 / QA2-09).
+ * Яркость держим вплотную к пламени: 2.2 / 2.7 / 3.2 м при полном топливе.
+ */
+export const CAMPFIRE_HALO = {
+  scale: { 1: 2.2, 2: 2.7, 3: 3.2 },
+  depthTest: true,
+  depthWrite: false,
+  renderOrder: -1
+};
+
+export function haloScale(level, fuelK = 1) {
+  const lv = clamp(level | 0, 1, 3);
+  return (2.2 + 0.5 * (lv - 1)) * (0.8 + 0.2 * clamp(fuelK, 0, 1));
+}
+
+/**
+ * Настроить игровой спрайт ореола: масштаб у пламени, depthTest, рисуется до непрозрачных врагов.
+ * Пример в js/game.js animFire: applyCampfireHalo(glow, { level: lv, fuelK: k, on });
+ */
+export function applyCampfireHalo(sprite, opts = {}) {
+  if (!sprite) return 0;
+  const on = opts.on !== false;
+  const s = haloScale(opts.level ?? 3, opts.fuelK ?? 1);
+  sprite.visible = on;
+  sprite.scale.setScalar(s);
+  const mat = sprite.material;
+  if (mat) {
+    mat.depthTest = true;
+    mat.depthWrite = false;
+    mat.transparent = true;
+    if ('fog' in mat) mat.fog = false;
+    if (opts.opacity != null) mat.opacity = opts.opacity;
+  }
+  sprite.renderOrder = CAMPFIRE_HALO.renderOrder;
+  return s;
+}
+
 
 function R(a, b) { return a + Math.random() * (b - a); }
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -100,9 +140,9 @@ function maxSmoke() { return PARTICLE_BUDGET.high.smoke + 8; }
 /**
  * Создаёт костёр и добавляет его группу на сцену.
  * @param {import('three').Scene} scene
- * @param {{level?: 1|2|3, position?: [number,number,number]|THREE.Vector3, quality?: 'low'|'high', lit?: boolean, base?: boolean, ring?: boolean}} [opts]
- *   base (по умолч. true) — диск свечения под костром; ring — кольцо границы света.
- *   При false объект не создаётся; setLevel/setFuel/update/dispose и setBaseVisible/setRingVisible безопасны.
+ * @param {{level?: 1|2|3, position?: [number,number,number]|THREE.Vector3, quality?: 'low'|'high', lit?: boolean, base?: boolean, ring?: boolean, stones?: boolean, logs?: boolean, light?: boolean}} [opts]
+ *   base — диск свечения; ring — кольцо света; stones — камни (и цоколь ур. 3); logs — поленья; light — PointLight.
+ *   Все по умолч. true. При false объект не создаётся; setLevel/setFuel/update/dispose безопасны.
  */
 export function createCampfire(scene, opts = {}) {
   const quality = opts.quality === 'low' ? 'low' : 'high';
@@ -113,35 +153,45 @@ export function createCampfire(scene, opts = {}) {
     else group.position.copy(pos);
   }
 
-  const stoneM = new THREE.MeshLambertMaterial({ color: 0x6b6762, flatShading: true });
-  const stones = [];
-  for (let i = 0; i < 9; i++) {
-    const a = i / 9 * Math.PI * 2;
-    const s = new THREE.Mesh(new THREE.DodecahedronGeometry(R(0.2, 0.28), 0), stoneM);
-    s.position.set(Math.cos(a) * 1.02, 0.12, Math.sin(a) * 1.02);
-    s.scale.y = 0.7;
-    s.rotation.set(R(0, 3), R(0, 3), 0);
-    s.castShadow = true;
-    group.add(s);
-    stones.push(s);
-  }
-  // простое каменное основание (заметно на ур. 3)
-  const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.35, 1.5, 0.16, 10),
-    new THREE.MeshLambertMaterial({ color: 0x5a564f, flatShading: true })
-  );
-  base.position.y = 0.02;
-  base.visible = false;
-  group.add(base);
+  const wantStones = opts.stones !== false;
+  const wantLogs = opts.logs !== false;
+  const wantLight = opts.light !== false;
 
-  const logM = new THREE.MeshLambertMaterial({ color: 0x3a2416, flatShading: true, emissive: 0x2a0800 });
-  for (let i = 0; i < 5; i++) {
-    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.25, 6), logM);
-    const a = i / 5 * Math.PI * 2;
-    l.position.set(Math.cos(a) * 0.25, 0.32, Math.sin(a) * 0.25);
-    l.lookAt(0, 0.95, 0);
-    l.rotateX(Math.PI / 2);
-    group.add(l);
+  let stoneM = null, base = null;
+  const stones = [];
+  if (wantStones) {
+    stoneM = new THREE.MeshLambertMaterial({ color: 0x6b6762, flatShading: true });
+    for (let i = 0; i < 9; i++) {
+      const a = i / 9 * Math.PI * 2;
+      const s = new THREE.Mesh(new THREE.DodecahedronGeometry(R(0.2, 0.28), 0), stoneM);
+      s.position.set(Math.cos(a) * 1.02, 0.12, Math.sin(a) * 1.02);
+      s.scale.y = 0.7;
+      s.rotation.set(R(0, 3), R(0, 3), 0);
+      s.castShadow = true;
+      group.add(s);
+      stones.push(s);
+    }
+    // простое каменное основание (заметно на ур. 3)
+    base = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.35, 1.5, 0.16, 10),
+      new THREE.MeshLambertMaterial({ color: 0x5a564f, flatShading: true })
+    );
+    base.position.y = 0.02;
+    base.visible = false;
+    group.add(base);
+  }
+
+  let logM = null;
+  if (wantLogs) {
+    logM = new THREE.MeshLambertMaterial({ color: 0x3a2416, flatShading: true, emissive: 0x2a0800 });
+    for (let i = 0; i < 5; i++) {
+      const l = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 1.25, 6), logM);
+      const a = i / 5 * Math.PI * 2;
+      l.position.set(Math.cos(a) * 0.25, 0.32, Math.sin(a) * 0.25);
+      l.lookAt(0, 0.95, 0);
+      l.rotateX(Math.PI / 2);
+      group.add(l);
+    }
   }
 
   const tongueData = [
@@ -187,13 +237,13 @@ export function createCampfire(scene, opts = {}) {
   const embers = [];
   const ePos = new Float32Array(emberCap * 3);
   for (let i = 0; i < emberCap; i++) {
-    embers.push({ x: 0, y: R(0, 2.4), z: 0, vx: R(-0.15, 0.15), vz: R(-0.15, 0.15), v: R(0.8, 1.8), life: Math.random() });
+    embers.push({ x: R(-0.2, 0.2), y: R(0.2, 1.4), z: R(-0.2, 0.2), vx: R(-0.45, 0.45), vz: R(-0.45, 0.45), v: R(0.7, 1.25), life: Math.random() });
   }
   const eg = new THREE.BufferGeometry();
   eg.setAttribute('position', new THREE.BufferAttribute(ePos, 3));
   const emberPts = new THREE.Points(eg, new THREE.PointsMaterial({
-    map: texEmber(), color: 0xffffff, size: 0.16, transparent: true,
-    blending: THREE.AdditiveBlending, depthWrite: false
+    map: texEmber(), color: 0xffd9a0, size: 0.12, transparent: true, opacity: 0.85,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
   }));
   group.add(emberPts);
 
@@ -223,10 +273,11 @@ export function createCampfire(scene, opts = {}) {
       new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({
         map: texGlow(), transparent: true, blending: THREE.AdditiveBlending,
-        depthWrite: false, fog: false
+        depthTest: true, depthWrite: false, fog: false
       })
     );
     glow.position.y = 0.03;
+    glow.renderOrder = -1;
     group.add(glow);
   }
 
@@ -243,9 +294,12 @@ export function createCampfire(scene, opts = {}) {
     group.add(ring);
   }
 
-  const light = new THREE.PointLight(0xff8a3a, 20, 16, 1.3);
-  light.position.set(0, 1.5, 0);
-  group.add(light);
+  let light = null;
+  if (wantLight) {
+    light = new THREE.PointLight(0xff8a3a, 20, 16, 1.3);
+    light.position.set(0, 1.5, 0);
+    group.add(light);
+  }
 
   scene.add(group);
 
@@ -262,7 +316,7 @@ export function createCampfire(scene, opts = {}) {
     wind: 0,
     disposed: false,
     flames, embers, emberPts, smoke, smokePts, glow, ring, base, stoneM, logM,
-    baseVis: true, ringVis: true
+    baseVis: true, ringVis: true, glowScale: opts.glowScale == null ? 1 : Math.max(0, +opts.glowScale)
   };
 
   const api = {
@@ -272,7 +326,7 @@ export function createCampfire(scene, opts = {}) {
     get lit() { return state.lit; },
 
     setLevel(n) { applyLevel(state, n); },
-    setLit(on) { state.lit = !!on; if (!state.lit) light.intensity = 0; },
+    setLit(on) { state.lit = !!on; if (!state.lit && state.light) state.light.intensity = 0; },
     /** 0..1, при низком топливе круг света мерцает (GDD). */
     setFuel(v) { state.fuel = clamp(v, 0, 1); },
     /** Вспышка искр при подбросе топлива. */
@@ -289,6 +343,8 @@ export function createCampfire(scene, opts = {}) {
       state.ringVis = !!on;
       if (state.ring && !state.ringVis) state.ring.visible = false;
     },
+    /** Множитель диска свечения пака (1 = как раньше, радиус света). 0 прячет. */
+    setGlowScale(s) { state.glowScale = Math.max(0, +s); },
     setQuality(q) { state.quality = q === 'low' ? 'low' : 'high'; applyLevel(state, state.level); },
     update(dt) { tickFire(state, dt); },
     dispose() { disposeCampfire(state); }
@@ -310,7 +366,7 @@ function applyLevel(state, n) {
   state.baseIntensity = L.intensity;
   state.lightDistance = L.distance;
   state.lightRadius = L.lightRadius;
-  state.light.distance = L.distance;
+  if (state.light) state.light.distance = L.distance;
   if (state.base) state.base.visible = level >= 3;
   if (state.ring) state.ring.scale.setScalar(L.lightRadius);
   if (state.glow) state.glow.scale.setScalar(L.lightRadius);
@@ -322,12 +378,12 @@ function kickEmbers(state) {
     if (Math.random() < 0.55) {
       const e = state.embers[i];
       e.life = 0;
-      e.x = R(-0.22, 0.22);
-      e.z = R(-0.22, 0.22);
+      e.x = R(-0.28, 0.28);
+      e.z = R(-0.28, 0.28);
       e.y = R(0.3, 0.7);
-      e.vx = R(-0.4, 0.4);
-      e.vz = R(-0.4, 0.4);
-      e.v = R(1.4, 2.6);
+      e.vx = R(-1.1, 1.1);
+      e.vz = R(-1.1, 1.1);
+      e.v = R(1.0, 1.8);
     }
   }
 }
@@ -358,19 +414,22 @@ function tickFire(state, dt) {
     f.rotation.z = (state.wind || 0) * 0.35 + Math.sin(state.t * 1.3) * (state.wind || 0) * 0.12;
   });
 
-  if (lit) {
-    state.light.intensity = (state.baseIntensity * (0.55 + 0.45 * fuel) * flick + state.burst * 16) * low;
-    state.light.distance = state.lightDistance * (0.75 + 0.25 * fuel);
-  } else {
-    state.light.intensity = 0;
+  if (state.light) {
+    if (lit) {
+      state.light.intensity = (state.baseIntensity * (0.55 + 0.45 * fuel) * flick + state.burst * 16) * low;
+      state.light.distance = state.lightDistance * (0.75 + 0.25 * fuel);
+    } else {
+      state.light.intensity = 0;
+    }
   }
 
   const glowOp = lit ? (0.4 + 0.3 * flick) * (0.45 + 0.55 * fuel) * low : 0;
   if (state.glow) {
     state.glow.visible = lit && state.baseVis;
     if (state.glow.visible) {
-      state.glow.scale.setScalar((state.lightRadius || 8) * (0.95 + 0.08 * flick + state.burst * 0.15));
-      state.glow.material.opacity = glowOp;
+      const gs = state.glowScale == null ? 1 : state.glowScale;
+      state.glow.scale.setScalar((state.lightRadius || 8) * (0.95 + 0.08 * flick + state.burst * 0.15) * gs);
+      state.glow.material.opacity = glowOp * Math.min(1, gs);
     }
   }
   if (state.ring) {
@@ -386,19 +445,21 @@ function tickFire(state, dt) {
   for (let i = 0; i < state.embers.length; i++) {
     const e = state.embers[i];
     if (i >= eN) { ea.setXYZ(i, 0, -10, 0); continue; }
-    e.life += d * e.v * 0.45;
-    if (e.life > 1) {
+    e.life += d * e.v * 0.9;
+    if (e.life > 1 || e.y > 2.35) {
       e.life = 0;
-      e.x = R(-0.18, 0.18);
-      e.z = R(-0.18, 0.18);
-      e.y = R(0.2, 0.5);
-      e.vx = R(-0.2, 0.2);
-      e.vz = R(-0.2, 0.2);
-      e.v = R(0.8, 1.9);
+      e.x = R(-0.25, 0.25);
+      e.z = R(-0.25, 0.25);
+      e.y = R(0.2, 0.55);
+      e.vx = R(-0.7, 0.7);
+      e.vz = R(-0.7, 0.7);
+      e.v = R(0.65, 1.25);
     }
+    e.vx += R(-0.15, 0.15) * d;
+    e.vz += R(-0.15, 0.15) * d;
     e.x += e.vx * d;
     e.z += e.vz * d;
-    e.y += d * e.v * 1.6 * scale;
+    e.y += d * e.v * 1.15; // высота не растёт вместе с ур. 3 (scale), иначе складывается столб
     ea.setXYZ(i, e.x, e.y, e.z);
   }
   ea.needsUpdate = true;
@@ -409,23 +470,23 @@ function tickFire(state, dt) {
   for (let i = 0; i < state.smoke.length; i++) {
     const e = state.smoke[i];
     if (i >= sN) { sa.setXYZ(i, 0, -10, 0); continue; }
-    e.life += d * e.v * 0.28;
-    if (e.life > 1) {
+    e.life += d * e.v * 0.38;
+    if (e.life > 1 || e.y > 3.0) {
       e.life = 0;
-      e.x = R(-0.2, 0.2);
-      e.z = R(-0.2, 0.2);
+      e.x = R(-0.28, 0.28);
+      e.z = R(-0.28, 0.28);
       e.y = R(0.5, 0.9);
-      e.vx = R(0.05, 0.18);
-      e.vz = R(-0.08, 0.08);
+      e.vx = R(0.08, 0.28);
+      e.vz = R(-0.18, 0.18);
     }
     e.x += e.vx * d;
     e.z += e.vz * d;
-    e.y += d * (0.55 + e.v) * scale;
+    e.y += d * (0.45 + e.v);
     sa.setXYZ(i, e.x, e.y, e.z);
   }
   sa.needsUpdate = true;
   state.smokePts.geometry.setDrawRange(0, sN);
-  state.smokePts.material.opacity = lit ? 0.5 + 0.15 * fuel : 0;
+  state.smokePts.material.opacity = lit ? 0.38 + 0.12 * fuel : 0;
   state.smokePts.visible = lit && sN > 0;
 }
 
@@ -569,11 +630,28 @@ function disposeFog(state) {
 }
 
 
-let _rainTex = null, _leafTex = null, _mothTex = null, _pingTex = null;
+let _rainTex = null, _rainStreakTex = null, _leafTex = null, _mothTex = null, _pingTex = null;
 function texRain() {
   return _rainTex || (_rainTex = makeDot(16, [
     [0, 'rgba(200,220,255,.7)'], [0.5, 'rgba(180,200,230,.25)'], [1, 'rgba(160,180,210,0)']
   ]));
+}
+function texRainStreak() {
+  if (_rainStreakTex) return _rainStreakTex;
+  const cv = document.createElement('canvas');
+  cv.width = 16; cv.height = 64;
+  const x = cv.getContext('2d');
+  const g = x.createLinearGradient(8, 0, 8, 64);
+  g.addColorStop(0, 'rgba(230,242,255,0)');
+  g.addColorStop(0.18, 'rgba(210,230,255,.3)');
+  g.addColorStop(0.5, 'rgba(220,238,255,.9)');
+  g.addColorStop(1, 'rgba(255,255,255,1)');
+  x.fillStyle = g;
+  x.fillRect(5, 0, 6, 64);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.needsUpdate = true;
+  _rainStreakTex = tex;
+  return tex;
 }
 function texLeaf() {
   if (_leafTex) return _leafTex;
@@ -606,26 +684,42 @@ function maxLeaves() { return PARTICLE_BUDGET.high.leaves; }
 function maxMoths() { return PARTICLE_BUDGET.high.moths; }
 
 /**
- * Лёгкий дождь (спрайты-капли). setActive(false) прячет слой.
+ * Лёгкий дождь: штрихи (InstancedMesh, 1 draw call) в объёме вокруг камеры/цели, не по всей карте.
+ * setActive(false) прячет слой. setCamera / setFollow задают центр объёма.
  */
 export function createRain(scene, opts = {}) {
   const quality = opts.quality === 'low' ? 'low' : 'high';
   const cap = maxRain();
-  const pos = new Float32Array(cap * 3);
+  const radius = opts.area ?? opts.radius ?? 7.5;
+  const height = opts.height ?? 9;
   const list = [];
-  const area = opts.area ?? 22;
   for (let i = 0; i < cap; i++) {
-    list.push({ x: R(-area, area), y: R(1, 10), z: R(-area, area), v: R(7, 12) });
-    pos[i * 3] = list[i].x; pos[i * 3 + 1] = list[i].y; pos[i * 3 + 2] = list[i].z;
+    list.push({ x: 0, y: 0, z: 0, v: 10, len: 0.5, wx: 0, wz: 0 });
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const pts = new THREE.Points(geo, new THREE.PointsMaterial({
-    map: texRain(), color: 0xcfe4ff, size: 0.12, transparent: true,
-    opacity: 0.55, depthWrite: false, sizeAttenuation: true
-  }));
-  pts.visible = false;
-  scene.add(pts);
+
+  const geo = new THREE.PlaneGeometry(0.04, 1);
+  const mat = new THREE.MeshBasicMaterial({
+    map: texRainStreak(),
+    color: 0xe8f3ff,
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false,
+    fog: false,
+    side: THREE.DoubleSide,
+    toneMapped: false
+  });
+  const mesh = new THREE.InstancedMesh(geo, mat, cap);
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  mesh.frustumCulled = false;
+  mesh.visible = false;
+  mesh.count = 0;
+  scene.add(mesh);
+
+  const dummy = new THREE.Object3D();
+  const fall = new THREE.Vector3();
+  const toCam = new THREE.Vector3();
+  const side = new THREE.Vector3();
+  const front = new THREE.Vector3();
 
   const puddles = [];
   if (PARTICLE_BUDGET.high.puddles) {
@@ -642,43 +736,115 @@ export function createRain(scene, opts = {}) {
     }
   }
 
-  const state = { scene, pts, list, puddles, quality, active: 0, target: 0, disposed: false, area };
+  const state = {
+    scene, mesh, list, puddles, quality,
+    active: 0, target: 0, disposed: false,
+    radius, height, camera: opts.camera || null, follow: opts.follow || null,
+    windX: 0.35, windZ: 0.15, dummy, fall, toCam, side, front
+  };
+
+  function origin() {
+    const c = state.camera;
+    if (c && c.position) return c.position;
+    const f = state.follow;
+    if (f && f.position) return f.position;
+    if (f && f.x != null) return f;
+    return null;
+  }
+
+  function respawn(e, atTop) {
+    const o = origin();
+    const ox = o ? o.x : 0, oz = o ? o.z : 0, oy = o ? o.y : 3.5;
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * state.radius;
+    e.x = ox + Math.cos(a) * r;
+    e.z = oz + Math.sin(a) * r;
+    e.y = atTop ? oy + R(1.2, state.height) : oy + R(-1.5, state.height);
+    e.v = R(10, 16);
+    e.len = R(0.45, 0.85);
+    e.wx = state.windX + R(-0.5, 0.5);
+    e.wz = state.windZ + R(-0.4, 0.4);
+  }
+
+  for (let i = 0; i < cap; i++) respawn(list[i], false);
+
+  function place(i, hide) {
+    const e = state.list[i];
+    const d = state.dummy;
+    if (hide) {
+      d.position.set(0, -40, 0);
+      d.scale.set(0.001, 0.001, 0.001);
+      d.rotation.set(0, 0, 0);
+      d.updateMatrix();
+      state.mesh.setMatrixAt(i, d.matrix);
+      return;
+    }
+    state.fall.set(e.wx, -e.v, e.wz).normalize();
+    const o = origin();
+    if (o) state.toCam.set(o.x - e.x, o.y - e.y, o.z - e.z);
+    else state.toCam.set(0.3, 0.2, 1);
+    if (state.toCam.lengthSq() < 1e-5) state.toCam.set(0, 0, 1);
+    state.side.crossVectors(state.toCam, state.fall);
+    if (state.side.lengthSq() < 1e-6) state.side.set(1, 0, 0);
+    else state.side.normalize();
+    state.front.crossVectors(state.fall, state.side).normalize();
+    d.matrix.makeBasis(state.side, state.fall, state.front);
+    const w = state.quality === 'low' ? 1.25 : 1;
+    const el = d.matrix.elements;
+    // масштабируем базис: X *= w, Y *= len (штрих), Z = 1
+    el[0] *= w; el[1] *= w; el[2] *= w;
+    el[4] *= e.len; el[5] *= e.len; el[6] *= e.len;
+    d.matrix.setPosition(e.x, e.y, e.z);
+    state.mesh.setMatrixAt(i, d.matrix);
+  }
+
   return {
     setActive(on) { state.target = on ? 1 : 0; },
     setQuality(q) { state.quality = q === 'low' ? 'low' : 'high'; },
+    setCamera(cam) { state.camera = cam || null; },
+    setFollow(obj) { state.follow = obj || null; },
+    setWind(x, z) { if (x != null) state.windX = +x; if (z != null) state.windZ = +z; },
     update(dt) {
       if (state.disposed) return;
       const d = Math.min(0.05, dt || 0.016);
       state.active += (state.target - state.active) * Math.min(1, d * 2);
       const n = state.active > 0.02 ? (state.quality === 'low' ? PARTICLE_BUDGET.low.rain : PARTICLE_BUDGET.high.rain) : 0;
-      state.pts.visible = n > 0;
-      state.pts.material.opacity = 0.45 * state.active;
-      const a = state.pts.geometry.attributes.position;
+      state.mesh.visible = n > 0 && state.active > 0.02;
+      state.mesh.material.opacity = 0.78 * state.active;
+      const o = origin();
+      const ox = o ? o.x : 0, oz = o ? o.z : 0;
+      const rad2 = (state.radius + 1.6) * (state.radius + 1.6);
       for (let i = 0; i < state.list.length; i++) {
+        if (i >= n) { place(i, true); continue; }
         const e = state.list[i];
-        if (i >= n) { a.setXYZ(i, 0, -20, 0); continue; }
         e.y -= e.v * d;
-        if (e.y < 0) { e.y = R(6, 11); e.x = R(-state.area, state.area); e.z = R(-state.area, state.area); }
-        a.setXYZ(i, e.x, e.y, e.z);
+        e.x += e.wx * d;
+        e.z += e.wz * d;
+        const dx = e.x - ox, dz = e.z - oz;
+        if (e.y < 0.04 || dx * dx + dz * dz > rad2) respawn(e, true);
+        place(i, false);
       }
-      a.needsUpdate = true;
-      state.pts.geometry.setDrawRange(0, n);
+      state.mesh.count = n;
+      state.mesh.instanceMatrix.needsUpdate = true;
       const puddleN = state.quality === 'low' ? 0 : PARTICLE_BUDGET.high.puddles;
       state.puddles.forEach((m, i) => {
         m.visible = i < puddleN && state.active > 0.2;
-        m.material.opacity = 0.22 * state.active;
+        m.material.opacity = 0.28 * state.active;
+        if (m.visible && o && i === 0) {
+          // лёгкие лужи держатся у ног/камеры, не по всей карте
+        }
       });
     },
     dispose() {
       if (state.disposed) return;
       state.disposed = true;
-      if (state.pts.parent) state.pts.parent.remove(state.pts);
-      state.pts.geometry.dispose();
-      state.pts.material.dispose();
+      if (state.mesh.parent) state.mesh.parent.remove(state.mesh);
+      state.mesh.geometry.dispose();
+      state.mesh.material.dispose();
       state.puddles.forEach((m) => {
         if (m.parent) m.parent.remove(m);
         m.geometry.dispose();
-        m.material.dispose(); // общую текстуру луж не диспоузим
+        m.material.dispose();
       });
     }
   };
@@ -1318,6 +1484,8 @@ export function createFeedback(scene, opts = {}) {
 
 /**
  * Фасад для движка: один объект, createCampfire / createNightFog / setLevel / update / setQuality / dispose.
+ * Новое в v0.6.2: applyCampfireHalo / CAMPFIRE_HALO / setGlowScale (ореол у пламени, depthTest).
+ * Новое в v0.6.1: createCampfire({stones,logs,light}), дождь-штрихи вокруг камеры, искры без столба.
  * Новое в v0.6: hit/collect/dawn/nightfall/petTired/stageWin/poof, setCamera, setBaseVisible/setRingVisible.
  * Новое в v0.5: applyNight(n), setWeather, createRain / createLeaves / createMoths / createPingMarker.
  */
@@ -1349,6 +1517,7 @@ export class GameVFX {
   setCamera(cam) {
     this._camera = cam || null;
     if (this._fb) this._fb.setCamera(this._camera);
+    if (this.rain && this.rain.setCamera) this.rain.setCamera(this._camera);
   }
 
   hit(pos, opts = {}) { const fb = this._ensureFb(opts.scene); if (fb) fb.hit(pos, opts); }
@@ -1361,6 +1530,7 @@ export class GameVFX {
 
   setBaseVisible(on) { if (this.campfire && this.campfire.setBaseVisible) this.campfire.setBaseVisible(on); }
   setRingVisible(on) { if (this.campfire && this.campfire.setRingVisible) this.campfire.setRingVisible(on); }
+  setGlowScale(s) { if (this.campfire && this.campfire.setGlowScale) this.campfire.setGlowScale(s); }
 
   createCampfire(scene, opts = {}) {
     if (this.campfire) this.campfire.dispose();
@@ -1379,7 +1549,8 @@ export class GameVFX {
   createRain(scene, opts = {}) {
     if (this.rain) this.rain.dispose();
     this._scene = scene || this._scene;
-    this.rain = createRain(this._scene, Object.assign({ quality: this.quality }, opts));
+    this.rain = createRain(this._scene, Object.assign({ quality: this.quality, camera: this._camera }, opts));
+    if (this._camera && this.rain.setCamera) this.rain.setCamera(this._camera);
     return this.rain;
   }
 
@@ -1432,7 +1603,11 @@ export class GameVFX {
       if (!this.leaves) this.createLeaves(scene);
       if (!this.moths) this.createMoths(scene);
     }
-    if (this.rain) this.rain.setActive(cur.rain);
+    if (this.rain) {
+      this.rain.setActive(cur.rain);
+      if (this.rain.setCamera && this._camera) this.rain.setCamera(this._camera);
+      if (this.rain.setWind) this.rain.setWind(cur.wind ? 1.2 : 0.35, cur.wind ? 0.4 : 0.15);
+    }
     if (this.leaves) this.leaves.setActive(cur.wind);
     if (this.moths) this.moths.setActive(cur.moths);
   }

@@ -58,13 +58,17 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .chip.bump{animation:bump .35s}
 .chip.zero{opacity:.55}
 @keyframes bump{40%{transform:scale(1.18)}}
-#hint{position:absolute;left:50%;top:calc(318px + var(--st));transform:translateX(-50%);padding:9px 16px;font-weight:800;font-size:14px;line-height:1.25;text-align:center;width:max-content;max-width:min(92vw,360px);pointer-events:none;transition:opacity .3s}
+/* v0.8: три слота сверху вниз — карточка обучения (слева, 184 px, мимо фишек рюкзака), подсказка (286 px), тост (352 px) */
+#hint{position:absolute;left:50%;top:max(calc(286px + var(--st)),var(--tutB,0px));transform:translateX(-50%);padding:9px 16px;font-weight:800;font-size:14px;line-height:1.25;text-align:center;width:max-content;max-width:min(92vw,360px);pointer-events:none;transition:opacity .3s}
 #hint.warn{background:#fff1f1;color:#d93c55}
 #hint.hide{opacity:0}
-#toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.9);padding:16px 24px;text-align:center;font-weight:900;font-size:24px;opacity:0;transition:all .35s;pointer-events:none;width:max-content;max-width:86vw;line-height:1.15}
+#toast{position:absolute;left:50%;top:max(calc(max(calc(286px + var(--st)),var(--tutB,0px)) + 66px),var(--hintB,0px));transform:translate(-50%,0) scale(.9);transform-origin:50% 0;padding:16px 24px;text-align:center;font-weight:900;font-size:24px;opacity:0;transition:all .35s;pointer-events:none;width:max-content;max-width:86vw;line-height:1.15}
 #toast small{display:block;font-size:14px;font-weight:800;color:#7a849d;margin-top:4px}
-#toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
-#joy{position:absolute;left:0;bottom:0;width:50%;height:46%;touch-action:none}
+#toast.on{opacity:1;transform:translate(-50%,0) scale(1)}
+@media (max-height:700px){#hint{top:max(calc(262px + var(--st)),var(--tutB,0px))}#toast{top:max(calc(max(calc(262px + var(--st)),var(--tutB,0px)) + 60px),var(--hintB,0px));font-size:21px;padding:12px 20px}}
+body.isnight #hint,body.isnight #tut,body.isnight #toast{background:rgba(255,255,255,.95);box-shadow:0 0 0 2px rgba(255,255,255,.55),0 6px 18px rgba(10,20,60,.35)}
+body.isnight #hint.warn{background:#fff1f1}
+#joy{position:absolute;left:0;bottom:0;width:calc(50% - 24px);height:46%;touch-action:none}
 #jbase{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,255,255,.35);border:3px solid rgba(255,255,255,.75);box-shadow:0 4px 14px rgba(40,60,110,.15);pointer-events:none;transition:opacity .2s}
 #jknob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#fff;box-shadow:0 4px 10px rgba(40,60,110,.25)}
 #acts{position:absolute;right:calc(14px + var(--sr));bottom:calc(18px + var(--sb));width:200px;height:200px;pointer-events:none}
@@ -85,7 +89,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 #sheet{position:absolute;left:0;right:0;bottom:0;padding:14px 14px calc(14px + var(--sb));border-radius:26px 26px 0 0;transform:translateY(105%);transition:transform .25s;max-height:70%;overflow:auto;touch-action:pan-y}
 #sheet.on{transform:none}
 #sheet h3{margin:2px 4px 10px;font-size:20px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
-#sheet h3 button{border:0;background:#eef2f9;border-radius:14px;width:36px;height:36px;font-size:18px;font-weight:900;color:#6b7590}
+#sheet h3 button{border:0;background:#eef2f9;border-radius:14px;width:44px;height:44px;font-size:18px;font-weight:900;color:#6b7590}
 .rc{display:flex;align-items:center;gap:10px;padding:10px;border-radius:18px;background:#f5f8fd;margin-bottom:8px}
 .rc .ic{width:48px;height:48px;border-radius:14px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 2px 6px rgba(40,60,110,.1)}
 .rc .ic svg{width:34px;height:34px}
@@ -101,6 +105,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .rc.done{opacity:.6}
 .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px calc(24px + var(--sr)) calc(24px + var(--sb)) calc(24px + var(--sl));background:linear-gradient(180deg,rgba(143,211,255,.25),rgba(255,255,255,.55));text-align:center}
 .ov.hide,.hide{display:none!important}
+#pauseOv,#overOv,#winOv,#confirmOv{background:rgba(236,246,255,.86);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
 .ov h1{margin:0;font-size:52px;font-weight:900;color:#fff;text-shadow:0 4px 0 #3e8f4f,0 8px 22px rgba(30,70,40,.35);letter-spacing:.5px;line-height:1}
 .ov h2{margin:0;font-size:28px;font-weight:900;color:#33405a}
 .ov p{margin:0 0 8px;font-weight:800;color:#55607a;font-size:15px;max-width:320px}
@@ -109,10 +114,12 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .big small{display:block;font-size:12px;opacity:.85}
 .big:active{transform:translateY(3px)}
 #startOv .card{padding:10px 16px;font-weight:800;font-size:13px;color:#6b7590;max-width:320px}
-#dbg{position:absolute;left:50%;top:calc(4px + var(--st));transform:translateX(-50%);font:11px/1.3 monospace;background:rgba(0,0,0,.55);color:#bfffbf;padding:3px 7px;border-radius:6px;pointer-events:none;white-space:pre}
+#dbg{position:absolute;left:50%;bottom:var(--sb);transform:translateX(-50%);font:10px/1.3 monospace;background:rgba(0,0,0,.55);color:#bfffbf;padding:3px 7px;border-radius:6px;pointer-events:none;white-space:pre}
 .ft{position:absolute;left:0;top:0;font-weight:900;font-size:18px;color:#fff;text-shadow:0 2px 0 rgba(40,60,110,.5),0 0 6px rgba(40,60,110,.4);pointer-events:none;will-change:transform;white-space:nowrap}
 .ft.bad{color:#ff6b7f}
-#nOf{white-space:nowrap}
+#nOf,#nTxt{white-space:nowrap}
+@media (max-width:370px){#night{font-size:18px;gap:5px}#night small{font-size:12px}#night svg{width:20px;height:20px}}
+.nw{white-space:nowrap}
 #wx{display:flex;gap:3px;align-items:center;margin:5px 0 1px}
 #wx svg{width:20px;height:20px}
 #wx b{font-size:9px;font-weight:900;color:#5b6fe0;margin-left:2px}
@@ -124,7 +131,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .petcard{border:0;display:flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;font:inherit;font-weight:900;font-size:15px;color:#33405a;text-align:left}
 .petcard img{width:48px;height:48px;border-radius:14px}
 .petcard small{display:block;font-size:11px;color:#8a93ab;font-weight:800}
-.link{border:0;background:none;font:inherit;font-weight:900;font-size:15px;color:#55607a;padding:8px 18px}
+.link{border:0;background:none;font:inherit;font-weight:900;font-size:15px;color:#55607a;padding:8px 18px;min-height:44px}
 .ov p.small{font-size:13px;margin:-4px 0 2px}
 #cells{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;width:min(100%,350px)}
 .cell{position:relative;border:0;border-radius:16px;padding:9px 2px 7px;font:inherit;background:rgba(255,255,255,.92);box-shadow:0 3px 0 #c9d2e3;color:#33405a}
@@ -143,11 +150,11 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .lobbybox{width:min(100%,350px);padding:12px;text-align:left}
 .lrow{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:#6b7590;margin:4px 0 8px}
 .lrow b{font-size:20px;color:#33405a;letter-spacing:2px;flex:1}
-.mini{border:0;border-radius:12px;padding:6px 10px;font:inherit;font-weight:900;font-size:12px;background:#eef2f9;color:#55607a}
+.mini{border:0;border-radius:12px;padding:6px 10px;min-height:44px;min-width:44px;font:inherit;font-weight:900;font-size:12px;background:#eef2f9;color:#55607a}
 .mini small{display:block;font-size:9px}
 .mini:disabled{opacity:.6}
 #slots{display:grid;gap:6px;margin-bottom:8px}
-#joinRow input,#chatIn{flex:1;min-width:0;border:2px solid #e3e8f2;border-radius:12px;padding:7px 10px;font:inherit;font-weight:800;font-size:14px;color:#33405a;background:#fff}
+#joinRow input,#chatIn{flex:1;min-width:0;min-height:44px;border:2px solid #e3e8f2;border-radius:12px;padding:7px 10px;font:inherit;font-weight:800;font-size:14px;color:#33405a;background:#fff}
 #bChat,#bPing{position:absolute;left:calc(12px + var(--sl,0px));width:58px;height:54px;border:0;display:grid;place-items:center;font-weight:900;font-size:10px;color:#55607a;padding:2px}
 #bChat b,#bPing b{font-size:18px;line-height:1}#bChat{bottom:calc(214px + var(--sb))}#bPing{bottom:calc(274px + var(--sb))}
 #bChat .n{position:absolute;right:-4px;top:-4px;background:#ff6b7f;color:#fff;border-radius:9px;padding:1px 5px;font-style:normal}
@@ -155,7 +162,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .chHead{display:flex;align-items:center;gap:8px;margin-bottom:6px}.chHead b{flex:1;color:#33405a}.mini2{font-size:12px;margin:0}
 #chatFeed{max-height:26vh;overflow:auto;display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:700;color:#33405a;margin-bottom:6px}
 #chatFeed p{margin:0}#chatFeed b{color:var(--c)}
-#chatTpl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}#chatTpl button{border:0;border-radius:10px;padding:5px 8px;font:inherit;font-size:11px;font-weight:800;background:#eef2f9;color:#55607a}
+#chatTpl{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}#chatTpl button{border:0;border-radius:10px;padding:5px 8px;min-height:44px;font:inherit;font-size:11px;font-weight:800;background:#eef2f9;color:#55607a}
 .chRow{display:flex;gap:6px}
 .slot .tag{display:inline-block;vertical-align:2px;font-style:normal;line-height:15px;font-size:10px;font-weight:900;color:#fff;background:var(--c);border-radius:8px;padding:1px 6px;margin-left:4px}
 .slot{display:flex;align-items:center;gap:8px;padding:6px;border-radius:14px;background:#f5f8fd;border-left:5px solid var(--c)}
@@ -163,7 +170,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 .slot b{display:block;font-size:13px;font-weight:900}
 .slot small{display:block;font-size:11px;font-weight:800;color:#8a93ab}
 .slot.empty{opacity:.75}
-.chk{display:flex;align-items:center;gap:10px;font-weight:900;font-size:15px;padding:6px 2px}
+.chk{display:flex;align-items:center;gap:10px;font-weight:900;font-size:15px;padding:6px 2px;min-height:44px}
 .chk input{width:24px;height:24px;accent-color:#5ccf6e}
 .chk small{font-size:11px;color:#8a93ab}
 #lobbyNote{font-size:12px;margin:4px 0 0;color:#6b7590;font-weight:800}
@@ -173,7 +180,7 @@ body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
 #tut.pop{animation:tpop .35s}@keyframes tpop{0%{transform:scale(.9);opacity:.3}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 #tut div{flex:1;min-width:0}#tut small{display:block;font-size:10px;font-weight:900;color:#d99a1a;text-transform:uppercase;letter-spacing:.3px}
 #tut b{display:block;font-size:14px;font-weight:900;line-height:1.2;color:#33405a}
-#tutSkip{pointer-events:auto;border:0;border-radius:12px;padding:8px 10px;font:inherit;font-weight:900;font-size:12px;background:#eef2f9;color:#6b7590;flex:none}
+#tutSkip{pointer-events:auto;border:0;border-radius:12px;padding:8px 10px;min-height:44px;font:inherit;font-weight:900;font-size:12px;background:#eef2f9;color:#6b7590;flex:none}
 .fly{position:absolute;left:0;top:0;width:28px;height:28px;pointer-events:none;will-change:transform;filter:drop-shadow(0 2px 2px rgba(40,60,110,.35));z-index:4}
 .fly svg{width:28px;height:28px}
 div.petcard{cursor:default}
@@ -238,7 +245,7 @@ div.petcard{cursor:default}
   </div>
   <div id="mapOv" class="ov hide">
     <h2 id="mapT">Карта этапов</h2>
-    <p class="small">По 6 ночей. В первой версии открыты ночи 1–12, дальше — скоро.</p>
+    <p class="small">По 6 ночей. В первой версии открыты <span class="nw">ночи 1–12</span>, дальше — скоро.</p>
     <div id="cells"></div>
     <div id="mapInfo" class="card"></div>
     <button class="big" id="bMapGo">Начать</button>
@@ -248,7 +255,7 @@ div.petcard{cursor:default}
     <h2>С другом</h2>
     <div class="card lobbybox">
       <div class="lrow"><span>Код комнаты</span><b id="lobbyCode">----</b><button class="mini" disabled>Пригласить<small>скоро</small></button></div>
-      <div class="lrow hide" id="joinRow"><input id="joinCode" placeholder="Код друга" maxlength="16" autocomplete="off" autocapitalize="off"><button class="mini" id="bJoin">Войти</button></div>
+      <div class="lrow hide" id="joinRow"><input id="joinCode" placeholder="Код друга" maxlength="8" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase"><button class="mini" id="bJoin">Войти</button></div>
       <div id="slots"></div>
       <div class="lrow"><span>Этап</span><b id="lobbyStage">1–6</b><button class="mini" id="bLobbyStage">Сменить</button></div>
       <label class="chk"><input type="checkbox" id="chkFill"><span>Добрать случайных <small>до 4 игроков</small></span></label>
@@ -258,13 +265,13 @@ div.petcard{cursor:default}
     <button class="link" id="bLobbyBack">Назад</button>
   </div>
   <div id="confirmOv" class="ov hide"><h2 id="cfT">Точно?</h2><p id="cfS"></p><button class="big" id="cfYes">Да</button><button class="big alt" id="cfNo">Отмена</button></div>
-  <div id="pauseOv" class="ov hide"><button class="card btn mute corner" aria-label="Звук"></button><h2>Пауза</h2><button class="big" id="bResume">Продолжить</button><button class="big alt" id="bMenu">В меню</button></div>
+  <div id="pauseOv" class="ov hide"><button class="card btn mute corner" aria-label="Звук"></button><h2>Пауза</h2><button class="big" id="bResume">Продолжить</button><button class="big alt" id="bTutAgain">Повторить обучение<small>подсказки первого дня заново</small></button><button class="big alt" id="bMenu">В меню</button></div>
   <div id="overOv" class="ov hide"><h2 id="overT">Костёр погас</h2><p id="overS"></p><button class="big" id="bRetry">Повторить ночь</button><button class="big alt" id="bMap2">Карта этапов</button><button class="big alt" id="bMenu2">В меню</button></div>
   <div id="winOv" class="ov hide"><h1 class="win">Утро!</h1><h2 id="winT">Этап пройден</h2><p id="winS"></p><button class="big" id="bNextStage">Дальше</button><button class="big alt" id="bWinMap">Карта этапов</button><button class="link" id="bWinMenu">В меню</button></div>
   <div id="loading" class="ov" style="background:#8fd3ff"><h1>99 ночей</h1><p>Загрузка…</p></div>
 </div>
 <div id="rot">Поверни телефон вертикально</div>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
-<script type="module" src="./js/game.js?v=0.7.0"></script>
+<script type="module" src="./js/game.js?v=0.8.0"></script>
 </body>
 </html>

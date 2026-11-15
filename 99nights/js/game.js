@@ -1,15 +1,17 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.7.0';
-import * as SIM from './sim.js?v=0.7.0';
-import { GameSfx } from './sfx.js?v=0.7.0';
-import { GameVFX } from './fx/vfx.js?v=0.7.0';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.8.0';
+import * as SIM from './sim.js?v=0.8.0';
+import { GameSfx } from './sfx.js?v=0.8.0';
+import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.0';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
 const Q = new URLSearchParams(location.search);
-const FAST = Q.has('fast') ? Math.max(2, +Q.get('fast') || 6) : 1;   // ?fast=1 — время ×6 (или ?fast=10)
+const FAST = Q.has('fast') ? Math.min(12, Math.max(2, Math.round(+Q.get('fast') || 6))) : 1;   // ?fast=1 — весь мир ×6 (или ?fast=10, максимум ×12)
+// v0.8 (QA2-08): ?fast больше не трогает timeScale (раньше ускорялись только часы, а враги и питомец ходили с ×1 — баланс с ?fast был недостоверен);
+//   теперь симуляция делает FAST обычных шагов за кадр — ускорено всё: часы, движение, враги, урон. Только для тестов.
 const DEBUG = Q.get('debug') === '1';
 const NOADAPT = Q.has('noadapt');
 // QA-флаги (только вместе с ?debug=1): night=N — сразу соло в ночь N (1–12) нужного этапа с его стартовым набором, без сейва; unlock=1 — все этапы MVP открыты
@@ -209,7 +211,7 @@ const hideI = (im, i) => setI(im, i, 0, -50, 0, 0, .0001);
   for (let i = 0; i < nF; i++) { const a = rnd() * 6.283, r = Math.sqrt(R(40, CFG.MAP ** 2)); setI(iff, i, Math.cos(a) * r, 0, Math.sin(a) * r, R(0, 6), R(.8, 1.3)); } }
 
 // узлы мира из состояния: id → {im, i}
-const NV = { map: new Map(), ims: {}, sig: new Map() }; const SHAKE = new Map();
+const NV = { map: new Map(), ims: {}, sig: new Map() }; const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4(), _sph = new THREE.Sphere(); const NOCULL = Q.has('nocull'); const SHAKE = new Map();
 // вспышка узла при ударе/сборе (v0.7): instanceColor > 1 подсвечивает инстанс на ~0,18 с, без новых draw calls
 const FLASH = new Map(), FLASH_KINDS = ['pine', 'oak', 'bush', 'lstump', 'rock'];
 function updFlash(dt) { if (!FLASH.size && !FLASH.dirty) return; FLASH.dirty = false;
@@ -230,8 +232,14 @@ function syncNodes(s, force) {
   let dirty = !!force; for (const n of s.nodes) { const sig = nodeSig(n); if (NV.sig.get(n.id) !== sig) { NV.sig.set(n.id, sig); dirty = true; } }
   if (!dirty && !SHAKE.size) return;
   const cnt = {}; for (const k in NV.ims) cnt[k] = 0;
+  // v0.8: отсечение по пирамиде камеры и дальности тумана — InstancedMesh не отсекается сам (frustumCulled=false),
+  // поэтому деревья за спиной рисовались целиком. Пересборка раз в 0,2 с при движении камеры (см. frame), запас по радиусу.
+  const cull = mode === 'play' && !NOCULL; if (cull) { camera.updateMatrixWorld(); _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); _fr.setFromProjectionMatrix(_pm); }
+  const far2 = (scene.fog.far + 4) ** 2, cx = camera.position.x, cz = camera.position.z;
+  const vis = (n, r) => { if (!cull) return true; const dx = n.x - cx, dz = n.z - cz; if (dx * dx + dz * dz > far2) return false; _sph.center.set(n.x, r * .8, n.z); _sph.radius = r + 1.5; return _fr.intersectsSphere(_sph); };
   const put = (k, n, sc, rx = 0, rz = 0) => { const im = NV.ims[k]; const i = cnt[k]++; setI(im, i, n.x, 0, n.z, n.ry, sc, sc, rx, rz); NV.map.get(n.id)[k] = i; };
   for (const n of s.nodes) { const v = NV.map.get(n.id); for (const k in v) v[k] = null;
+    if (!vis(n, n.k === 'tree' ? 2.6 * (n.s || 1) : n.k === 'rock' ? 1.4 * (n.s || 1) : 1)) continue;
     if (n.k === 'tree') { const sc = n.s * .85; const sh = SHAKE.get(n.id) || 0, w = sh > 0 ? Math.sin(sh * 40) * sh * .5 : 0; if (n.alive) put(n.sub ? 'oak' : 'pine', n, sc, w, w * .6); else put('stump', n, sc); }
     else if (n.k === 'bush') { put('bush', n, n.s); if (n.berry) put('berries', n, n.s); }
     else if (n.k === 'stump') { put('lstump', n, 1); if (n.loot) put('scraps', n, 1); }
@@ -258,13 +266,9 @@ const fireRing = new THREE.Mesh(GEO.campfire_addon_2(), matVC); fireRing.visible
 // пламя, искры и дым — из пака эффектов (/fx/vfx.js). Камни/поленья/круг света рисуем свои (запечённые, 1 draw call),
 // поэтому у костра из пака прячем его меши-основания, кольцо и свечение, а PointLight снимаем (свет костра — один, наш).
 const vfx = new GameVFX({ quality: QUALITY });
-// v0.7 (пак 0.6): диск и кольцо пака не создаются (base/ring: false). Отдельных опций для камней/поленьев пака пока нет —
-// их (Lambert-меши) прячем один раз и после смены уровня (setLevel может включить каменное основание ур. 3).
-const fireFx = vfx.createCampfire(scene, { level: 1, position: [0, 0, 0], base: false, ring: false });
-fireFx.group.remove(fireFx.light); vfx.setCamera(camera);
-const packHide = []; fireFx.group.traverse(o => { if (o.isMesh && o.material.isMeshLambertMaterial) packHide.push(o); });
-const hidePackBase = () => { for (const o of packHide) o.visible = false; };
-hidePackBase();
+// v0.8 (пак 0.6.1+): у пака берём только пламя, искры и дым — диск, кольцо, камни, поленья и PointLight не создаются вовсе
+const fireFx = vfx.createCampfire(scene, { level: 1, position: [0, 0, 0], base: false, ring: false, stones: false, logs: false, light: false });
+vfx.setCamera(camera);   // нужен и дождю 0.6.1+ (штрихи вокруг камеры)
 const fogFx = vfx.createNightFog(scene, { radius: 11 });   // на 'high' — низкие простыни тумана ночью; цвет/дальность ниже подстраиваем под палитру
 // погода из пака: дождь, листья на ветру, мотыльки (vfx.setWeather по данным симуляции). Пак рисует лужи только на 'high',
 // поэтому на телефоне добавляем 6 простых луж-инстансов (один draw call). Ветер по кронам — наш шейдер matTree.
@@ -346,21 +350,34 @@ function mergePet(root) {
   root.clear(); for (const o of out) root.add(o); }
 function loadPet(pet) {
   if (petCache[pet]) return petCache[pet]; const a = PET_MODELS[pet];
-  return petCache[pet] = (async () => { const gltf = await (await getLoader()).loadAsync(a.url); const root = gltf.scene;
+  return petCache[pet] = (async () => { const gltf = await (await getLoader()).loadAsync(vu(a.url)); const root = gltf.scene;
     mergePet(root);
     root.scale.setScalar(a.scale || 1); const box = new THREE.Box3().setFromObject(root); root.position.y = -box.min.y; return root; })();
 }
-function placeholderPet() { return new THREE.Mesh(merge([part(Box(.6, .55, .5), '#9aa3b5', 0, .45), part(Box(.6, .5, .55), '#9aa3b5', 0, 1.0), part(Box(.5, .12, .05), '#3d4458', 0, 1.02, .28), part(Cone(.1, .2, 4), '#6f7890', -.2, 1.33, 0), part(Cone(.1, .2, 4), '#6f7890', .2, 1.33, 0)]), matVC); }
+let PH_GEO = null;   // v0.8: заглушка, текстура «z z» и луч фонарика — общие (раньше создавались на каждый вид питомца и утекали)
+function placeholderPet() { return new THREE.Mesh(PH_GEO || (PH_GEO = merge([part(Box(.6, .55, .5), '#9aa3b5', 0, .45), part(Box(.6, .5, .55), '#9aa3b5', 0, 1.0), part(Box(.5, .12, .05), '#3d4458', 0, 1.02, .28), part(Cone(.1, .2, 4), '#6f7890', -.2, 1.33, 0), part(Cone(.1, .2, 4), '#6f7890', .2, 1.33, 0)])), matVC); }
+let ZZ_TEX = null, BEAM = null;
+// v0.8 (QA1-10, GDD §5): шарфик цвета слота (модель художника slot_scarf.glb) — только в коопе. Материал SlotColor красим в цвет слота,
+// SlotAccent (узелок) не трогаем; геометрия запекается с цветами вершин один раз на цвет, материал — общий питомцев (ночная обводка). +1 draw call на питомца.
+const SCARF_AT = { raccoon: [.47, 1], capybara: [.47, 1.05], dragon: [.48, 1], goose: [.50, .95] }; let scarfP = null; const scarfGeo = {};
+// v0.8: модели художника обновляются под тем же именем — версия в URL, чтобы кэш браузера/Pages не отдавал старые .glb
+function vu(u) { return u + '?v=0.8.0'; }
+function loadScarf() { return scarfP || (scarfP = getLoader().then(L => L.loadAsync(vu('models/art/slot_scarf.glb'))).then(g => { const root = g.scene; root.updateMatrixWorld(true); const ms = []; root.traverse(o => { if (o.isMesh) ms.push(o); }); return { root, ms }; })); }
+function scarfMesh(sc, petK, color) { let g = scarfGeo[color];
+  if (!g) { for (const o of sc.ms) if (o.material.name === 'SlotColor') o.material.color = new THREE.Color(color); g = scarfGeo[color] = bakePetMeshes(sc.ms, new THREE.Matrix4().copy(sc.root.matrixWorld).invert()).geometry; }
+  const m = new THREE.Mesh(g, matPet), [y, k] = SCARF_AT[petK] || SCARF_AT.raccoon; m.position.set(0, y, 0); m.scale.setScalar(k); m.userData.scarf = color; return m; }
 const PV = new Map();   // id игрока → вид
 function playerView(p) {
   let v = PV.get(p.id); if (v) return v;
   v = { g: new THREE.Group(), body: new THREE.Group(), arms: [], walk: 0, pet: p.pet, zzz: null };
   v.g.add(v.body); v.g.add(v.sh = blob(1.3)); v.body.add(placeholderPet()); scene.add(v.g);
-  const beam = new THREE.Mesh(new THREE.ConeGeometry(2.2, 7.5, 16, 1, true).translate(0, -3.75, 0).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff1a8, transparent: true, opacity: .18, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false }));
+  if (!BEAM) BEAM = [new THREE.ConeGeometry(2.2, 7.5, 16, 1, true).translate(0, -3.75, 0).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xfff1a8, transparent: true, opacity: .18, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })];
+  const beam = new THREE.Mesh(BEAM[0], BEAM[1]);
   beam.position.set(0, .9, .3); beam.visible = false; v.g.add(beam); v.beam = beam;
-  const zz = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d'); x.font = '900 34px Nunito, sans-serif'; x.fillStyle = '#fff'; x.strokeStyle = '#7d8cff'; x.lineWidth = 6; x.strokeText('z z', 6, 44); x.fillText('z z', 6, 44); return new THREE.CanvasTexture(c); })(), transparent: true, depthWrite: false, fog: false }));
+  const zz = new THREE.Sprite(new THREE.SpriteMaterial({ map: ZZ_TEX || (ZZ_TEX = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d'); x.font = '900 34px Nunito, sans-serif'; x.fillStyle = '#fff'; x.strokeStyle = '#7d8cff'; x.lineWidth = 6; x.strokeText('z z', 6, 44); x.fillText('z z', 6, 44); return new THREE.CanvasTexture(c); })()), transparent: true, depthWrite: false, fog: false }));
   zz.scale.set(1, 1, 1); zz.position.y = 2; zz.visible = false; v.g.add(zz); v.zzz = zz;
-  loadPet(p.pet).then(root => { const m = root.clone(true); v.body.clear(); v.body.add(m); v.arms = []; m.traverse(o => { if (/Arm_[LR]/.test(o.name)) { o.userData.q0 = o.quaternion.clone(); o.userData.side = /_L/.test(o.name) ? 1 : -1; v.arms.push(o); } }); }).catch(e => console.warn('pet', e.message));
+  loadPet(p.pet).then(root => { const m = root.clone(true); v.body.clear(); v.body.add(m); v.arms = [];
+    if (S && S.mode === 'coop') loadScarf().then(sc => { if (v.body.children[0] === m) m.add(scarfMesh(sc, p.pet, p.color || SIM.SLOT_COLORS[(p.slot - 1) % 4])); }).catch(e => console.warn('scarf', e.message)); m.traverse(o => { if (/Arm_[LR]/.test(o.name)) { o.userData.q0 = o.quaternion.clone(); o.userData.side = /_L/.test(o.name) ? 1 : -1; v.arms.push(o); } }); }).catch(e => console.warn('pet', e.message));
   PV.set(p.id, v); return v;
 }
 const id_is_me = p => p.id === PID;
@@ -372,38 +389,80 @@ function syncPlayers(s, dt) { FB.squash = Math.max(0, FB.squash - dt * 1.4);
     v.body.position.x = asleep ? .5 : 0; v.zzT = Math.max(0, (v.zzT || 0) - dt); v.zzz.visible = asleep && v.zzT <= 0; if (id_is_me(p)) { const q = FB.squash; v.body.scale.set(1 + q * .35, 1 - q * .3, 1 + q * .35); } if (asleep) v.zzz.position.y = 1.6 + Math.sin(performance.now() * .003) * .15;
     for (const a of v.arms) { const sw = sp > .3 ? Math.sin(v.walk) * .6 * a.userData.side : 0, hit = p.swing > 0 && a.userData.side < 0 ? -Math.sin(p.swing * Math.PI) * 1.8 : 0; a.quaternion.copy(a.userData.q0).multiply(_q2.setFromEuler(_e.set(sw + hit, 0, 0))); }
     if ((p.has.basket || p.has.basket2) && !v.basket) { v.basket = new THREE.Mesh(GEO.basket(), matVC); v.basket.userData.key = 'basket'; v.basket.position.set(0, .55, -.42); v.basket.scale.setScalar(.8); v.g.add(v.basket); }
-    v.beam.visible = p.flash.on; if (p.flash.on) v.beam.material.opacity = .14 + Math.sin(performance.now() * .02) * .02; }
+    v.beam.visible = p.flash.on; if (p.flash.on) BEAM[1].opacity = .14 + Math.sin(performance.now() * .02) * .02; }
+  updSpot(dt);
 }
+// v0.8 (GDD §5): енот «замечает спрятанные запасы» — мерцающие искорки над кустами с ягодами и пнями с лоскутками рядом (1 draw call, только у енота)
+const SPOT_N = 24, spotGeo = new THREE.BufferGeometry(); spotGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPOT_N * 3), 3));
+const spotPts = new THREE.Points(spotGeo, new THREE.PointsMaterial({ map: radialTex([[0, 'rgba(255,255,220,1)'], [.35, 'rgba(255,230,120,.8)'], [1, 'rgba(255,210,80,0)']]), size: .55, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
+spotPts.frustumCulled = false; spotPts.visible = false; scene.add(spotPts); let spotT = 0;
+function updSpot(dt) { const p = S && S.players[PID]; if (!p || !PETS[p.pet].spot || mode === 'menu') { spotPts.visible = false; return; }
+  if ((spotT -= dt) <= 0) { spotT = .5; const a = spotGeo.attributes.position.array; let n = 0;
+    for (const q of S.nodes) { if (n >= SPOT_N) break; if (!((q.k === 'bush' && q.berry) || (q.k === 'stump' && q.loot))) continue; const d = Math.hypot(q.x - p.x, q.z - p.z); if (d > 14 || d < 1.2) continue; a[n * 3] = q.x; a[n * 3 + 1] = q.k === 'bush' ? .85 * (q.s || 1) : .95; a[n * 3 + 2] = q.z; n++; }
+    spotGeo.setDrawRange(0, n); spotGeo.attributes.position.needsUpdate = true; spotPts.visible = n > 0; }
+  spotPts.material.opacity = .55 + .35 * Math.sin(performance.now() * .004); }
 // ---------- враги (вид) ----------
 const EG = {}; for (const k of ['mist', 'crow', 'moose', 'moth']) EG[k] = [GEO[k](), GEO[k + 'Eyes']()];
 const matMoth = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: false, transparent: true, opacity: .92 });
 const EV = new Map();
-// существа художника: граф сцены + AnimationMixer; меши под каждым узлом-костью склеены (lit + glow) → мало draw calls
+// существа художника: граф сцены + AnimationMixer. v0.8: все меши существа (под всеми узлами-костями, и обычные, и светящиеся)
+// склеены в ОДИН SkinnedMesh: каждая вершина жёстко привязана к своему узлу (вес 1), светящиеся части — атрибут aGlow
+// (неосвещаемый цвет и слабее туман). Было по 2 draw call на узел (лось 11, ворон 6, клубочек 3, мотылёк 4) — стало 1 на врага.
 const CR = {};
+const matCreature = new THREE.MeshLambertMaterial({ vertexColors: true });
+matCreature.onBeforeCompile = sh => {
+  sh.vertexShader = 'attribute float aGlow;\nvarying float vGlow;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vGlow = aGlow;');
+  sh.fragmentShader = 'varying float vGlow;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += diffuseColor.rgb * vGlow; diffuseColor.rgb *= 1.0 - vGlow;')
+    .replace('#include <fog_fragment>', `#ifdef USE_FOG
+  #ifdef FOG_EXP2
+  float fogFactor = 1.0 - exp( - fogDensity * fogDensity * vFogDepth * vFogDepth );
+  #else
+  float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
+  #endif
+  gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor * ( 1.0 - .7 * vGlow ) );
+#endif`); };
+matCreature.customProgramCacheKey = () => 'creature-glow';
+function mergeSkin(parts) {
+  let n = 0; for (const q of parts) n += q.g.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3), si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), gl = new Float32Array(n); let o = 0;
+  for (const { g, bi, glow } of parts) { const c = g.attributes.position.count; pos.set(g.attributes.position.array.subarray(0, c * 3), o * 3); nor.set(g.attributes.normal.array.subarray(0, c * 3), o * 3); col.set(g.attributes.color.array.subarray(0, c * 3), o * 3);
+    for (let i = 0; i < c; i++) { si[(o + i) * 4] = bi; sw[(o + i) * 4] = 1; gl[o + i] = glow; } o += c; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4)); g.setAttribute('aGlow', new THREE.BufferAttribute(gl, 1)); g.computeBoundingSphere(); return g;
+}
 function prepCreature(gltf, a) {
-  const root = gltf.scene; root.updateMatrixWorld(true); const hosts = new Map();
+  const root = gltf.scene; root.position.set(0, 0, 0); root.quaternion.identity(); root.scale.set(1, 1, 1); root.updateMatrixWorld(true); const hosts = new Map();
   root.traverse(o => { if (o.isMesh) { const h = o.parent; if (!hosts.has(h)) hosts.set(h, []); hosts.get(h).push(o); } });
+  const bones = [], parts = [];
   for (const [h, ms] of hosts) { const tmp = new THREE.Group(); const inv = new THREE.Matrix4().copy(h.matrixWorld).invert();
     for (const o of ms) { const c = new THREE.Mesh(o.geometry, o.material); c.name = o.name; c.matrixAutoUpdate = false; c.matrix.multiplyMatrices(inv, o.matrixWorld); tmp.add(c); h.remove(o); }
-    tmp.updateMatrixWorld(true); const { lit, glow } = bakeParts(tmp, a); if (lit) h.add(new THREE.Mesh(lit, matVC)); if (glow) h.add(new THREE.Mesh(glow, matGlow)); }
+    tmp.updateMatrixWorld(true); const { lit, glow } = bakeParts(tmp, a); const bi = bones.length; bones.push(h);
+    if (lit) parts.push({ g: lit.applyMatrix4(h.matrixWorld), bi, glow: 0 }); if (glow) parts.push({ g: glow.applyMatrix4(h.matrixWorld), bi, glow: 1 }); }
+  const mesh = new THREE.SkinnedMesh(mergeSkin(parts), matCreature); mesh.frustumCulled = false; root.add(mesh); root.updateMatrixWorld(true);
+  mesh.bind(new THREE.Skeleton(bones), new THREE.Matrix4());
   root.scale.setScalar(a.scale || 1); root.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(root); root.position.y = -box.min.y;
-  root.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
   return { root, clips: gltf.animations };
 }
+// клон существа: Object3D.clone не перепривязывает скелет — строим новый Skeleton из склонированных узлов (обратные матрицы общие)
+function cloneCreature(src) { const m = src.clone(true), a = [], b = []; src.traverse(o => a.push(o)); m.traverse(o => b.push(o)); const map = new Map(a.map((o, i) => [o, b[i]]));
+  m.traverse(o => { if (o.isSkinnedMesh) o.bind(new THREE.Skeleton(o.skeleton.bones.map(x => map.get(x)), o.skeleton.boneInverses), o.bindMatrix); }); return m; }
+// v0.8: вид врага убирается с освобождением текстуры костей и кэша анимаций (раньше копились за долгий забег)
+function dropEnemyView(v) { scene.remove(v.g); if (v.mixer) { v.mixer.stopAllAction(); v.mixer.uncacheRoot(v.mixer.getRoot()); } v.g.traverse(o => { if (o.isSkinnedMesh) o.skeleton.dispose(); }); }
 function bakeParts(group, a) { const r = bakeObject(group, { glowMin: a.glowMin, scale: 1, noGround: true }); return { lit: r.geo, glow: r.glow }; }
 const CLIP = { mist: e => e.st === 'go' || e.st === 'flee' || e.leave ? 'walk' : 'idle', crow: e => e.st === 'peck' ? 'peck' : e.y > .25 ? 'fly' : 'idle', moose: e => e.st === 'watch' || e.st === 'blow' ? 'idle' : 'walk', moth: e => e.st === 'land' ? 'idle' : 'fly' };
 function enemyView(e) {
   let v = EV.get(e.id); if (v) return v; v = { g: new THREE.Group(), body: new THREE.Group(), t: Math.random() * 6 };
   const cr = CR[e.k];
-  if (cr) { const m = cr.root.clone(true); v.body.add(m); v.glb = true; v.mixer = new THREE.AnimationMixer(m); v.acts = {}; for (const c of cr.clips) v.acts[c.name] = v.mixer.clipAction(c); v.clip = ''; }
+  if (cr) { const m = cloneCreature(cr.root); v.body.add(m); v.glb = true; v.mixer = new THREE.AnimationMixer(m); v.acts = {}; for (const c of cr.clips) v.acts[c.name] = v.mixer.clipAction(c); v.clip = ''; }
   else { const m = new THREE.Mesh(EG[e.k][0], e.k === 'moth' ? matMoth : matVC), eyes = new THREE.Mesh(EG[e.k][1], matGlow); eyes.visible = !!EG[e.k][1].attributes.position; v.body.add(m, eyes); } v.g.add(v.body); v.g.add(v.sh = blob(e.k === 'moose' ? 1.5 : e.k === 'mist' ? 1.2 : e.k === 'moth' ? .4 : .8));
   scene.add(v.g); EV.set(e.id, v); return v;
 }
 function syncEnemies(s, dt) {
-  const alive = new Set(s.enemies.map(e => e.id)); for (const [id, v] of EV) if (!alive.has(id)) { scene.remove(v.g); EV.delete(id); }
+  const alive = new Set(s.enemies.map(e => e.id)); for (const [id, v] of EV) if (!alive.has(id)) { dropEnemyView(v); EV.delete(id); }
   for (const e of s.enemies) { const v = enemyView(e); v.t += dt; v.g.position.set(e.x, 0, e.z); v.g.rotation.y = e.ry; const sc = e.dead ? Math.max(.01, 2 - e.dead) : 1; v.g.scale.setScalar(sc);
     if (v.glb) { const want = CLIP[e.k](e), act = v.acts[want] || v.acts.idle; if (want !== v.clip && act) { const prev = v.acts[v.clip]; act.reset().play(); if (prev) act.crossFadeFrom(prev, .25, false); v.clip = want; } v.mixer.update(dt);
-      if (e.k === 'crow' || e.k === 'moth') { v.body.position.y = e.y; v.sh.visible = e.k === 'crow' && e.y < 3; } if (e.k === 'mist' && e.st === 'blow') v.body.scale.set(1 + Math.sin(v.t * 12) * .08, 1, 1); else v.body.scale.set(1, 1, 1); continue; }
+      if (e.k === 'crow' || e.k === 'moth') { v.body.position.y = e.y; v.sh.visible = e.k === 'crow' && e.y < 3; } if (e.k === 'mist') v.body.position.y = e.st === 'blow' && S.fire.lv === 3 ? .14 : 0;   /* v0.8 (QA2-09): новая модель художника не уходит в землю; у костра ур. 3 — на высоту постамента */
+      if (e.k === 'mist' && e.st === 'blow') v.body.scale.set(1 + Math.sin(v.t * 12) * .08, 1, 1); else v.body.scale.set(1, 1, 1); continue; }
     if (e.k === 'mist') { v.body.position.y = Math.abs(Math.sin(v.t * 6)) * .15; v.body.rotation.x = v.t * 3; if (e.st === 'blow') v.body.scale.set(1 + Math.sin(v.t * 12) * .08, 1, 1); }
     else if (e.k === 'crow') { v.body.position.y = e.y; v.sh.visible = e.y < 3; v.body.rotation.z = e.st === 'peck' ? 0 : Math.sin(v.t * 14) * .25; v.body.rotation.x = e.st === 'peck' ? Math.sin(v.t * 10) * .3 : 0; }
     else if (e.k === 'moth') { v.body.position.y = e.y; v.body.scale.x = .35 + Math.abs(Math.sin(v.t * (e.st === 'land' ? 9 : 22))) * .75; v.body.rotation.x = e.st === 'land' ? .5 : .15; v.sh.visible = false; }
@@ -413,11 +472,13 @@ function syncEnemies(s, dt) {
 // ---------- игра: состояние и связь с симуляцией ----------
 let S = null;                 // состояние мира (из sim.js)
 let mode = 'menu';            // menu | play | pause | over
-let pet = Q.get('pet') || localStorage.getItem(PET_KEY) || 'raccoon'; if (!PETS[pet]) pet = 'raccoon';   // GDD: питомец только из профиля Тапышей (в прототипе — ?pet= или профиль-заглушка 99n_v1_pet); выбора в меню нет
+// v0.8 (QA2-11): старый выбор из v0.6 (`99n_v1_pet`) больше не читаем и удаляем — питомец только из профиля (в прототипе — ?pet=)
+try { localStorage.removeItem(PET_KEY); } catch (_) {}
+let pet = Q.get('pet') || 'raccoon'; if (!PETS[pet]) pet = 'raccoon';   // GDD: питомец только из профиля Тапышей (в прототипе — ?pet= или профиль-заглушка 99n_v1_pet); выбора в меню нет
 const cmdQ = [];              // очередь команд → step()
 const send = c => COOP && COOP.active() ? COOP.send(c) : cmdQ.push({ pid: PID, ...c });
 const ico = (el, k) => { if (el) el.innerHTML = IC[k]; };
-function initWorld(state) { S = state; OCC.set.clear(); for (const k in OCC.ghosts) { OCC.ghosts[k].count = 0; OCC.ghosts[k].visible = false; } S.timeScale = FAST; for (const im of Object.values(NV.ims)) scene.remove(im); NV.map.clear(); NV.ims = {}; buildNodeViews(S); syncBuilds(S); for (const [id, v] of PV) { scene.remove(v.g); } PV.clear(); for (const [, v] of EV) scene.remove(v.g); EV.clear(); audioSig = ''; }
+function initWorld(state) { S = state; OCC.set.clear(); for (const k in OCC.ghosts) { OCC.ghosts[k].count = 0; OCC.ghosts[k].visible = false; } S.timeScale = 1; for (const im of Object.values(NV.ims)) { scene.remove(im); im.dispose(); } NV.map.clear(); NV.ims = {}; buildNodeViews(S); syncBuilds(S); for (const [id, v] of PV) { scene.remove(v.g); } PV.clear(); for (const [, v] of EV) dropEnemyView(v); EV.clear(); audioSig = ''; }
 
 // ---------- звук: разблокировка из первого жеста, mute, настроение/погода из состояния ----------
 const sfx = new GameSfx({ masterVolume: .3, quality: QUALITY }); sfx.muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -441,20 +502,20 @@ const today = () => new Date().toISOString().slice(0, 10);
 const stageName = id => { const st = STAGES[id - 1]; return st.from + '–' + st.to; };
 // состояние ячейки: soon (13–99 и финал) | passed | open | locked; + флаг соло-сейва
 function cellState(id, a = account(), sv = loadSave()) { const save = !!(sv && sv.stage === id); if (id > CFG.MVP_STAGES) return { st: 'soon', save }; if (a.passed.includes(id)) return { st: 'passed', save }; if (QA_UNLOCK) return { st: 'open', save }; return { st: id <= a.open ? 'open' : 'locked', save }; }
-let qaRun = false;   // ?debug=1&night=N — забег без сейва
+let qaRun = false, runBonus = 0;   // runBonus — монеты «первый заход дня», полученные в этом заходе этапа   // ?debug=1&night=N — забег без сейва
 function save() { if (!S || S.mode !== 'solo' || qaRun) return; try { localStorage.setItem(SAVE_KEY, SIM.serialize(S)); } catch (e) {} }
 function loadSave() { try { const t = localStorage.getItem(SAVE_KEY); if (!t) return null; const s = SIM.deserialize(t); return s.v === 3 ? s : null; } catch (e) { return null; } }
 function startStage(stage) {
   const a = account(), firstEver = !a.started, seed = +Q.get('seed') || (1 + Math.floor(Math.random() * 99990));
-  const s = SIM.createState({ seed, timeScale: FAST, mode: 'solo', nPlayers: 1 }); SIM.addPlayer(s, PID, pet); SIM.beginStage(s, stage, { firstEver });
-  a.started = true; saveAcc(a); qaRun = false; TUT.stop(false); initWorld(s); save(); startPlay();
+  const s = SIM.createState({ seed, timeScale: 1, mode: 'solo', nPlayers: 1 }); SIM.addPlayer(s, PID, pet); SIM.beginStage(s, stage, { firstEver });
+  a.started = true; saveAcc(a); qaRun = false; runBonus = 0; TUT.stop(false); initWorld(s); save(); startPlay();
   let tut = false; try { tut = stage === 1 && !localStorage.getItem(TUT_KEY); } catch (_) {}
   if (tut) TUT.start(S.fire.fuel > 0);
   else hint(firstEver ? 'Разожги костёр: подойди к нему и нажми «Разжечь»' : stage === 2 ? 'Этап 7–12: костёр 3-го уровня, в сундуке набор главы' : 'Собирай ветки и ягоды, корми костёр', 4);
 }
 // QA: сразу в ночь N (1–12) нужного этапа со стартовым набором этого этапа; сейв не пишется и не трогается
 function startQaNight(n) {
-  const stage = SIM.stageOf(n), seed = +Q.get('seed') || 7; const s = SIM.createState({ seed, timeScale: FAST, mode: 'solo', nPlayers: 1 }); SIM.addPlayer(s, PID, pet); SIM.beginStage(s, stage, {});
+  const stage = SIM.stageOf(n), seed = +Q.get('seed') || 7; const s = SIM.createState({ seed, timeScale: 1, mode: 'solo', nPlayers: 1 }); SIM.addPlayer(s, PID, pet); SIM.beginStage(s, stage, {});
   s.night = n; s.t = SIM.dayLen(s) - 2; qaRun = true; TUT.stop(false); initWorld(s); startPlay(); toast('QA · ночь ' + n, 'Этап ' + stageName(stage) + ' · без сохранения');
 }
 function continueGame() { qaRun = false; TUT.stop(false); const s = loadSave(); if (!s) return showMap(); const p = s.players[PID]; p.x = 0; p.z = 4.2; p.vx = p.vz = 0; p.sleep = p.rest = 0; p.str = Math.max(p.str, 50); p.in = { x: 0, z: 0 }; p.flash.on = false; s.enemies = []; s.result = null; initWorld(s); startPlay(); toast('Этап ' + stageName(S.stage) + ' · ночь ' + SIM.stageNight(S), 'Продолжаем с утра'); }
@@ -486,11 +547,21 @@ function updHUD() {
   const sl = p.sleep > 0 || p.rest > 0; $('sleepCard').classList.toggle('hide', !sl);
   if (sl) { $('sleepT').textContent = PETS[p.pet].name + (p.rest > 0 ? ' отдыхает у костра' : ' устал и уснул'); $('sleepS').textContent = p.rest > 0 ? 'Встанет через ' + Math.ceil(p.rest / S.timeScale) + ' с' : 'Грёзы унесут к костру через ' + Math.ceil(p.sleep / S.timeScale) + ' с'; }
 }
-const hintLog = []; let hintT = 0; function hint(t, dur = 2.2, warn = false) { hintLog.push(t); if (hintLog.length > 40) hintLog.shift(); const el = $('hint'); el.textContent = t; el.classList.remove('hide'); el.classList.toggle('warn', warn); hintT = dur; }
-function toast(t, sub) { const el = $('toast'); el.innerHTML = t + (sub ? `<small>${sub}</small>` : ''); el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 2600); }
+const hintLog = []; let hintT = 0; function hint(t, dur = 2.2, warn = false) { hintLog.push(t); if (hintLog.length > 40) hintLog.shift(); const el = $('hint'); el.textContent = t; el.classList.remove('hide'); el.classList.toggle('warn', warn); hintT = dur; hintSlot(); }
+// v0.8: у тоста свой слот (ниже подсказки и карточки обучения) и очередь — второй тост ждёт, пока первый дочитают (≥1,4 с)
+const TQ = { q: [], t0: 0, h: 0 };
+function toast(t, sub) { const now = performance.now(), el = $('toast'), html = t + (sub ? `<small>${sub}</small>` : '');
+  if (el.classList.contains('on') && now - TQ.t0 < 1400) { if (!TQ.q.some(x => x === html) && TQ.q.length < 3) TQ.q.push(html); return; }
+  showToast(html); }
+function showToast(html) { const el = $('toast'); el.innerHTML = html; hintSlot(); el.classList.add('on'); TQ.t0 = performance.now(); clearTimeout(TQ.h);
+  TQ.h = setTimeout(() => { if (TQ.q.length) showToast(TQ.q.shift()); else el.classList.remove('on'); }, TQ.q.length ? 1600 : 2600); }
+function clearToasts() { TQ.q.length = 0; clearTimeout(TQ.h); $('toast').classList.remove('on'); }
 const floats = []; for (let i = 0; i < 8; i++) { const el = document.createElement('div'); el.className = 'ft'; el.style.display = 'none'; $('hud').appendChild(el); floats.push({ el, t: 0, p: new THREE.Vector3() }); }
-let fIdx = 0; function floatText(txt, x, y, z, bad) { const f = floats[fIdx]; fIdx = (fIdx + 1) % floats.length; f.el.innerHTML = txt; f.el.className = 'ft' + (bad ? ' bad' : ''); f.t = 1.1; f.p.set(x, y, z); f.el.style.display = ''; }
-function updFloats(dt) { for (const f of floats) { if (f.t <= 0) continue; f.t -= dt; f.p.y += dt * 1.2; if (f.t <= 0) { f.el.style.display = 'none'; continue; } _v.copy(f.p).project(camera); const sc = f.t > .95 ? 1 + (f.t - .95) * 4 : 1; f.el.style.transform = `translate(${(_v.x * .5 + .5) * innerWidth}px,${(-_v.y * .5 + .5) * innerHeight}px) translate(-50%,-50%) scale(${sc.toFixed(2)})`; f.el.style.opacity = Math.min(1, f.t * 2); } }
+let fIdx = 0; function floatText(txt, x, y, z, bad) { const f = floats[fIdx]; fIdx = (fIdx + 1) % floats.length; f.el.innerHTML = txt; f.el.className = 'ft' + (bad ? ' bad' : ''); f.t = 1.1; f.w = 0; f.p.set(x, y, z); f.el.style.display = ''; }
+function updFloats(dt) { updFloats.top = null; for (const f of floats) { if (f.t <= 0) continue; f.t -= dt; f.p.y += dt * 1.2; if (f.t <= 0) { f.el.style.display = 'none'; continue; } _v.copy(f.p).project(camera); const sc = f.t > .95 ? 1 + (f.t - .95) * 4 : 1; const hw = Math.min(innerWidth / 2 - 4, (f.w || (f.w = f.el.offsetWidth || 80)) / 2 + 6);   // v0.8 (QA1-15): не уезжает за край экрана
+    const fx = clamp((_v.x * .5 + .5) * innerWidth, hw, innerWidth - hw); let fy = clamp((-_v.y * .5 + .5) * innerHeight, 70, innerHeight - 40);
+    const tr = updFloats.top || (updFloats.top = $('top').getBoundingClientRect()); if (fx - hw < tr.right && fy < tr.bottom + 16) fy = tr.bottom + 16;   // и не ложится на HUD-панель
+    f.el.style.transform = `translate(${fx}px,${fy}px) translate(-50%,-50%) scale(${sc.toFixed(2)})`; f.el.style.opacity = Math.min(1, f.t * 2); } }
 const icoTxt = (k, n) => `+${n} <span style="display:inline-block;width:20px;height:20px;vertical-align:-4px">${IC[k]}</span>`;
 
 // ---------- обучение первого дня (v0.7, план Геймдизайна, balance_1-12.md §6) ----------
@@ -508,12 +579,16 @@ const TUT_STEPS = [
 function nearestNode() { const p = me(); let b = null, bd = 1e9; for (const n of S.nodes) { if (!n.alive || !(n.k === 'branch' || (n.k === 'bush' && n.berry))) continue; const d = Math.hypot(n.x - p.x, n.z - p.z); if (d < bd) { bd = d; b = n; } } return b; }
 const tutArrow = new THREE.Mesh(new THREE.ConeGeometry(.32, .7, 4).rotateX(Math.PI), new THREE.MeshBasicMaterial({ color: 0xffd23c, fog: false, depthTest: false, transparent: true }));
 tutArrow.renderOrder = 5; tutArrow.visible = false; scene.add(tutArrow);
+// v0.8: подсказка и тост встают сразу под карточкой обучения (её высота 2–4 строки), а без обучения — на свои места
+function tutSlot() { const el = $('tut'), on = !el.classList.contains('hide'); document.body.style.setProperty('--tutB', on ? (el.offsetTop + el.offsetHeight + 8) + 'px' : '0px'); hintSlot(); }
+// v0.8 (QA2-01): тост — всегда ниже фактического низа подсказки (она бывает в 2–3 строки), а не на фиксированные +66 px
+function hintSlot() { const h = $('hint'), on = !h.classList.contains('hide') && h.textContent; document.body.style.setProperty('--hintB', on ? (h.offsetTop + h.offsetHeight + 8) + 'px' : '0px'); }
 const TUT = { on: false, i: 0, fed: false, full: false, feedHint: false, doneT: 0, log: [],
-  start(firstLit) { this.on = true; this.i = firstLit ? 1 : 0; this.fed = false; this.full = false; this.feedHint = false; this.doneT = 0; this.log = []; document.body.classList.add('tut'); this.show(); },
-  stop(done) { if (!this.on) return; this.on = false; tutArrow.visible = false; $('tut').classList.add('hide'); document.body.classList.remove('tut'); if (done) try { localStorage.setItem(TUT_KEY, '1'); } catch (_) {} },
+  start(firstLit) { this.on = true; this.i = firstLit ? 1 : 0; this.fed = false; this.full = false; this.feedHint = false; this.doneT = 0; this.log = []; document.body.classList.add('tut'); this.show(firstLit ? 'Костёр уже горит. Днём собирай ветки и ягоды, потом неси в сундук у костра' : undefined); },   // v0.8 (QA2-10): не «Огонь горит!», если ребёнок не разжигал
+  stop(done) { if (!this.on) return; this.on = false; tutArrow.visible = false; $('tut').classList.add('hide'); document.body.classList.remove('tut'); tutSlot(); if (done) try { localStorage.setItem(TUT_KEY, '1'); } catch (_) {} },
   go(id) { const k = TUT_STEPS.findIndex(q => q.id === id); if (k > this.i) { this.i = k; this.show(); } },
   show(text) { const st = TUT_STEPS[this.i], t = text || st.t; this.log.push(st.id); $('tut').classList.toggle('hide', !t); if (!t) return;
-    $('tutT').textContent = t; $('tutN').textContent = 'Обучение · ' + (Math.min(this.i, 5) + 1) + ' / 6'; const el = $('tut'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); },
+    $('tutT').textContent = t; $('tutN').textContent = 'Обучение · ' + [1, 2, 3, 4, 4, 5, 6][this.i] + ' / 6';   /* v0.8 (QA2-10): «wait» — продолжение шага 4, рассвет — 6/6 только один раз */ const el = $('tut'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); tutSlot(); },
   ev(t, e) { if (!this.on) return; const id = TUT_STEPS[this.i].id;
     if (t === 'fuel') { if (e.relit && id === 'ignite') this.go('gather'); else if (!e.relit) { this.fed = true; if (id === 'craft' || this.feedHint) { this.feedHint = false; this.go('wait'); this.show(); } } }
     else if (t === 'gain' && (e.k === 'stick' || e.k === 'berry') && id === 'gather') this.go('more');
@@ -538,7 +613,8 @@ function ctxHints(dt) { if ((CH.t -= dt) > 0 || !S || mode !== 'play') return; C
   if (p.sleep > 0 || p.rest > 0) return;
   if (p.hunger < 30 && (food ? say('eat', 'Проголодался — нажми «Съесть»', 20) : say('hungry', 'Голодно — собери ягоды с кустов или возьми из сундука', 25, true))) return;
   if (night && Math.hypot(p.x, p.z) > lightRv && p.str < 55 && say('dark', 'Силы тают во тьме — вернись в круг света', 14, true)) return;
-  if (S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < (night ? .25 : .15) && !TUT.on && say('fuel', night ? 'Костёр слабеет — подбрось веток!' : 'Костёр почти погас — подбрось веток', night ? 12 : 25, night)) return;
+  // v0.8 (баланс §9.1): днём при топливе < 40% — «Подбрось веток в костёр, пока день» (ветки берутся и из сундука)
+  if (S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < (night ? .25 : .4) && !TUT.on && say('fuel', night ? 'Костёр слабеет — подбрось веток!' : 'Подбрось веток в костёр, пока день', night ? 12 : 30, night)) return;
   if (!night && !TUT.on && SIM.dayLen(S) - S.t < 12 && S.t > 5 && say('dusk' + S.night, 'Скоро ночь — запаси веток у костра', 999)) return; }
 
 // ---------- крафт-панель ----------
@@ -573,15 +649,15 @@ function handleEvents() {
   const evs = S.ev.splice(0); let nodesChanged = false;
   for (const e of evs) {
     const mine = !e.pid || e.pid === PID;   // в коопе чужие действия — тише/без подсказок
-    if (!mine && !['spawn', 'ping', 'wake'].includes(e.t)) continue;
+    if (!mine && !['spawn', 'ping', 'wake', 'waking'].includes(e.t) && e.by !== PID) continue;
     switch (e.t) {
       case 'gain': { floatText(icoTxt(e.k, e.n), e.x, 1.4, e.z); { const p = me(); vfx.collect([e.x, .5, e.z], [p.x, 1.2, p.z], { item: { stick: 'sticks', stone: 'stones', berry: 'berries', cloth: 'scraps' }[e.k] }); } sfx.play('collect', { item: { stick: 'sticks', stone: 'stones', berry: 'berries', cloth: 'scraps' }[e.k] }); nodesChanged = true;
         flyToInv(e.k, e.x, .8, e.z); FB.squash = .22; buzz(12); FB.n.gain++; const nn = S.nodes.find(q => Math.abs(q.x - e.x) < .01 && Math.abs(q.z - e.z) < .01); if (nn) FLASH.set(nn.id, .18); TUT.on && TUT.ev('gain', e); break; }
       case 'hit': { const n = S.nodes.find(q => q.id === e.id); if (n) { SHAKE.set(n.id, .3); FLASH.set(n.id, .18); } vfx.hit([e.x, 1, e.z], { kind: 'tree' }); sfx.play('chop'); shake(.18); FB.squash = .16; buzz(18); FB.n.hit++; break; }
       case 'node': nodesChanged = true; break;
       case 'full': hint('Рюкзак полон — отнеси всё в сундук у костра', 2.4, true); TUT.on && TUT.ev('full', e); sfx.play('ui', { kind: 'timeout' }); break;
-      case 'fuel': floatText('+' + e.n + ' огня', 0, 2.4, 0); burst(0, 1, 0, '#ffb13b', 8, 1.8); fireFx.burst(); FB.fire = 1; buzz(10); TUT.on && TUT.ev('fuel', e); if (e.relit) { sfx.play('fire', { kind: 'ignite' }); toast(S.firstLight === false && S.night === STAGES[S.stage - 1].from && S.phase === 'day' ? 'Костёр зажжён!' : 'Костёр снова горит!'); } else sfx.play('fire', { kind: 'feed' }); break;
-      case 'deposit': { const t = Object.entries(e.moved).map(([k, n]) => n + ' ' + RN[k]).join(', '); hint('В сундук: ' + t, 2.2); TUT.on && TUT.ev('deposit', e); burst(CFG.CHEST.x, 1, CFG.CHEST.z, '#ffd36b', 8, 1.5); sfx.play('chest', { kind: 'in' }); break; }
+      case 'fuel': floatText('+' + e.n + ' огня', 0, 2.4, 0); if (e.fromChest && !TUT.on && (handleEvents.chestT || 0) < performance.now()) { hint(e.relit && e.sticks > 1 ? 'Розжиг: 2 ветки (взято из сундука)' : 'Ветка взята из сундука', 1.6); handleEvents.chestT = performance.now() + 8000; } burst(0, 1, 0, '#ffb13b', 8, 1.8); fireFx.burst(); FB.fire = 1; buzz(10); TUT.on && TUT.ev('fuel', e); if (e.relit) { sfx.play('fire', { kind: 'ignite' }); toast(S.firstLight === false && S.night === STAGES[S.stage - 1].from && S.phase === 'day' ? 'Костёр зажжён!' : 'Костёр снова горит!'); } else sfx.play('fire', { kind: 'feed' }); break;
+      case 'deposit': { const t = Object.entries(e.moved).map(([k, n]) => n + ' ' + RN[k]).join(', '); hint('В сундук: ' + t + (e.full ? ' · сундук полон (' + CFG.CHEST_SLOTS + ' слота)' : ''), e.full ? 3 : 2.2, !!e.full); TUT.on && TUT.ev('deposit', e); burst(CFG.CHEST.x, 1, CFG.CHEST.z, '#ffd36b', 8, 1.5); sfx.play('chest', { kind: 'in' }); break; }
       case 'craft': { const fc = Object.entries(e.fromChest || {}); toast(e.name, fc.length ? 'Взято из сундука: ' + fc.map(([k, n]) => n + ' ' + RN[k]).join(', ') : 'Готово!'); const p = me(); burst(p.x, 1, p.z, '#ffd36b', 10, 2);
         if (e.id === 'fire2' || e.id === 'fire3') { sfx.play('fire', { kind: 'upgrade' }); fireFx.burst(); FB.fire = 1.5; } else sfx.play('craft'); buzz(25); syncBuilds(S); renderRecipes(); TUT.on && TUT.ev('craft', e); break; }
       case 'eat': { const p = me(); floatText(e.k === 'pie' ? 'Пирожок!' : 'Ням!', p.x, 2, p.z); sfx.play('eat', { item: e.k === 'pie' ? 'pie' : 'berries' }); break; }
@@ -603,7 +679,9 @@ function handleEvents() {
       case 'flash': sfx.play('lamp', { kind: e.on ? 'on' : 'charge' }); if (e.empty) hint('Фонарик разрядился — заряди его у костра', 2.2, true); break;
       case 'sleep': { const pv = PV.get(e.pid || PID); if (pv) { vfx.petTired(pv.g); pv.zzT = 3; } } hint(PETS[me().pet].name + ' устал и уснул…', 2.5, true); sfx.play('pet', { kind: 'sleep', pet: me().pet }); sfx.play('ping', { tired: true }); break;
       case 'dream': hint('Грёзы унесли к костру — отдых 15 с', 2.5); sfx.play('dream'); break;
-      case 'wake': hint(PETS[me().pet].name + ' проснулся!', 1.8); sfx.play('pet', { kind: 'wake', pet: me().pet }); break;
+      case 'wake': { const q = S.players[e.pid] || me(), nm = q.id === PID ? PETS[q.pet].name : (q.name || PETS[q.pet].name); hint(e.by === PID ? nm + ' снова на ногах!' : nm + ' проснулся!', 1.8); sfx.play('pet', { kind: 'wake', pet: q.pet }); break; }
+      case 'waking': { const q = S.players[e.pid]; if (!q) break; const pc = Math.round(e.p * 100); hint(e.by === PID ? 'Будишь ' + (q.name || PETS[q.pet].name) + '… держи кнопку · ' + pc + '%' : 'Тебя будят… ' + pc + '%', .6); break; }
+      case 'tired': if (e.k === 'crow') sfx.play('crow', { kind: 'flap' }); break;
       case 'ping': sfx.play('ping'); break;
       case 'fireOut': hint('Костёр погас! Подбрось веток до конца ночи', 3, true); sfx.play('fire', { kind: 'extinguish' }); shake(.3); buzzT = 0; buzz(60); break;
       case 'openBench': openCraft(true); sfx.play('ui', { kind: 'click' }); break;
@@ -612,7 +690,7 @@ function handleEvents() {
         else { toast('Ночь ' + SIM.stageNight(S) + ' / ' + SIM.stageLen(S), w.title || (S.fire.fuel > 0 ? 'Держись в круге света!' : 'Костёр погас — разожги его!'));
           hint(w.moths ? 'Мотыльки летят на свет и садятся на костёр' : w.rain ? 'Дождь — костёр тает быстрее, подкладывай чаще' : e.n === 3 ? 'Появился Лунный Лось. Он боится света — не ходи во тьму без фонарика' : e.n >= 3 ? 'Лось боится света. Клубочки задувают костёр' : 'Ночью силы тают вне круга света', e.n === 3 ? 4.5 : 3); }
         syncAudio(true); TUT.on && TUT.ev('night', e); break; }
-      case 'dawn': { nodesChanged = true; TUT.on && TUT.ev('dawn', e); const a = account(); let bonus = 0; if (a.lastDay !== today()) { bonus = 50; a.lastDay = today(); } a.coins += e.coins + bonus; saveAcc(a); save(); sfx.play('morning'); vfx.dawn(camera); syncAudio(true);
+      case 'dawn': { nodesChanged = true; TUT.on && TUT.ev('dawn', e); const a = account(); let bonus = 0; if (a.lastDay !== today()) { bonus = 50; a.lastDay = today(); runBonus += bonus; } a.coins += e.coins + bonus; saveAcc(a); save(); sfx.play('morning'); vfx.dawn(camera); syncAudio(true);
         if (!S.result) toast('Ночь ' + (e.n - STAGES[S.stage - 1].from + 1) + ' пережита!', `<span class="coin">${IC.coin}</span>+${e.coins + bonus} монет${bonus ? ' (первый заход дня)' : ''}${e.special ? ' · туман сошёл' : ''} · прогресс сохранён`); break; }
       case 'stageWin': vfx.stageWin([0, 1.3, 0]); stageWin(); break;
       case 'lose': sfx.play('lose'); gameOver(); break;
@@ -667,33 +745,43 @@ function shake(a) { cam.shake = Math.min(.5, Math.max(cam.shake, a)); }
 // вертикальных цилиндров узлов (XZ-расстояние + высота отрезка в ближайшей точке), раз в 0,1 с, ~100 узлов.
 // Прозрачность: инстанс прячем в основном InstancedMesh и рисуем в «призрачном» InstancedMesh своего типа
 // (+1 draw call на тип только пока есть заслонители).
-const OCC = { set: new Map(), t: 0, ghosts: {}, pull: 99 };
+const OCC = { set: new Map(), t: 0, ghosts: {}, pull: 99, near: new Set() };
 const ghostMat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: .28, depthWrite: false });
 const OCC_KINDS = n => n.k === 'tree' ? (n.alive ? [n.sub ? 'oak' : 'pine'] : null) : n.k === 'bush' ? (n.berry ? ['bush', 'berries'] : ['bush']) : n.k === 'rock' ? ['rock'] : null;
-const OCC_DIM = n => n.k === 'tree' ? [1.2 * n.s * .85, 3.9 * n.s * .85] : n.k === 'bush' ? [.62 * (n.s || 1), .9 * (n.s || 1)] : [.55 * (n.s || 1), .6 * (n.s || 1)];
+// v0.8: размеры по новым моделям художника — куст ниже и шире (0,52 × r 0,64), кроны выше (сосна с 1,56 м, дуб с 1,85 м), стволы тоньше.
+// [радиус, высота, низ кроны]: ниже кроны заслоняет только ствол, его не прячем
+const OCC_DIM = n => n.k === 'tree' ? (n.sub ? [1.22 * n.s * .85, 3.68 * n.s * .85, 1.85 * n.s * .85] : [1.16 * n.s * .85, 4.21 * n.s * .85, 1.56 * n.s * .85]) : n.k === 'bush' ? [.64 * (n.s || 1), .52 * (n.s || 1), 0] : [.55 * (n.s || 1), .6 * (n.s || 1), 0];
 function ghost(k) { let g = OCC.ghosts[k]; if (!g) { g = OCC.ghosts[k] = new THREE.InstancedMesh(GEO[k](), ghostMat, 8); g.userData.key = k; g.frustumCulled = false; g.count = 0; g.renderOrder = 2; scene.add(g); } return g; }
 function updOcclusion(dt, px, pz, cx, cy, cz) {
   if (!S || !NV.ims.pine) return; OCC.t -= dt;
-  if (OCC.t <= 0) { OCC.t = .1; const want = new Set(); let pull = 99; const dx = cx - px, dz = cz - pz, L2 = dx * dx + dz * dz || 1, L = Math.sqrt(L2);
-    for (const n of S.nodes) { const ks = OCC_KINDS(n); if (!ks) continue; const [R, H] = OCC_DIM(n);
+  if (OCC.t <= 0) { OCC.t = .1; const want = new Set(), hideNear = OCC.near = new Set(); let pull = 99; const dx = cx - px, dz = cz - pz, L2 = dx * dx + dz * dz || 1, L = Math.sqrt(L2);
+    const ccx = camera.position.x, ccz = camera.position.z, fx = px - ccx, fz = pz - ccz, fl = Math.hypot(fx, fz) || 1;
+    for (const n of S.nodes) { const ks = OCC_KINDS(n); if (!ks) continue; const [R, H, CB] = OCC_DIM(n);
+      // v0.8 (QA1-18): кусты/деревья у самой камеры (сбоку, в кадре) тоже становятся полупрозрачными
+      //   совсем вплотную (≤ R + 0,9 м) — не рисуем вовсе: полупрозрачная крона во весь экран мешает больше, чем помогает
+      { const ex = n.x - ccx, ez = n.z - ccz, ed = Math.hypot(ex, ez); if (ed < R + 1.6 && (ex * fx + ez * fz) / fl > -R) { want.add(n.id); if (ed < R + .9) hideNear.add(n.id); } }   // без continue: «подъезд» камеры (pull) ниже считаем и для близких
       const t = clamp(((n.x - px) * dx + (n.z - pz) * dz) / L2, 0, 1); if (t < .04) continue;   // за спиной питомца не трогаем
       const qx = px + dx * t - n.x, qz = pz + dz * t - n.z, d = Math.hypot(qx, qz); if (d > R + .25) continue;
-      const y = 1.1 + (cy - 1.1) * t; if (y > H + .3) continue; want.add(n.id);
+      const y = 1.1 + (cy - 1.1) * t; if (y > H + .3 || (y < CB - .2 && d > .4)) continue; want.add(n.id);
       if (n.k !== 'rock' && Math.hypot(cx - n.x, cz - n.z) < R + .5 && cy < H + .8) pull = Math.min(pull, Math.max(3.2, t * cam.dist - R - .3));   // камера в кроне/кусте
     }
     OCC.pull = pull;
-    for (const [id, o] of OCC.set) if (!want.has(id) || o.sig !== NV.sig.get(id)) { OCC.set.delete(id); OCC.dirty = true; }
+    for (const [id, o] of OCC.set) if (!want.has(id) || o.sig !== NV.sig.get(id) || o.ks.some(k => (NV.map.get(id) || {})[k] == null)) { OCC.set.delete(id); OCC.dirty = true; }
     if (OCC.dirty) { OCC.dirty = false; syncNodes(S, true); }
     for (const id of want) if (!OCC.set.has(id)) { const n = S.nodes.find(q => q.id === id), v = NV.map.get(id); if (!n || !v) continue;
-      const ks = OCC_KINDS(n).filter(k => v[k] != null && NV.ims[k]); OCC.set.set(id, { ks, m: ks.map(k => { const m = new THREE.Matrix4(); NV.ims[k].getMatrixAt(v[k], m); return m; }), sig: NV.sig.get(id) }); }
+      const ks = OCC_KINDS(n).filter(k => NV.ims[k]); if (ks.some(k => v[k] == null)) continue;   /* отсечён камерой — возьмём на следующем шаге */ OCC.set.set(id, { ks, m: ks.map(k => { const m = new THREE.Matrix4(); NV.ims[k].getMatrixAt(v[k], m); return m; }), sig: NV.sig.get(id) }); }
     for (const k in OCC.ghosts) { OCC.ghosts[k].count = 0; OCC.ghosts[k].visible = false; }
-    for (const [, o] of OCC.set) o.ks.forEach((k, i) => { const g = ghost(k); if (g.count < 8) { g.setMatrixAt(g.count++, o.m[i]); g.instanceMatrix.needsUpdate = true; g.visible = true; } }); }
+    for (const [id, o] of OCC.set) if (!hideNear.has(id)) o.ks.forEach((k, i) => { const g = ghost(k); if (g.count < 8) { g.setMatrixAt(g.count++, o.m[i]); g.instanceMatrix.needsUpdate = true; g.visible = true; } }); }
   for (const [id, o] of OCC.set) { const v = NV.map.get(id); if (v) for (const k of o.ks) if (v[k] != null) hideI(NV.ims[k], v[k]); }   // индекс берём свежий (инстансы упакованы)
 }
 function updCamera(dt, moveAmt) {
   // автодоворот за спину — только когда идём «вперёд» (джойстик вверх); при ходьбе вбок камера больше не закручивается кругами
   const p = me(), fwd = Math.max(0, -readInput.iy); if (moveAmt > .2 && fwd > .3 && performance.now() - dragT > 1500) { let d = (p.face + Math.PI) - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * Math.min(1, dt * 1.5 * fwd); }
-  const tgt = Math.min(cam.dist, OCC.pull); cam.eff += (tgt - cam.eff) * (1 - Math.exp(-(tgt < cam.eff ? 6 : 2) * dt));   // подъезд быстрее, отъезд мягче
+  let tgt = Math.min(cam.dist, OCC.pull);
+  // v0.8 (QA1-07): камера не уходит за стену тумана открытой зоны — подъезжает так, чтобы её точка была внутри (R − 0,7 м)
+  { const OR = SIM.openR(S); if (OR < CFG.MAP) { const cpz = Math.cos(cam.pitch), ux = Math.sin(cam.yaw), uz = Math.cos(cam.yaw), Rm = OR - .7, b = p.x * ux + p.z * uz, c = p.x * p.x + p.z * p.z - Rm * Rm, D = b * b - c;
+      if (D > 0) { const dmax = (-b + Math.sqrt(D)) / cpz; if (dmax < tgt) tgt = Math.max(3.2, dmax); } } }
+  cam.eff += (tgt - cam.eff) * (1 - Math.exp(-(tgt < cam.eff ? 6 : 2) * dt));   // подъезд быстрее, отъезд мягче
   const cp = Math.cos(cam.pitch);
   updOcclusion(dt, p.x, p.z, p.x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, p.z + Math.cos(cam.yaw) * cp * cam.dist);   // до _v: hideI портит общий _v
   _v.set(p.x + Math.sin(cam.yaw) * cp * cam.eff, 1.1 + Math.sin(cam.pitch) * cam.eff, p.z + Math.cos(cam.yaw) * cp * cam.eff);
@@ -729,10 +817,13 @@ function animFire(dt) {
   const t = performance.now() * .001, fuel = S ? S.fire.fuel : 60, max = S ? SIM.fireMax(S) : 100, lv = S ? S.fire.lv : 1, on = fuel > 0, k = on ? .45 + .55 * Math.sqrt(fuel / max) : 0, big = lv === 3 ? 1.5 : lv === 2 ? 1.2 : 1;
   if (S && lv !== shownLv) { shownLv = lv; fireRing.visible = lv >= 2; if (lv >= 2) { fireRing.geometry = GEO['campfire_addon_' + lv](); fireRing.userData.key = 'campfire_addon_' + lv; } }
   const low = on && fuel / max < .15, flick = low ? (Math.sin(t * 20) > 0 ? 1 : .6) : 1;
-  if (lv !== fireFx.level) { fireFx.setLevel(lv); hidePackBase(); } if (fireFx.lit !== on) fireFx.setLit(on); fireFx.setFuel(fuel / max);
+  if (lv !== fireFx.level) fireFx.setLevel(lv); if (fireFx.lit !== on) fireFx.setLit(on); fireFx.setFuel(fuel / max);
   const LR = S ? SIM.lightR(S) : 8; lightRv += (LR - lightRv) * Math.min(1, dt * 3);
-  glow.visible = on; glow.scale.setScalar(2.5 + lightRv * .35); 
-  FB.fire = Math.max(0, FB.fire - dt * 2.2); glow.scale.multiplyScalar(1 + FB.fire * .35);
+  // v0.8 (QA1-17): ореол больше не растёт с радиусом света (на ур. 3 был аддитивный билборд ~8 м — «столб» над костром)
+  // QA2-09: когда враг у самого костра — ореол мягко приглушаем (×0,7), чтобы клубочек/мотылёк читались на фоне огня
+  const foe = S && S.enemies.some(e => !e.dead && !e.leave && (e.k === 'mist' || e.k === 'moth') && e.x * e.x + e.z * e.z < 9); animFire.dim = (animFire.dim || 1) + ((foe ? .7 : 1) - (animFire.dim || 1)) * Math.min(1, dt * 4);
+  applyCampfireHalo(glow, { level: lv, fuelK: k, on }); glow.scale.multiplyScalar(animFire.dim);   // пак 0.6.2: 2,2 / 2,7 / 3,2 м у пламени, depthTest, renderOrder −1
+  FB.fire = Math.max(0, FB.fire - dt * 2.2);
   const n = nightness(); updPetLight(n, on, k); fireLight.intensity = on ? (1.2 + 28.8 * n) * k * flick * (1 + Math.sin(t * 17) * .06) * (1 + FB.fire * .6) + FB.fire * 3 : 0; fireLight.distance = lightRv * 1.9 + 2;
   const vis = lightRv > .2; safeDisc.visible = safeRing.visible = vis; if (vis) { safeDisc.scale.setScalar(lightRv); safeRing.scale.setScalar(lightRv); }
   safeRing.material.opacity = (.25 + .5 * n) * (low ? flick : 1); safeDisc.material.opacity = .35 + .65 * n;
@@ -741,7 +832,7 @@ function animFire(dt) {
 
 // ---------- кадр ----------
 const STEP = 1 / 60; let acc = 0, hudT = 0, tgtT = 0, target = null, actShown = '';
-const ACT = { push: ['paw', 'Толкнуть'], fuel: ['fire', 'В костёр'], ignite: ['fire', 'Разжечь'], deposit: ['chest', 'В сундук'], tree: ['axe', 'Рубить'], bush: ['berry', 'Собрать'], branch: ['stick', 'Подобрать'], stone: ['stone', 'Подобрать'], stump: ['cloth', 'Обыскать'], bench: ['bench', 'Верстак'], wake: ['wake', 'Разбудить'], none: ['hand', 'Действие'] };
+const ACT = { push: ['paw', 'Толкнуть'], fuel: ['fire', 'В костёр'], ignite: ['fire', 'Разжечь'], deposit: ['chest', 'В сундук'], tree: ['axe', 'Рубить'], bush: ['berry', 'Собрать'], branch: ['stick', 'Подобрать'], stone: ['stone', 'Подобрать'], stump: ['cloth', 'Обыскать'], bench: ['bench', 'Верстак'], wake: ['wake', 'Держи: будить'], none: ['hand', 'Действие'] };
 function updActBtn() { const k = target ? target.kind : 'none'; if (k === actShown) return; actShown = k; const b = $('bAct'); ico(b.querySelector('.ico'), ACT[k][0]); b.querySelector('span').textContent = ACT[k][1]; b.classList.toggle('dim', k === 'none'); }
 function frame(dt) {
   sfx.update(dt); vfx.update(dt);
@@ -749,8 +840,9 @@ function frame(dt) {
   if (mode !== 'play') return;
   const moveAmt = readInput(); if (input.hold && me().cd <= 0 && cmdQ.length === 0) send({ t: 'act' });
   if (COOP && COOP.active()) { cmdQ.length = 0; COOP.frame(dt); handleEvents(); if (mode !== 'play') return; }   // кооп: мир с сервера, свой питомец — предсказание
-  else { acc += dt; let n = 0; while (acc >= STEP && n < 5) { SIM.step(S, STEP, cmdQ.splice(0)); acc -= STEP; n++; handleEvents(); if (mode !== 'play') return; } if (n >= 5) acc = 0; }
-  if ((frame.nsT = (frame.nsT || 0) - dt) <= 0) { frame.nsT = .25; syncNodes(S); }   // страховка: узлы, изменённые не событием (отрастание, тесты)
+  else { acc += dt; let n = 0; while (acc >= STEP && n < 5) { for (let k = 0; k < FAST; k++) { SIM.step(S, STEP, k ? [] : cmdQ.splice(0)); handleEvents(); if (mode !== 'play') return; } acc -= STEP; n++; } if (n >= 5) acc = 0; }
+  if ((frame.nsT = (frame.nsT || 0) - dt) <= 0) { frame.nsT = .2; const c = camera.position, q = camera.quaternion, cs = c.x.toFixed(1) + c.z.toFixed(1) + q.y.toFixed(2) + q.w.toFixed(2) + q.x.toFixed(2);
+    syncNodes(S, cs !== frame.camSig); frame.camSig = cs; }   // страховка (узлы, изменённые не событием) + пересборка при движении камеры   // страховка: узлы, изменённые не событием (отрастание, тесты)
   if (SHAKE.size) { for (const [id, sh] of SHAKE) { if (sh - dt <= 0) SHAKE.delete(id); else SHAKE.set(id, sh - dt); } syncNodes(S, true); }
   updFlash(dt);
   syncPlayers(S, dt); syncEnemies(S, dt); updCamera(dt, moveAmt);
@@ -772,8 +864,8 @@ const only = id => OVS.forEach(o => $(o).classList.toggle('hide', o !== id));
 const UIK = { bSolo: 'mode', bFriend: 'mode', bMap: 'map', bMap2: 'map', bWinMap: 'map', bLobbyStage: 'map', bMapGo: 'start', bCont: 'play', bRetry: 'play', bNextStage: 'start', cfYes: 'start' };
 document.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled || b.closest('#acts')) return; sfx.play('ui', { kind: b.classList.contains('cell') ? 'stage' : UIK[b.id] || 'click' }); }, true);
 function startPlay() { mode = 'play'; acc = 0; only(null); $('hud').classList.remove('hide'); actShown = ''; lastMove = ''; updHUD.wsig = ''; updHUD(); joyHome(); const p = me(); cam.yaw = 0; camera.position.set(p.x, 6, p.z + 7); cam.look.set(p.x, 1.1, p.z); clock.getDelta(); syncAudio(true); }
-function setPause(on) { if (on && mode !== 'play') return; if (!on && mode !== 'pause') return; mode = on ? 'pause' : 'play'; $('pauseOv').classList.toggle('hide', !on); input.hold = false; if (!on) clock.getDelta(); }
-function clearWorldEnemies() { if (S) { S.enemies = []; S.wx = SIM.weatherFor(S, 0); for (const [, v] of EV) scene.remove(v.g); EV.clear(); } }
+function setPause(on) { if (on && mode !== 'play') return; if (!on && mode !== 'pause') return; mode = on ? 'pause' : 'play'; $('pauseOv').classList.toggle('hide', !on); $('bTutAgain').classList.toggle('hide', !S || S.mode !== 'solo'); input.hold = false; if (!on) clock.getDelta(); }
+function clearWorldEnemies() { if (S) { S.enemies = []; S.wx = SIM.weatherFor(S, 0); for (const [, v] of EV) dropEnemyView(v); EV.clear(); } }
 function showMenu() { TUT.stop(false); mode = 'menu'; openCraft(false); $('hud').classList.add('hide'); only('startOv'); clearWorldEnemies(); }
 function showSolo() { const d = loadSave(); if (!d) return showMap(); mode = 'menu'; only('soloOv'); $('contInfo').textContent = 'Этап ' + stageName(d.stage) + ' · ночь ' + SIM.stageNight(d) + ' / ' + SIM.stageLen(d) + ' · ' + PETS[d.players[PID].pet].name; }
 // карта этапов: 16 ячеек по 6 ночей + финал 97–99; в MVP играбельны 1–6 и 7–12
@@ -815,7 +907,7 @@ $('chkFill').onchange = e => { lobby.fill = e.target.checked; sfx.play('ui', { k
 $('bLobbyStage').onclick = () => showMap('lobby');
 $('bLobbyBack').onclick = showMenu;
 // поражение: в соло можно сразу повторить эту ночь с состояния утра
-function gameOver() { $('toast').classList.remove('on'); $('hint').classList.add('hide');
+function gameOver() { clearToasts(); $('hint').classList.add('hide');
   mode = 'over'; input.hold = false; openCraft(false); const r = S.result || {};
   $('overT').textContent = 'Костёр погас';
   $('overS').innerHTML = `Ночь ${r.night - STAGES[(r.stage || 1) - 1].from + 1} / 6 этапа ${stageName(r.stage || 1)}. Открытые этапы не теряются.<br><span class="coin">${IC.coin}</span> за пережитые ночи: ${r.coins || 0}`;
@@ -823,18 +915,21 @@ function gameOver() { $('toast').classList.remove('on'); $('hint').classList.add
   only('overOv');
 }
 // победа этапа: открывает следующий; соло может сразу идти дальше с тем же лагерем
-function stageWin() { $('toast').classList.remove('on'); $('hint').classList.add('hide');
+function stageWin() { clearToasts(); $('hint').classList.add('hide');
   mode = 'over'; input.hold = false; openCraft(false); const r = S.result, a = account();
   if (!a.passed.includes(r.stage)) a.passed.push(r.stage); a.open = Math.max(a.open, Math.min(CFG.MVP_STAGES + 1, r.stage + 1)); a.coins += 100; saveAcc(a);
   if (S.mode === 'solo') localStorage.removeItem(SAVE_KEY); sfx.play('win'); const coop = S.mode !== 'solo';
   $('winT').textContent = 'Этап ' + stageName(r.stage) + ' пройден!';
-  $('winS').innerHTML = `Утро после ${r.night}-й ночи, костёр горит.<br><span class="coin">${IC.coin}</span> за этап: ${r.coins} (вместе с бонусом +100)` + (r.mvpEnd ? '<br>Этапы 13–99 — скоро.' : '');
+  // v0.8 (QA1-14): бонус «первый заход дня» показываем отдельной строкой и в итоге — сумма = фактическое начисление
+  $('winS').innerHTML = `Утро после ${r.night}-й ночи, костёр горит.<br><span class="coin">${IC.coin}</span> за этап: ${r.coins} (вместе с бонусом +100)` + (runBonus ? `<br>+${runBonus} за первый заход дня · всего ${r.coins + runBonus}` : '') + (r.mvpEnd ? '<br>Этапы 13–99 — скоро.' : '');
   $('bNextStage').classList.toggle('hide', !!r.mvpEnd || coop); $('bWinMap').classList.toggle('hide', coop); if (coop) $('winS').innerHTML += '<br>Командный забег: один этап за заход.'; if (!r.mvpEnd) $('bNextStage').innerHTML = 'Дальше: этап ' + stageName(r.stage + 1) + '<small>лагерь и рюкзак остаются</small>';
   only('winOv');
 }
 $('bNextStage').onclick = () => { if (SIM.continueNextStage(S)) { save(); startPlay(); toast('Этап ' + stageName(S.stage), 'Лагерь остался с тобой'); } };
 $('bSolo').onclick = showSolo; $('bFriend').onclick = showLobby; $('bMap').onclick = () => showMap(); $('bBack1').onclick = showMenu;
 $('bNewRun').onclick = () => { const d = loadSave(); confirmBox('Новый забег?', 'Сбросится только незавершённый забег этапа ' + (d ? stageName(d.stage) : '') + '. Открытые этапы останутся.', () => { localStorage.removeItem(SAVE_KEY); showMap(); }, showSolo); };
+// v0.8: «Повторить обучение» в паузе — подсказки первого дня запускаются заново прямо в текущем соло-забеге
+$('bTutAgain').onclick = () => { try { localStorage.removeItem(TUT_KEY); } catch (_) {} setPause(false); TUT.stop(false); TUT.start(S.fire.fuel > 0); hint('Обучение начато заново', 1.6); };
 $('bCont').onclick = continueGame; $('bRetry').onclick = continueGame; $('bResume').onclick = () => setPause(false);
 $('bMenu').onclick = showMenu; $('bMenu2').onclick = showMenu; $('bMap2').onclick = () => showMap(); $('bWinMap').onclick = () => showMap(); $('bWinMenu').onclick = showMenu;
 document.querySelectorAll('.mute').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); setMute(!sfx.muted); })); setMute(sfx.muted);
@@ -856,14 +951,14 @@ function loop() {
 window.__g = { scene, input, SIM, get S() { return S; }, get mode() { return mode; }, send, save, loadSave, startStage, continueGame, showMap, showMenu, account, saveAcc, sfx, vfx, fireFx, setMute, renderer, camera, cam, quality: QUALITY, assets: ASSET_STATE, occ: OCC, get coop() { return COOP; }, get PID() { return PID; },
   teleport: (x, z) => { const p = me(); p.x = x; p.z = z; const cp = Math.cos(cam.pitch); camera.position.set(x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, z + Math.cos(cam.yaw) * cp * cam.dist); cam.look.set(x, 1.1, z); },
   look: (yaw, pitch) => { cam.yaw = yaw; if (pitch) cam.pitch = pitch; dragT = performance.now(); },
-  tut: TUT, fb: FB, startQaNight, hintLog, stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };
+  tut: TUT, fb: FB, startQaNight, hintLog, toastTest: (a, b) => toast(a, b), hintTest: t => hint(t, 3), stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };
 
 // подмена процедурных заглушек на GLB художника (js/assets.js): запекаем и меняем геометрию у инстансов, мешей лагеря и врагов.
 // Нет url или файл не загрузился — остаётся заглушка. Один GLB может кормить несколько ключей (include/exclude).
 async function loadStaticAssets() {
   const keys = Object.keys(ASSETS).filter(k => ASSETS[k] && ASSETS[k].url); if (!keys.length) return; const L = await getLoader(); const files = {};
   await Promise.all(keys.map(async k => { const a = ASSETS[k];
-    try { const gltf = await (files[a.url] || (files[a.url] = L.loadAsync(a.url)));
+    try { const gltf = await (files[a.url] || (files[a.url] = L.loadAsync(vu(a.url))));
       if (a.anim) { const c = CR[k] = prepCreature(gltf, a); let t = 0, calls = 0; c.root.traverse(o => { if (o.isMesh) { calls++; t += o.geometry.attributes.position.count / 3; } }); ASSET_STATE.tris[k] = Math.round(t); ASSET_STATE.calls = { ...(ASSET_STATE.calls || {}), [k]: calls }; ASSET_STATE.loaded.push(k); return; }
       const { geo, glow } = bakeObject(gltf.scene, a);
       ASSET_STATE.tris[k] = Math.round(geo.attributes.position.count / 3 + (glow ? glow.attributes.position.count / 3 : 0));
@@ -872,14 +967,14 @@ async function loadStaticAssets() {
       else { GEO[k] = () => geo; scene.traverse(o => { if (o.isMesh && o.userData.key === k) { o.geometry = geo; withGlow(o); } }); if (k.startsWith('campfire_addon')) RG[k.slice(-1)] = geo; }
       ASSET_STATE.loaded.push(k); } catch (e) { ASSET_STATE.failed.push(k); console.warn('asset', k, e.message); } }));
   // виды врагов, созданные до загрузки, пересоздаём уже с моделями
-  for (const [, v] of EV) scene.remove(v.g); EV.clear();
+  for (const [, v] of EV) dropEnemyView(v); EV.clear();
 }
 // API для кооп-модуля (грузится только с ?server=)
 const API = { get S() { return S; }, setS: v => { S = v; }, get PID() { return PID; }, setPID: id => { PID = id; }, get mode() { return mode; }, setMode: m => { mode = m; }, get pet() { return pet; },
   initWorld, startPlay, only, toast, hint, showMenu, handleEvents, syncNodes, syncBuilds, account, stageName, PV, scene, camera, THREE, sfx, IC, me, input, setPause };
 (async () => {
   showMenu(); loop();
-  if (NET) import('./coop.js?v=0.7.0').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
+  if (NET) import('./coop.js?v=0.8.0').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
   try { await Promise.race([loadPet(pet), new Promise(r => setTimeout(r, 6000))]); } catch (e) { console.warn('pet', e.message); }
   await Promise.race([assetsP, new Promise(r => setTimeout(r, 8000))]); $('loading').classList.add('hide'); window.__g.ready = true;
   if (QA_NIGHT && !NET) startQaNight(QA_NIGHT);
