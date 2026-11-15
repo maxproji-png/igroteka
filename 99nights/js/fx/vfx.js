@@ -12,7 +12,7 @@
  */
 import * as THREE from 'three';
 
-export const VERSION = '0.6.2-concept';
+export const VERSION = '0.6.3-concept';
 
 /**
  * Уровни костра из GDD v0.5, разделы 6–7 (те же радиусы, что в v0.2; уровней по-прежнему три).
@@ -22,9 +22,11 @@ export const VERSION = '0.6.2-concept';
  * Единицы сцены = метры. intensity — PointLight, distance ≈ 2 × радиус света.
  */
 export const CAMPFIRE_LEVELS = {
-  1: { lightRadius: 8,  openRadius: 16, intensity: 20, distance: 16, flameScale: 0.85, emberMul: 0.75, smokeMul: 0.8 },
-  2: { lightRadius: 12, openRadius: 24, intensity: 32, distance: 24, flameScale: 1.15, emberMul: 1.0,  smokeMul: 1.15 },
-  3: { lightRadius: 16, openRadius: 24, intensity: 46, distance: 32, flameScale: 1.45, emberMul: 1.25, smokeMul: 1.55 }
+  // flameScale — общий множитель (1). Рост с уровнем: flameWidth / flameMul (число языков), не высота.
+  // flameHeight держим почти плоским, чтобы ур. 3 был пухлым, а не свечой (QA v0.8, конус ночью).
+  1: { lightRadius: 8,  openRadius: 16, intensity: 20, distance: 16, flameScale: 1, flameWidth: 0.88, flameHeight: 0.90, flameMul: 0.62, emberMul: 0.75, smokeMul: 0.8 },
+  2: { lightRadius: 12, openRadius: 24, intensity: 32, distance: 24, flameScale: 1, flameWidth: 1.06, flameHeight: 0.97, flameMul: 0.85, emberMul: 1.0,  smokeMul: 1.15 },
+  3: { lightRadius: 16, openRadius: 24, intensity: 46, distance: 32, flameScale: 1, flameWidth: 1.24, flameHeight: 1.04, flameMul: 1.00, emberMul: 1.25, smokeMul: 1.55 }
 };
 
 /** Бюджеты частиц (активных точек). Старые ключи flames/embers/smoke/mist сохранены. */
@@ -140,9 +142,10 @@ function maxSmoke() { return PARTICLE_BUDGET.high.smoke + 8; }
 /**
  * Создаёт костёр и добавляет его группу на сцену.
  * @param {import('three').Scene} scene
- * @param {{level?: 1|2|3, position?: [number,number,number]|THREE.Vector3, quality?: 'low'|'high', lit?: boolean, base?: boolean, ring?: boolean, stones?: boolean, logs?: boolean, light?: boolean}} [opts]
+ * @param {{level?: 1|2|3, position?: [number,number,number]|THREE.Vector3, quality?: 'low'|'high', lit?: boolean, base?: boolean, ring?: boolean, stones?: boolean, logs?: boolean, light?: boolean, flameScale?: number, flameHeight?: number, flameY?: number}} [opts]
  *   base — диск свечения; ring — кольцо света; stones — камни (и цоколь ур. 3); logs — поленья; light — PointLight.
  *   Все по умолч. true. При false объект не создаётся; setLevel/setFuel/update/dispose безопасны.
+ *   flameScale / flameHeight — доп. множители (1 = как в CAMPFIRE_LEVELS). flameY — высота базы языков в метрах (по умолч. 0.36, на поленьях GLB).
  */
 export function createCampfire(scene, opts = {}) {
   const quality = opts.quality === 'low' ? 'low' : 'high';
@@ -194,15 +197,18 @@ export function createCampfire(scene, opts = {}) {
     }
   }
 
+  // Пухлые короткие языки (референс художника: Flame_* в campfire.glb, кончик ~1.43 м).
+  // Тёплый оранжевый, без бледно-жёлтого ядра — иначе аддитив складывается в белый конус.
+  const flameY = opts.flameY == null ? 0.36 : +opts.flameY;
   const tongueData = [
-    [0, 0, 0.62, 1.5, 0xff4d12, 0.75],
-    [0.18, 0.1, 0.36, 1.1, 0xff5a14, 0.8],
-    [-0.2, 0.06, 0.34, 1.0, 0xff5a14, 0.8],
-    [0.05, -0.2, 0.32, 1.15, 0xff6a1a, 0.8],
-    [0, 0, 0.42, 1.25, 0xff9a2a, 0.85],
-    [0.1, 0.12, 0.22, 0.95, 0xffb03a, 0.9],
-    [-0.12, -0.05, 0.22, 0.85, 0xffb03a, 0.9],
-    [0, 0, 0.22, 0.75, 0xffe39a, 0.95]
+    [0.00,  0.00, 0.70, 0.88, 0xff5716, 0.48],
+    [0.20,  0.12, 0.44, 0.78, 0xff6218, 0.50],
+    [-0.22, 0.10, 0.42, 0.74, 0xff6218, 0.50],
+    [0.10, -0.22, 0.42, 0.80, 0xff6c1c, 0.50],
+    [-0.16,-0.14, 0.40, 0.70, 0xff6c1c, 0.46],
+    [0.00,  0.04, 0.46, 0.70, 0xff7a22, 0.50],
+    [0.12,  0.08, 0.28, 0.56, 0xff8626, 0.52],
+    [-0.10,-0.06, 0.26, 0.52, 0xff8626, 0.52]
   ];
   const flames = [];
   tongueData.forEach(([x, z, r, h, c, o], i) => {
@@ -213,22 +219,23 @@ export function createCampfire(scene, opts = {}) {
         blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
       })
     );
-    m.position.set(x, 0.18, z);
+    m.position.set(x, flameY, z);
     m.userData.ph = R(0, 6.28);
     m.userData.sp = R(7, 13);
     m.userData.idx = i;
+    m.userData.baseH = h;
     group.add(m);
     flames.push(m);
   });
   const core = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.32, 0),
+    new THREE.IcosahedronGeometry(0.36, 0),
     new THREE.MeshBasicMaterial({
-      color: 0xffc060, transparent: true, opacity: 0.9,
+      color: 0xff7a22, transparent: true, opacity: 0.42,
       blending: THREE.AdditiveBlending, depthWrite: false
     })
   );
-  core.position.y = 0.28;
-  core.scale.y = 0.6;
+  core.position.y = flameY + 0.22;
+  core.scale.y = 0.5;
   core.userData.core = true;
   group.add(core);
   flames.push(core);
@@ -316,7 +323,10 @@ export function createCampfire(scene, opts = {}) {
     wind: 0,
     disposed: false,
     flames, embers, emberPts, smoke, smokePts, glow, ring, base, stoneM, logM,
-    baseVis: true, ringVis: true, glowScale: opts.glowScale == null ? 1 : Math.max(0, +opts.glowScale)
+    baseVis: true, ringVis: true, glowScale: opts.glowScale == null ? 1 : Math.max(0, +opts.glowScale),
+    userFlameScale: opts.flameScale == null ? 1 : Math.max(0, +opts.flameScale),
+    userFlameHeight: opts.flameHeight == null ? 1 : Math.max(0, +opts.flameHeight),
+    flameY
   };
 
   const api = {
@@ -345,6 +355,10 @@ export function createCampfire(scene, opts = {}) {
     },
     /** Множитель диска свечения пака (1 = как раньше, радиус света). 0 прячет. */
     setGlowScale(s) { state.glowScale = Math.max(0, +s); },
+    /** Общий множитель пламени поверх уровня (1 = как в таблице). */
+    setFlameScale(s) { state.userFlameScale = Math.max(0, +s); },
+    /** Множитель только высоты языков (1 = как в таблице; меньше — пухлее). */
+    setFlameHeight(s) { state.userFlameHeight = Math.max(0, +s); },
     setQuality(q) { state.quality = q === 'low' ? 'low' : 'high'; applyLevel(state, state.level); },
     update(dt) { tickFire(state, dt); },
     dispose() { disposeCampfire(state); }
@@ -361,8 +375,12 @@ function applyLevel(state, n) {
   const bud = PARTICLE_BUDGET[state.quality];
   state.emberCount = Math.max(4, Math.round(bud.embers * L.emberMul));
   state.smokeCount = Math.max(4, Math.round(bud.smoke * L.smokeMul));
-  state.flameCount = bud.flames;
-  state.flameScale = L.flameScale;
+  const cap = bud.flames;
+  const fMul = L.flameMul == null ? 1 : L.flameMul;
+  state.flameCount = Math.max(3, Math.min(cap, Math.round(cap * fMul)));
+  state.flameScale = L.flameScale == null ? 1 : L.flameScale;
+  state.levelFlameWidth = L.flameWidth == null ? 1 : L.flameWidth;
+  state.levelFlameHeight = L.flameHeight == null ? 1 : L.flameHeight;
   state.baseIntensity = L.intensity;
   state.lightDistance = L.distance;
   state.lightRadius = L.lightRadius;
@@ -397,20 +415,30 @@ function tickFire(state, dt) {
   const fuel = lit ? state.fuel : 0;
   const low = fuel < 0.22 ? 0.65 + 0.35 * Math.sin(state.t * 14) : 1;
   const flick = 0.85 + 0.15 * Math.sin(state.t * 17) + 0.08 * Math.sin(state.t * 31);
-  const scale = state.flameScale || 1;
+  const userS = state.userFlameScale == null ? 1 : state.userFlameScale;
+  const userH = state.userFlameHeight == null ? 1 : state.userFlameHeight;
+  const sx0 = (state.flameScale || 1) * (state.levelFlameWidth || 1) * userS;
+  const sy0 = (state.flameScale || 1) * (state.levelFlameHeight || 1) * userS * userH;
 
   state.flames.forEach((f) => {
     if (f.userData.core) {
       f.visible = lit;
-      if (lit) f.scale.set((1 + 0.1 * Math.sin(state.t * 17)) * scale, 0.6 * scale, (1 + 0.1 * Math.cos(state.t * 15)) * scale);
+      if (lit) {
+        const cx = sx0 * (0.95 + 0.08 * Math.sin(state.t * 17));
+        const cy = sy0 * 0.5 * (0.96 + 0.06 * Math.cos(state.t * 15));
+        f.scale.set(cx, cy, cx);
+      }
       return;
     }
     const on = lit && f.userData.idx < state.flameCount;
     f.visible = on;
     if (!on) return;
     const u = f.userData;
-    const k = scale * (0.85 + state.burst * 0.45) * (1 + 0.22 * Math.sin(state.t * u.sp + u.ph) + 0.1 * Math.sin(state.t * u.sp * 2.3 + u.ph));
-    f.scale.set(k, k, k);
+    const wobX = 1 + 0.12 * Math.sin(state.t * u.sp + u.ph) + 0.06 * Math.sin(state.t * u.sp * 2.3 + u.ph);
+    const wobY = 1 + 0.08 * Math.sin(state.t * u.sp * 0.9 + u.ph);
+    const burstW = 0.92 + state.burst * 0.18;
+    const burstH = 0.94 + state.burst * 0.10;
+    f.scale.set(sx0 * burstW * wobX, sy0 * burstH * wobY, sx0 * burstW * wobX);
     f.rotation.z = (state.wind || 0) * 0.35 + Math.sin(state.t * 1.3) * (state.wind || 0) * 0.12;
   });
 
@@ -1484,6 +1512,7 @@ export function createFeedback(scene, opts = {}) {
 
 /**
  * Фасад для движка: один объект, createCampfire / createNightFog / setLevel / update / setQuality / dispose.
+ * Новое в v0.6.3: пухлое пламя (flameWidth/Height/Mul, setFlameScale/setFlameHeight), тёплое ядро без белого конуса.
  * Новое в v0.6.2: applyCampfireHalo / CAMPFIRE_HALO / setGlowScale (ореол у пламени, depthTest).
  * Новое в v0.6.1: createCampfire({stones,logs,light}), дождь-штрихи вокруг камеры, искры без столба.
  * Новое в v0.6: hit/collect/dawn/nightfall/petTired/stageWin/poof, setCamera, setBaseVisible/setRingVisible.
@@ -1531,6 +1560,8 @@ export class GameVFX {
   setBaseVisible(on) { if (this.campfire && this.campfire.setBaseVisible) this.campfire.setBaseVisible(on); }
   setRingVisible(on) { if (this.campfire && this.campfire.setRingVisible) this.campfire.setRingVisible(on); }
   setGlowScale(s) { if (this.campfire && this.campfire.setGlowScale) this.campfire.setGlowScale(s); }
+  setFlameScale(s) { if (this.campfire && this.campfire.setFlameScale) this.campfire.setFlameScale(s); }
+  setFlameHeight(s) { if (this.campfire && this.campfire.setFlameHeight) this.campfire.setFlameHeight(s); }
 
   createCampfire(scene, opts = {}) {
     if (this.campfire) this.campfire.dispose();

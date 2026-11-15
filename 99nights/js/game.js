@@ -1,10 +1,10 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.8.0';
-import * as SIM from './sim.js?v=0.8.0';
-import { GameSfx } from './sfx.js?v=0.8.0';
-import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.0';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.8.1';
+import * as SIM from './sim.js?v=0.8.1';
+import { GameSfx } from './sfx.js?v=0.8.1';
+import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.1';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
@@ -361,7 +361,7 @@ let ZZ_TEX = null, BEAM = null;
 // SlotAccent (узелок) не трогаем; геометрия запекается с цветами вершин один раз на цвет, материал — общий питомцев (ночная обводка). +1 draw call на питомца.
 const SCARF_AT = { raccoon: [.47, 1], capybara: [.47, 1.05], dragon: [.48, 1], goose: [.50, .95] }; let scarfP = null; const scarfGeo = {};
 // v0.8: модели художника обновляются под тем же именем — версия в URL, чтобы кэш браузера/Pages не отдавал старые .glb
-function vu(u) { return u + '?v=0.8.0'; }
+function vu(u) { return u + '?v=0.8.1'; }
 function loadScarf() { return scarfP || (scarfP = getLoader().then(L => L.loadAsync(vu('models/art/slot_scarf.glb'))).then(g => { const root = g.scene; root.updateMatrixWorld(true); const ms = []; root.traverse(o => { if (o.isMesh) ms.push(o); }); return { root, ms }; })); }
 function scarfMesh(sc, petK, color) { let g = scarfGeo[color];
   if (!g) { for (const o of sc.ms) if (o.material.name === 'SlotColor') o.material.color = new THREE.Color(color); g = scarfGeo[color] = bakePetMeshes(sc.ms, new THREE.Matrix4().copy(sc.root.matrixWorld).invert()).geometry; }
@@ -398,7 +398,7 @@ const spotPts = new THREE.Points(spotGeo, new THREE.PointsMaterial({ map: radial
 spotPts.frustumCulled = false; spotPts.visible = false; scene.add(spotPts); let spotT = 0;
 function updSpot(dt) { const p = S && S.players[PID]; if (!p || !PETS[p.pet].spot || mode === 'menu') { spotPts.visible = false; return; }
   if ((spotT -= dt) <= 0) { spotT = .5; const a = spotGeo.attributes.position.array; let n = 0;
-    for (const q of S.nodes) { if (n >= SPOT_N) break; if (!((q.k === 'bush' && q.berry) || (q.k === 'stump' && q.loot))) continue; const d = Math.hypot(q.x - p.x, q.z - p.z); if (d > 14 || d < 1.2) continue; a[n * 3] = q.x; a[n * 3 + 1] = q.k === 'bush' ? .85 * (q.s || 1) : .95; a[n * 3 + 2] = q.z; n++; }
+    for (const q of S.nodes) { if (n >= SPOT_N) break; if (!((q.k === 'bush' && q.berry) || (q.k === 'stump' && q.loot))) continue; const d = Math.hypot(q.x - p.x, q.z - p.z); if (d > PETS[p.pet].spot || d < 1.2) continue;   /* §11.4: радиус 6 м */ a[n * 3] = q.x; a[n * 3 + 1] = q.k === 'bush' ? .85 * (q.s || 1) : .95; a[n * 3 + 2] = q.z; n++; }
     spotGeo.setDrawRange(0, n); spotGeo.attributes.position.needsUpdate = true; spotPts.visible = n > 0; }
   spotPts.material.opacity = .55 + .35 * Math.sin(performance.now() * .004); }
 // ---------- враги (вид) ----------
@@ -542,7 +542,7 @@ function updHUD() {
   for (const [k] of INV) { const v = p.inv[k] || 0; if (lastInv[k] !== v) { if (lastInv[k] !== undefined && v > lastInv[k]) bump(k); lastInv[k] = v; $('iv_' + k).querySelector('b').textContent = v; $('iv_' + k).classList.toggle('zero', !v); } }
   if (!night && !TUT.on && S.fire.fuel <= 0 && S.t < 3 && S.firstLight && hintT <= 0) hint('Костёр не горит — подойди и нажми «Разжечь»', 2);
   const used = SIM.bagSlots(p.inv), cap = SIM.bagCap(p); $('iv_bag').querySelector('b').textContent = used + '/' + cap; $('iv_bag').classList.toggle('full', used >= cap);
-  const food = (p.inv.berry || 0) + (p.inv.pie || 0); $('bEat').querySelector('.n').textContent = food; $('bEat').classList.toggle('off', !food); ico($('bEat').querySelector('.ico'), p.inv.pie > 0 && p.hunger < 60 ? 'pie' : 'berry');
+  const food = (p.inv.berry || 0) + (p.inv.pie || 0) + (SIM.nearFood(p) && !(p.inv.berry > 0) ? S.chest.berry || 0 : 0); $('bEat').querySelector('.n').textContent = food;   // §11.5: у костра — и ягоды из сундука $('bEat').classList.toggle('off', !food); ico($('bEat').querySelector('.ico'), p.inv.pie > 0 && p.hunger < 60 ? 'pie' : 'berry');
   const bt = $('bTorch'); bt.classList.toggle('hide', !p.has.flash); bt.querySelector('.n').textContent = Math.round(p.flash.charge) + '%'; bt.classList.toggle('down', p.flash.on);
   const sl = p.sleep > 0 || p.rest > 0; $('sleepCard').classList.toggle('hide', !sl);
   if (sl) { $('sleepT').textContent = PETS[p.pet].name + (p.rest > 0 ? ' отдыхает у костра' : ' устал и уснул'); $('sleepS').textContent = p.rest > 0 ? 'Встанет через ' + Math.ceil(p.rest / S.timeScale) + ' с' : 'Грёзы унесут к костру через ' + Math.ceil(p.sleep / S.timeScale) + ' с'; }
@@ -609,7 +609,7 @@ $('tutSkip').addEventListener('click', e => { e.stopPropagation(); TUT.stop(true
 const CH = { t: 0, cd: {} };
 function ctxHints(dt) { if ((CH.t -= dt) > 0 || !S || mode !== 'play') return; CH.t = 1; if (hintT > 0) return; const p = me(), now = performance.now(), night = S.phase === 'night';
   const say = (k, txt, cd, warn) => { if ((CH.cd[k] || 0) > now) return false; CH.cd[k] = now + cd * 1000; hint(txt, 2.6, warn); return true; };
-  const food = (p.inv.berry || 0) + (p.inv.pie || 0) + (Math.hypot(p.x - CFG.CHEST.x, p.z - CFG.CHEST.z) < 2.5 ? S.chest.berry : 0);
+  const food = (p.inv.berry || 0) + (p.inv.pie || 0) + (SIM.nearFood(p) ? S.chest.berry : 0);
   if (p.sleep > 0 || p.rest > 0) return;
   if (p.hunger < 30 && (food ? say('eat', 'Проголодался — нажми «Съесть»', 20) : say('hungry', 'Голодно — собери ягоды с кустов или возьми из сундука', 25, true))) return;
   if (night && Math.hypot(p.x, p.z) > lightRv && p.str < 55 && say('dark', 'Силы тают во тьме — вернись в круг света', 14, true)) return;
@@ -674,8 +674,11 @@ function handleEvents() {
       case 'mooseLit': sfx.play('moose', { kind: 'light' }); break;
       case 'spawn': if (e.k === 'moose') { toast('Лунный Лось вышел к краю света', 'Держи костёр ярким'); sfx.play('moose', { kind: 'steps' }); }
         else if (e.k === 'moth') sfx.play('moth'); else if (e.k === 'crow') sfx.play('crow', { kind: 'caw' });
-        else if (e.k === 'mist') { sfx.play('mist', { kind: 'puff' });   // v0.7: подсказка гуся раньше перехватывалась веткой mist выше и не показывалась
-          if (PETS[me().pet].warn && (handleEvents.gooseT || 0) < performance.now()) { hint('Га-га! К костру катится клубочек мглы', 2); sfx.play('pet', { kind: 'idle', pet: 'goose' }); handleEvents.gooseT = performance.now() + 6000; } } break;
+        else if (e.k === 'mist') sfx.play('mist', { kind: 'puff' }); break;
+      // v0.8.1 (§11.4): гусь гогочет за 5 с до того, как угроза дойдёт до костра (событие симуляции), — звук и значок над гусем
+      case 'honk': { const gp = Object.values(S.players).find(q => PETS[q.pet].warn); if (!gp) break; const pv = PV.get(gp.id); if (pv) floatText('Га-га!', gp.x, 2.3, gp.z);
+        sfx.play('pet', { kind: 'idle', pet: 'goose' }); if ((handleEvents.gooseT || 0) < performance.now()) { hint('Га-га! К костру ' + ({ mist: 'катится клубочек мглы', moth: 'летит мотылёк', crow: 'летит ворон' }[e.k] || 'идёт угроза'), 2.2); handleEvents.gooseT = performance.now() + 4000; } break; }
+      case 'ember': { const q = S.players[e.pid]; if (q) floatText(e.charge ? 'Огонёк: +50% фонарика' : 'Огонёк!', q.x, 2.2, q.z); sfx.play('lamp', { kind: 'charge' }); break; }
       case 'flash': sfx.play('lamp', { kind: e.on ? 'on' : 'charge' }); if (e.empty) hint('Фонарик разрядился — заряди его у костра', 2.2, true); break;
       case 'sleep': { const pv = PV.get(e.pid || PID); if (pv) { vfx.petTired(pv.g); pv.zzT = 3; } } hint(PETS[me().pet].name + ' устал и уснул…', 2.5, true); sfx.play('pet', { kind: 'sleep', pet: me().pet }); sfx.play('ping', { tired: true }); break;
       case 'dream': hint('Грёзы унесли к костру — отдых 15 с', 2.5); sfx.play('dream'); break;
@@ -974,7 +977,7 @@ const API = { get S() { return S; }, setS: v => { S = v; }, get PID() { return P
   initWorld, startPlay, only, toast, hint, showMenu, handleEvents, syncNodes, syncBuilds, account, stageName, PV, scene, camera, THREE, sfx, IC, me, input, setPause };
 (async () => {
   showMenu(); loop();
-  if (NET) import('./coop.js?v=0.8.0').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
+  if (NET) import('./coop.js?v=0.8.1').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
   try { await Promise.race([loadPet(pet), new Promise(r => setTimeout(r, 6000))]); } catch (e) { console.warn('pet', e.message); }
   await Promise.race([assetsP, new Promise(r => setTimeout(r, 8000))]); $('loading').classList.add('hide'); window.__g.ready = true;
   if (QA_NIGHT && !NET) startQaNight(QA_NIGHT);
