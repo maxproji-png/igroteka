@@ -1,10 +1,10 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.5.1';
-import * as SIM from './sim.js?v=0.5.1';
-import { GameSfx } from './sfx.js?v=0.5.1';
-import { GameVFX } from './fx/vfx.js?v=0.5.1';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.5.2';
+import * as SIM from './sim.js?v=0.5.2';
+import { GameSfx } from './sfx.js?v=0.5.2';
+import { GameVFX } from './fx/vfx.js?v=0.5.2';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
@@ -261,7 +261,8 @@ function updWeather(dt) {
 function radialTex(stops, size = 64) { const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); const h = size / 2, gr = x.createRadialGradient(h, h, 0, h, h, h); stops.forEach(([o, col]) => gr.addColorStop(o, col)); x.fillStyle = gr; x.fillRect(0, 0, size, size); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
 const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: radialTex([[0, 'rgba(255,200,90,.9)'], [.4, 'rgba(255,150,60,.35)'], [1, 'rgba(255,120,40,0)']]), blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }));
 glow.position.y = 1; fireG.add(glow);
-const smoke = new THREE.Mesh(new THREE.CylinderGeometry(.25, .7, 14, 7, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide })); smoke.position.y = 8.5; fireG.add(smoke);
+// (v0.5.2) убран открытый цилиндр-«столб дыма» с жёсткими краями — ночью читался как белый прямоугольный столб света.
+// Дым над костром теперь только частицы пака (мягкие радиальные точки).
 const safeDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: radialTex([[0, 'rgba(255,190,90,0)'], [.7, 'rgba(255,190,90,.14)'], [.97, 'rgba(255,200,100,.42)'], [1, 'rgba(255,200,100,0)']]), transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
 safeDisc.position.y = .05; scene.add(safeDisc);
 const safeRing = new THREE.Mesh(new THREE.RingGeometry(.975, 1, 64).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: .6, depthWrite: false, fog: false }));
@@ -287,10 +288,24 @@ stars.frustumCulled = false; scene.add(stars);
 // ---------- питомцы (вид) ----------
 let gltfMod = null; const getLoader = async () => { if (!gltfMod) gltfMod = await import('../vendor/GLTFLoader.js'); return new gltfMod.GLTFLoader(); };
 const petCache = {};
+// Питомец ночью: френель-обводка (лунный rim) + слабая лунная подсветка + тёплый свет костра по близости (в view-space).
+// Один общий набор uniform'ов на все материалы питомцев, 0 доп. draw calls, ~10 ALU во фрагменте.
+const PETU = { uRim: { value: new THREE.Color(0, 0, 0) }, uFill: { value: new THREE.Color(0, 0, 0) }, uWarm: { value: new THREE.Color(0, 0, 0) }, uFireV: { value: new THREE.Vector3() }, uFireR: { value: 8 } };
+function petMat(m) { m.onBeforeCompile = sh => { Object.assign(sh.uniforms, PETU);
+  sh.fragmentShader = 'uniform vec3 uRim; uniform vec3 uFill; uniform vec3 uWarm; uniform vec3 uFireV; uniform float uFireR;\n' + sh.fragmentShader.replace('#include <opaque_fragment>',
+    `float fr = pow(1.0 - clamp(dot(normal, geometryViewDir), 0.0, 1.0), 2.2);
+     float fw = 1.0 - smoothstep(0.0, uFireR, length(-vViewPosition - uFireV));
+     outgoingLight += uRim * fr + diffuseColor.rgb * (uFill + uWarm * fw * (0.55 + 0.45 * fr));
+     #include <opaque_fragment>`); }; m.customProgramCacheKey = () => 'pet-night'; return m; }
+const _fv = new THREE.Vector3();
+function updPetLight(n, on, k) {   // n — «ночность» 0..1, on/k — костёр горит и его сила
+  PETU.uRim.value.setRGB(.42, .52, .95).multiplyScalar(.06 + .38 * n); PETU.uFill.value.setRGB(.22, .26, .45).multiplyScalar(.9 * n);
+  PETU.uWarm.value.setRGB(1, .62, .32).multiplyScalar(on ? .85 * n * k : 0); PETU.uFireR.value = Math.max(3, lightRv * 1.15);
+  PETU.uFireV.value.copy(_fv.set(0, 1, 0).applyMatrix4(camera.matrixWorldInverse)); }
 function loadPet(pet) {
   if (petCache[pet]) return petCache[pet]; const a = PET_MODELS[pet];
   return petCache[pet] = (async () => { const gltf = await (await getLoader()).loadAsync(a.url); const root = gltf.scene;
-    root.traverse(o => { if (o.isMesh) { const ms = (Array.isArray(o.material) ? o.material : [o.material]).map(om => new THREE.MeshLambertMaterial({ color: om.color, vertexColors: !!o.geometry.attributes.color })); o.material = ms.length > 1 ? ms : ms[0]; } });
+    root.traverse(o => { if (o.isMesh) { const ms = (Array.isArray(o.material) ? o.material : [o.material]).map(om => petMat(new THREE.MeshLambertMaterial({ color: om.color, vertexColors: !!o.geometry.attributes.color }))); o.material = ms.length > 1 ? ms : ms[0]; } });
     root.scale.setScalar(a.scale || 1); const box = new THREE.Box3().setFromObject(root); root.position.y = -box.min.y; return root; })();
 }
 function placeholderPet() { return new THREE.Mesh(merge([part(Box(.6, .55, .5), '#9aa3b5', 0, .45), part(Box(.6, .5, .55), '#9aa3b5', 0, 1.0), part(Box(.5, .12, .05), '#3d4458', 0, 1.02, .28), part(Cone(.1, .2, 4), '#6f7890', -.2, 1.33, 0), part(Cone(.1, .2, 4), '#6f7890', .2, 1.33, 0)]), matVC); }
@@ -359,7 +374,7 @@ let pet = localStorage.getItem(PET_KEY) || Q.get('pet') || 'raccoon'; if (!PETS[
 const cmdQ = [];              // очередь команд → step()
 const send = c => cmdQ.push({ pid: PID, ...c });
 const ico = (el, k) => { if (el) el.innerHTML = IC[k]; };
-function initWorld(state) { S = state; S.timeScale = FAST; for (const im of Object.values(NV.ims)) scene.remove(im); NV.map.clear(); NV.ims = {}; buildNodeViews(S); syncBuilds(S); for (const [id, v] of PV) { scene.remove(v.g); } PV.clear(); for (const [, v] of EV) scene.remove(v.g); EV.clear(); audioSig = ''; }
+function initWorld(state) { S = state; OCC.set.clear(); for (const k in OCC.ghosts) OCC.ghosts[k].count = 0; S.timeScale = FAST; for (const im of Object.values(NV.ims)) scene.remove(im); NV.map.clear(); NV.ims = {}; buildNodeViews(S); syncBuilds(S); for (const [id, v] of PV) { scene.remove(v.g); } PV.clear(); for (const [, v] of EV) scene.remove(v.g); EV.clear(); audioSig = ''; }
 
 // ---------- звук: разблокировка из первого жеста, mute, настроение/погода из состояния ----------
 const sfx = new GameSfx({ masterVolume: .3, quality: QUALITY }); sfx.muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -527,10 +542,41 @@ function readInput() {
 }
 
 // ---------- камера: сзади питомца, мягко доворачивает за ним ----------
-const cam = { yaw: 0, pitch: .6, dist: 7.2, look: new THREE.Vector3(0, 1, 3) };
+const cam = { yaw: 0, pitch: .6, dist: 7.2, eff: 7.2, look: new THREE.Vector3(0, 1, 3) };
+// ---------- окклюзия камеры (как в Roblox): деревья/кусты/камни между камерой и питомцем становятся полупрозрачными,
+// а если камера «влезла» в крону/куст — плавно подъезжает ближе. Проверка дешёвая: отрезок камера→питомец против
+// вертикальных цилиндров узлов (XZ-расстояние + высота отрезка в ближайшей точке), раз в 0,1 с, ~100 узлов.
+// Прозрачность: инстанс прячем в основном InstancedMesh и рисуем в «призрачном» InstancedMesh своего типа
+// (+1 draw call на тип только пока есть заслонители).
+const OCC = { set: new Map(), t: 0, ghosts: {}, pull: 99 };
+const ghostMat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: .28, depthWrite: false });
+const OCC_KINDS = n => n.k === 'tree' ? (n.alive ? [n.sub ? 'oak' : 'pine'] : null) : n.k === 'bush' ? (n.berry ? ['bush', 'berries'] : ['bush']) : n.k === 'rock' ? ['rock'] : null;
+const OCC_DIM = n => n.k === 'tree' ? [1.2 * n.s * .85, 3.9 * n.s * .85] : n.k === 'bush' ? [.62 * (n.s || 1), .9 * (n.s || 1)] : [.55 * (n.s || 1), .6 * (n.s || 1)];
+function ghost(k) { let g = OCC.ghosts[k]; if (!g) { g = OCC.ghosts[k] = new THREE.InstancedMesh(GEO[k](), ghostMat, 8); g.userData.key = k; g.frustumCulled = false; g.count = 0; g.renderOrder = 2; scene.add(g); } return g; }
+function updOcclusion(dt, px, pz, cx, cy, cz) {
+  if (!S || !NV.ims.pine) return; OCC.t -= dt;
+  if (OCC.t <= 0) { OCC.t = .1; const want = new Set(); let pull = 99; const dx = cx - px, dz = cz - pz, L2 = dx * dx + dz * dz || 1, L = Math.sqrt(L2);
+    for (const n of S.nodes) { const ks = OCC_KINDS(n); if (!ks) continue; const [R, H] = OCC_DIM(n);
+      const t = clamp(((n.x - px) * dx + (n.z - pz) * dz) / L2, 0, 1); if (t < .04) continue;   // за спиной питомца не трогаем
+      const qx = px + dx * t - n.x, qz = pz + dz * t - n.z, d = Math.hypot(qx, qz); if (d > R + .25) continue;
+      const y = 1.1 + (cy - 1.1) * t; if (y > H + .3) continue; want.add(n.id);
+      if (n.k !== 'rock' && Math.hypot(cx - n.x, cz - n.z) < R + .5 && cy < H + .8) pull = Math.min(pull, Math.max(3.2, t * cam.dist - R - .3));   // камера в кроне/кусте
+    }
+    OCC.pull = pull;
+    for (const [id, o] of OCC.set) if (!want.has(id) || o.sig !== NV.sig.get(id)) { OCC.set.delete(id); NV.sig.delete(id); OCC.dirty = true; }
+    if (OCC.dirty) { OCC.dirty = false; syncNodes(S); }
+    for (const id of want) if (!OCC.set.has(id)) { const n = S.nodes.find(q => q.id === id), v = NV.map.get(id); if (!n || !v) continue;
+      const ks = OCC_KINDS(n).filter(k => v[k] != null && NV.ims[k]); OCC.set.set(id, { ks, idx: ks.map(k => v[k]), m: ks.map(k => { const m = new THREE.Matrix4(); NV.ims[k].getMatrixAt(v[k], m); return m; }), sig: NV.sig.get(id) }); }
+    for (const k in OCC.ghosts) OCC.ghosts[k].count = 0;
+    for (const [, o] of OCC.set) o.ks.forEach((k, i) => { const g = ghost(k); if (g.count < 8) { g.setMatrixAt(g.count++, o.m[i]); g.instanceMatrix.needsUpdate = true; } }); }
+  for (const [, o] of OCC.set) o.ks.forEach((k, i) => hideI(NV.ims[k], o.idx[i]));   // syncNodes мог вернуть инстанс — прячем каждый кадр
+}
 function updCamera(dt, moveAmt) {
   const p = me(); if (moveAmt > .2 && performance.now() - dragT > 1500) { let d = (p.face + Math.PI) - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * Math.min(1, dt * 1.6 * moveAmt); }
-  const cp = Math.cos(cam.pitch); _v.set(p.x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, p.z + Math.cos(cam.yaw) * cp * cam.dist);
+  const tgt = Math.min(cam.dist, OCC.pull); cam.eff += (tgt - cam.eff) * (1 - Math.exp(-(tgt < cam.eff ? 6 : 2) * dt));   // подъезд быстрее, отъезд мягче
+  const cp = Math.cos(cam.pitch);
+  updOcclusion(dt, p.x, p.z, p.x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, p.z + Math.cos(cam.yaw) * cp * cam.dist);   // до _v: hideI портит общий _v
+  _v.set(p.x + Math.sin(cam.yaw) * cp * cam.eff, 1.1 + Math.sin(cam.pitch) * cam.eff, p.z + Math.cos(cam.yaw) * cp * cam.eff);
   camera.position.lerp(_v, 1 - Math.exp(-7 * dt)); cam.look.lerp(_s.set(p.x, 1.1, p.z), 1 - Math.exp(-10 * dt)); camera.lookAt(cam.look);
 }
 
@@ -562,8 +608,8 @@ function animFire(dt) {
   const low = on && fuel / max < .15, flick = low ? (Math.sin(t * 20) > 0 ? 1 : .6) : 1;
   if (lv !== fireFx.level) { fireFx.setLevel(lv); hidePackBase(); } if (fireFx.lit !== on) fireFx.setLit(on); fireFx.setFuel(fuel / max);
   const LR = S ? SIM.lightR(S) : 8; lightRv += (LR - lightRv) * Math.min(1, dt * 3);
-  glow.visible = on; glow.scale.setScalar(2.5 + lightRv * .35); smoke.visible = on; smoke.material.opacity = .06 + .04 * big; smoke.scale.set(big, 1, big);
-  const n = nightness(); fireLight.intensity = on ? (1.2 + 28.8 * n) * k * flick * (1 + Math.sin(t * 17) * .06) : 0; fireLight.distance = lightRv * 1.9 + 2;
+  glow.visible = on; glow.scale.setScalar(2.5 + lightRv * .35); 
+  const n = nightness(); updPetLight(n, on, k); fireLight.intensity = on ? (1.2 + 28.8 * n) * k * flick * (1 + Math.sin(t * 17) * .06) : 0; fireLight.distance = lightRv * 1.9 + 2;
   const vis = lightRv > .2; safeDisc.visible = safeRing.visible = vis; if (vis) { safeDisc.scale.setScalar(lightRv); safeRing.scale.setScalar(lightRv); }
   safeRing.material.opacity = (.25 + .5 * n) * (low ? flick : 1); safeDisc.material.opacity = .35 + .65 * n;
   const OR = S ? SIM.openR(S) : 16; fogWall.scale.set(OR + .3, 1, OR + .3); fogWall.visible = OR < CFG.MAP;
@@ -678,7 +724,7 @@ function loop() {
     if (DEBUG) { const i = renderer.info.render; dbg.textContent = `FPS ${fps.toFixed(0)}  calls ${i.calls}  tris ${i.triangles}  px ${pixelRatio.toFixed(2)}  врагов ${S ? S.enemies.length : 0}  ×${FAST}`; } }
 }
 // API для тестов и отладки (только чтение/служебное)
-window.__g = { scene, input, SIM, get S() { return S; }, get mode() { return mode; }, send, save, loadSave, startStage, continueGame, showMap, showMenu, account, saveAcc, sfx, vfx, fireFx, setMute, renderer, camera, cam, quality: QUALITY, assets: ASSET_STATE,
+window.__g = { scene, input, SIM, get S() { return S; }, get mode() { return mode; }, send, save, loadSave, startStage, continueGame, showMap, showMenu, account, saveAcc, sfx, vfx, fireFx, setMute, renderer, camera, cam, quality: QUALITY, assets: ASSET_STATE, occ: OCC,
   teleport: (x, z) => { const p = me(); p.x = x; p.z = z; const cp = Math.cos(cam.pitch); camera.position.set(x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, z + Math.cos(cam.yaw) * cp * cam.dist); cam.look.set(x, 1.1, z); },
   look: (yaw, pitch) => { cam.yaw = yaw; if (pitch) cam.pitch = pitch; dragT = performance.now(); },
   stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };

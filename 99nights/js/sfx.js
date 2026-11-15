@@ -1,7 +1,7 @@
 // «99 ночей» — тонкая обёртка над паком звука /fx/audio.js (процедурный Web Audio, 0 КБ файлов).
 // Пак даёт все звуки ТЗ 3 (действия, угрозы, погода, UI, джинглы, пэды дня/ночи). Здесь только:
 // mute (выключатель в HUD/меню), счётчик сыгранных событий для тестов и короткое «блестящее» рассеивание тени.
-import { GameAudio } from './fx/audio.js?v=0.5.1';
+import { GameAudio } from './fx/audio.js?v=0.5.2';
 
 export class GameSfx extends GameAudio {
   constructor(opts = {}) { super(opts); this.muted = false; this._vol = opts.masterVolume ?? .3; this.log = Object.create(null); }
