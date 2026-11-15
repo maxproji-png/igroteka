@@ -6,7 +6,7 @@ window.T = window.T || {};
 T.PETS = { raccoon: 'Енот', capybara: 'Капибара', dragon: 'Дракон', goose: 'Гусь' };
 T.me = { name: 'Дима', coins: 12000, energy: 120, energyMax: 300 };
 T.clan = {
-  name: 'Дикий зоопарк', emblem: 'raccoon', lvl: 2, members: 27, cap: 45, online: 6,
+  name: 'Дикий зоопарк', icon: 'paw', color: 'orange', lvl: 2, members: 27, cap: 45, online: 6,
   wins: 64, nextWins: 100, nextCap: 50,
   weekTaps: 1240560, weekPlace: 3, weekGoal: 1500000,
   weekLeft: '2 д 14 ч', coinByPlace: [3000, 2000, 1000],

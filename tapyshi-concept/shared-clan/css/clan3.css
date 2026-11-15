@@ -7,6 +7,8 @@
 .emb{width:48px;height:48px;border-radius:17px;flex:none;display:grid;place-items:center;overflow:hidden;background:var(--violet-soft);box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--violet) 12%,transparent)}
 .emb img{width:88%;height:88%;object-fit:contain;margin-top:10%}
 .emb.sm{width:40px;height:40px;border-radius:14px}
+.emb.clan-badge,.ci-head .emb.clan-badge{background:linear-gradient(180deg,color-mix(in srgb,var(--cc) 82%,var(--white)),var(--cc));box-shadow:0 3px 0 color-mix(in srgb,var(--ce) 70%,transparent),inset 0 -3px 0 color-mix(in srgb,var(--ce) 40%,transparent);color:var(--badge-ink,var(--white));overflow:hidden}
+.emb.clan-badge svg,.ci-head .emb.clan-badge svg{width:58%;height:58%;display:block;margin:0}
 .e-dragon{background:var(--green-soft)}.e-goose,.e-raccoon{background:var(--violet-soft)}.e-capybara{background:var(--sun-soft)}
 .ch-h .t{flex:1;min-width:0}
 .ch-h .t>b{display:block;font-size:22px;font-weight:1000;letter-spacing:-.3px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

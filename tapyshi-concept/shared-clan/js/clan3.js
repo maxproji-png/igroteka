@@ -36,10 +36,13 @@ C.lvlOf = function(n, pet){
 C.colors = ['var(--violet-edge)','var(--violet)','var(--sun)','color-mix(in srgb,var(--violet) 60%,var(--white))','color-mix(in srgb,var(--violet) 40%,var(--white))'];
 C.rest = 'color-mix(in srgb,var(--violet) 18%,var(--white))';
 C.top = [
-  { n:'Котики-ниндзя', pet:'dragon', lvl:3, m:48, t:1980400 }, { n:'Пушистый отряд', pet:'goose', lvl:3, m:46, t:1612300 },
-  { n:'Дикий зоопарк', pet:'raccoon', lvl:2, m:27, t:1240560, me:1 }, { n:'Ёжики в тумане', pet:'capybara', lvl:2, m:31, t:1104900 },
-  { n:'Хомяки-силачи', pet:'dragon', lvl:2, m:25, t:987200 }, { n:'Совы не спят', pet:'goose', lvl:1, m:19, t:842010 },
-  { n:'Лапки вверх', pet:'capybara', lvl:1, m:22, t:760300 } ];
+  { n:'Котики-ниндзя',  icon:'moon',   color:'violet', lvl:3, m:48, t:1980400 },
+  { n:'Пушистый отряд', icon:'flower', color:'pink',   lvl:3, m:46, t:1612300 },
+  { n:'Дикий зоопарк',  icon:'paw',    color:'orange', lvl:2, m:27, t:1240560, me:1 },
+  { n:'Ёжики в тумане', icon:'snow',   color:'teal',   lvl:2, m:31, t:1104900 },
+  { n:'Хомяки-силачи',  icon:'bolt',   color:'sun',    lvl:2, m:25, t:987200 },
+  { n:'Совы не спят',   icon:'star',   color:'blue',   lvl:1, m:19, t:842010 },
+  { n:'Лапки вверх',    icon:'heart',  color:'green',  lvl:1, m:22, t:760300 } ];
 C.chat = [
   { day:'Сегодня' },
   { sys:'Соня вступила в клан' },
@@ -64,12 +67,8 @@ C.members_ = function(o){ o=o||{}; var list=(o.all?C.allMembers():C.members).sli
   }).join('')+((C.restN && !o.all)?'<button type="button" class="row more tap" data-members-all><span class="nm"><b>Ещё '+C.restN+' участников</b><small>'+T.fmt(C.restT)+' тапов вместе</small></span><span class="go">'+T.IC.chev+'</span></button>':'')+'</div>';
 };
 var topEmb = function(c){
-  if (c.icon && window.ClanCreate) {
-    var col = ClanCreate.colorBy(c.color), ic = ClanCreate.iconBy(c.icon);
-    return '<span class="emb sm clan-badge" style="'+ClanCreate.badgeStyle(col)+'">'+ClanCreate.svg(ic)+'</span>';
-  }
-  var src=(window.TAP_petThumb?TAP_petThumb(c.pet,1):H(c.pet));
-  return '<span class="emb sm e-'+c.pet+'"><img src="'+src+'" alt=""></span>';
+  if (window.ClanCreate && ClanCreate.embHTML) return ClanCreate.embHTML(c, 'sm');
+  return '<span class="emb sm clan-badge"></span>';
 };
 C.top_ = function(){
   return '<div class="prize"><span class="cap">Награды недели</span>'+C.prize.map(function(n,i){return '<span class="chip chip--sun">'+(i+1)+'-е — '+(T.coin?T.coin('',14):'')+'<b>'+T.fmt(n)+'</b></span>';}).join('')+'</div><div class="list">'+C.top.map(function(c,i){

@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="../shared-clan/css/tokens.css?v=tc11132410">
 <link rel="stylesheet" href="../shared/components.css?v=tc11150155">
 <link rel="stylesheet" href="../shared/coin.css?v=tc11150155">
-<link rel="stylesheet" href="../shared-clan/css/clan3.css?v=tc11150030">
+<link rel="stylesheet" href="../shared-clan/css/clan3.css?v=tc11151730">
 <link rel="stylesheet" href="../shared-clan/css/chest-art.css?v=tc11150030">
 <link rel="stylesheet" href="../shared/pet-ava.css?v=tc11150135">
 <style>
@@ -115,7 +115,7 @@ button.row.more{display:flex;align-items:center;width:100%;border:0;background:n
 .clan-info{padding:2px 2px 4px}
 .clan-info h3{margin:0;font-size:22px;font-weight:1000;letter-spacing:-.3px}
 .ci-head{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding-right:36px}
-.ci-head .emb{width:56px;height:56px;border-radius:18px;overflow:hidden;flex:none;background:var(--violet-soft);display:grid;place-items:center}
+.ci-head .emb{width:56px;height:56px;border-radius:18px;overflow:hidden;flex:none;display:grid;place-items:center}
 .ci-head .emb img{width:48px;height:48px;object-fit:contain}
 .ci-head p{margin:4px 0 0;font-size:13px;font-weight:800;color:var(--ink-2)}
 .ci-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 16px}
@@ -140,7 +140,7 @@ button.row.more{display:flex;align-items:center;width:100%;border:0;background:n
 <div class="app" id="app">
   <div class="scroll">
     <header class="ch-h">
-      <span class="emb"><img src="../shared-clan/img/pets/raccoon_happy_head.png" alt=""></span>
+      <span class="emb clan-badge" style="--cc:var(--game-goroda);--ce:var(--game-goroda-edge)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="6.45" cy="9.75" rx="2.12" ry="2.62" transform="rotate(-22 6.45 9.75)"/><ellipse cx="9.85" cy="6.5" rx="2.28" ry="2.78" transform="rotate(-7 9.85 6.5)"/><ellipse cx="14.15" cy="6.5" rx="2.28" ry="2.78" transform="rotate(7 14.15 6.5)"/><ellipse cx="17.55" cy="9.75" rx="2.12" ry="2.62" transform="rotate(22 17.55 9.75)"/><path d="M12 10.95c-3.95 0-5.85 2.35-5.85 5.55 0 2.85 2.05 3.95 4.05 3.35 .85-.25 1.2-.7 1.8-.7s.95.45 1.8.7c2 .6 4.05-.5 4.05-3.35 0-3.2-1.9-5.55-5.85-5.55z"/></svg></span>
       <span class="t"><b>Дикий зоопарк</b><small><span class="chip chip--sun"><b>ур. 2</b></span>27 из 45 · <i class="gdot"></i> 6 онлайн</small></span>
       <button class="ibtn tap" id="more" aria-label="О клане"></button>
     </header>
@@ -160,12 +160,13 @@ button.row.more{display:flex;align-items:center;width:100%;border:0;background:n
 <script src="../shared/coin.js?v=tc11150155"></script>
 <script src="../shared/pet-thumb.js?v=tc11150030"></script>
 <script>window.T=window.T||{};T.ROOT='../shared-clan/';</script>
-<script src="../shared-clan/js/data.js?v=tc11150030"></script>
+<script src="../shared-clan/js/data.js?v=tc11151730"></script>
 <script src="../shared-clan/js/app.js?v=tc11150155"></script>
 <script src="../shared-clan/js/v2.js?v=tc11150030"></script>
 <script src="../shared-clan/js/nav3.js?v=tc11132410"></script>
 <script src="../shared-clan/js/chest-art.js?v=tc11152130"></script>
-<script src="../shared-clan/js/clan3.js?v=tc11150155"></script>
+<script src="../clan-create/shared.js?v=tc11151730"></script>
+<script src="../shared-clan/js/clan3.js?v=tc11151730"></script>
 <script>
 var C=T.c3;
 document.getElementById('more').innerHTML=T.IC.dots;
@@ -186,7 +187,7 @@ function pplWord(n){var m=n%100,d=n%10;return (m>10&&m<20)||!d||d>4?'участ�
 document.getElementById('more').addEventListener('click',function(){
   T.sheet(
     '<div class="clan-info">'+
-      '<div class="ci-head"><span class="emb e-raccoon"><img src="../shared-clan/img/pets/raccoon_happy_head.png" alt=""></span><div><h3>Дикий зоопарк</h3><p>Твой клан</p></div></div>'+
+      '<div class="ci-head">'+(window.ClanCreate&&ClanCreate.embHTML?ClanCreate.embHTML(T.clan):'')+'<div><h3>'+((T.clan&&T.clan.name)||'Дикий зоопарк')+'</h3><p>Твой клан</p></div></div>'+
       '<div class="ci-grid">'+
         '<div class="ci-cell"><small>Уровень</small><b>2</b></div>'+
         '<div class="ci-cell"><small>Места</small><b>27 / 45</b></div>'+
@@ -199,8 +200,7 @@ document.getElementById('more').addEventListener('click',function(){
 </script>
 <script src="../shared/invite.js?v=tc11150030"></script>
 <script src="../shared/nav.js?v=tc11132410"></script>
-<script src="../clan-create/shared.js?v=tc11132410"></script>
-<script src="../clan-create/apply.js?v=tc11132410"></script>
+<script src="../clan-create/apply.js?v=tc11151730"></script>
 
 </body>
 </html>

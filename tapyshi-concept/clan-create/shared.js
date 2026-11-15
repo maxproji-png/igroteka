@@ -39,9 +39,40 @@
     return s || FALLBACK;
   }
 
+  /* Демо-кланы концепта: одно и то же имя = один герб и цвет везде. */
+  var DEMO = {
+    'Дикий зоопарк':  { icon: 'paw',    color: 'orange' },
+    'Котики-ниндзя':  { icon: 'moon',   color: 'violet' },
+    'Пушистый отряд': { icon: 'flower', color: 'pink' },
+    'Ёжики в тумане': { icon: 'snow',   color: 'teal' },
+    'Хомяки-силачи':  { icon: 'bolt',   color: 'sun' },
+    'Совы не спят':   { icon: 'star',   color: 'blue' },
+    'Лапки вверх':    { icon: 'heart',  color: 'green' }
+  };
+  function demoByName(name) {
+    return DEMO[name] || { icon: 'paw', color: 'violet' };
+  }
+  function markOf(st) {
+    if (!st) return demoByName('');
+    if (typeof st === 'string') return Object.assign({ name: st }, demoByName(st));
+    var fromName = st.n || st.name ? demoByName(st.n || st.name) : null;
+    return {
+      icon: st.icon || (fromName && fromName.icon) || 'paw',
+      color: st.color || (fromName && fromName.color) || 'violet',
+      name: st.n || st.name
+    };
+  }
+
   function badgeHTML(st, size) {
-    var ic = iconBy(st.icon), col = colorBy(st.color);
+    var m = markOf(st), ic = iconBy(m.icon), col = colorBy(m.color);
     return '<span class="badge badge--' + (size || 'sm') + '" style="' + badgeStyle(col) + '">' + svg(ic) + '</span>';
+  }
+
+  /* Значок в шапке / списках клана: тот же герб, классы .emb уже есть в clan3.css. */
+  function embHTML(st, size) {
+    var m = markOf(st), ic = iconBy(m.icon), col = colorBy(m.color);
+    var cls = 'emb clan-badge' + (size === 'sm' ? ' sm' : '');
+    return '<span class="' + cls + '" style="' + badgeStyle(col) + '">' + svg(ic) + '</span>';
   }
 
   function previewHTML(st, kind) {
@@ -236,5 +267,5 @@
     };
   }
 
-  w.ClanCreate = { ICONS: ICONS, COLORS: COLORS, KEY: KEY, init: init, previewHTML: previewHTML, svg: svg, iconBy: iconBy, colorBy: colorBy, displayName: displayName, toast: toast, save: save, load: load, badgeHTML: badgeHTML, badgeStyle: badgeStyle };
+  w.ClanCreate = { ICONS: ICONS, COLORS: COLORS, KEY: KEY, DEMO: DEMO, init: init, previewHTML: previewHTML, svg: svg, iconBy: iconBy, colorBy: colorBy, displayName: displayName, toast: toast, save: save, load: load, badgeHTML: badgeHTML, badgeStyle: badgeStyle, embHTML: embHTML, demoByName: demoByName, markOf: markOf };
 })(window);

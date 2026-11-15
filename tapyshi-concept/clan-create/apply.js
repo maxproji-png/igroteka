@@ -134,7 +134,15 @@
     document.head.appendChild(st);
   }
 
+  function paintDemoHeader() {
+    var emb = document.querySelector('.ch-h .emb');
+    if (!emb || !window.ClanCreate || !ClanCreate.embHTML) return;
+    var st = (window.T && T.clan) || ClanCreate.demoByName('Дикий зоопарк');
+    emb.outerHTML = ClanCreate.embHTML(st);
+  }
+
   function enhanceDemo() {
+    paintDemoHeader();
     var mine = window.ClanCreate && ClanCreate.load();
     if (!mine) return;
     var more = document.getElementById('more');
