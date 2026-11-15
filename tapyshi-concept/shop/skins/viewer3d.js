@@ -47,15 +47,17 @@ function init(){
     const dy = dx * 0.55; yaw += dy; vel = dy / Math.max(8, t - lt) * 16; lt = t; draw(); });
   const up = () => { if (px === null) return; px = null; if (Math.abs(vel) > 0.3) spin(); };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
-  ro = new ResizeObserver(() => { size(); draw(); });
+  ro = new ResizeObserver(() => { if (size()) renderNow(); });   // размер сменился → перерисовать в том же кадре
 }
 function spin(){ stop(); const step = () => { vel *= 0.93; yaw += vel; draw(); if (Math.abs(vel) > 0.05) raf = requestAnimationFrame(step); else raf = 0; }; raf = requestAnimationFrame(step); }
 function stop(){ if (raf) cancelAnimationFrame(raf); raf = 0; }
-function size(){ if (!host) return; const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; ren.setSize(w, h, false);
+let sw = 0, shh = 0;
+/* setSize очищает буфер WebGL — вызываем только при реальной смене размера, иначе на кадр мелькнёт пустой канвас */
+function size(){ if (!host) return false; const w = host.clientWidth, h = host.clientHeight; if (!w || !h || (w === sw && h === shh)) return false; sw = w; shh = h; ren.setSize(w, h, false);
   /* кадр: ширина 2R (любой угол поворота), высота — проекция бокса 0…H с учётом наклона; запас 6% */
   const needW = 2 * R * 1.06, needH = (H * Math.cos(EL) + 2 * R * Math.sin(EL)) * 1.06, asp = w / h;
   let hw = needW / 2, hh = hw / asp; if (hh * 2 < needH) { hh = needH / 2; hw = hh * asp; }
-  cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.updateProjectionMatrix(); }
+  cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.updateProjectionMatrix(); return true; }
 function draw(){ if (dirty) return; dirty = true; requestAnimationFrame(() => { dirty = false; if (!ren || !host) return; pivot.rotation.y = THREE.MathUtils.degToRad(yaw); ren.render(scene, cam); }); }
 
 /* центр по bbox: голова+тело енота (без хвоста) → x,z = 0; лапы на полу → y = 0 */
@@ -71,31 +73,41 @@ async function load(set){
 function show(set){ for (const k in cache) cache[k].visible = (k === set); }
 
 /* attach: окно набора перерисовалось — переносим канвас в новую сцену, грузим/переключаем модель, применяем правила */
+/* attach: окно набора открыто/перерисовано. Постер (webp) виден ТОЛЬКО пока GLB грузится в первый раз за сессию;
+   как только первый кадр 3D отрисован (синхронно) — .is-3d: постер display:none, канвас visible. Без кроссфейда. */
 async function attach(stage, set, sel, angle){
   if (!OK) return false;
   if (!ren) init();
   if (host !== stage){ if (ro && host) ro.unobserve(host); host = stage; stage.appendChild(canvas); ro.observe(stage); size(); }
   if (angle != null) { yaw = angle; vel = 0; stop(); }
   parts = new Set(sel); want = set;
-  if (cur !== set){ stage.classList.remove('is-3d'); const tok = ++loadTok;
-    try { const root = await load(set); if (tok !== loadTok || !ren) return; if (!root.parent) pivot.add(root); cur = set; }
+  if (cur !== set || !cache[set] || cache[set].parent !== pivot){
+    if (!cache[set]) stage.classList.remove('is-3d');        // ещё не загружен: канвас скрыт, виден постер
+    const tok = ++loadTok;
+    try { const root = cache[set] || await load(set);          // из кэша — синхронно, без await
+      if (tok !== loadTok || !ren || host !== stage) return false; if (root.parent !== pivot) pivot.add(root); cur = set; }
     catch (e) { console.warn('3D: не загрузилось', set, e); stage.classList.add('is-3d-fail'); return false; } }
   show(cur); applyRules(cache[cur], parts);
-  host.classList.add('is-3d'); host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); draw(); return true;
+  renderNow(); host.classList.add('is-3d'); host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); return true;
 }
-function update(sel){ if (!cur || !cache[cur]) return; parts = new Set(sel); applyRules(cache[cur], parts); if (host) host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); draw(); }
+function renderNow(){ if (!ren || !host) return; size(); pivot.rotation.y = THREE.MathUtils.degToRad(yaw); ren.render(scene, cam); }
+function has(set){ return !!cache[set]; }
+/* тап по части: только applyRules + кадр в том же такте (без rAF), чтобы после переноса сцены в DOM не было пустого кадра */
+function update(sel){ if (!cur || !cache[cur]) return; parts = new Set(sel); applyRules(cache[cur], parts); if (host) host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); renderNow(); }
 function detach(){ if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas); if (ro && host) ro.unobserve(host); host = null; stop(); }
+/* закрытие окна: освобождаем GPU (рендерер + контекст WebGL), но разобранные GLB оставляем в памяти сессии —
+   повторное открытие сразу в 3D, без постера */
 function dispose(){
   detach(); loadTok++;
-  for (const k in cache){ cache[k].traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach(m => { for (const p in m) if (m[p] && m[p].isTexture) m[p].dispose(); m.dispose(); }); }); delete cache[k]; }
+  for (const k in cache) if (cache[k].parent) cache[k].parent.remove(cache[k]);
   if (shadow){ shadow.geometry.dispose(); shadow.material.map.dispose(); shadow.material.dispose(); }
   if (ren){ ren.dispose(); ren.forceContextLoss(); }
   if (ro) ro.disconnect();
-  ren = scene = cam = pivot = shadow = canvas = ro = null; cur = want = null; yaw = TQ;
+  ren = scene = cam = pivot = shadow = canvas = ro = null; cur = want = null; yaw = TQ; sw = shh = 0;
 }
-function state(){ return { ok:OK, ready:!!(cur && host && host.classList.contains('is-3d')), set:cur, yaw:Math.round(((yaw % 360) + 360) % 360),
+function state(){ return { ok:OK, ready:!!(cur && host && host.classList.contains('is-3d')), cached:Object.keys(cache), set:cur, yaw:Math.round(((yaw % 360) + 360) % 360),
   visible: cur ? (() => { const r = []; cache[cur].traverse(o => { if (o.isMesh) { let v = true, p = o; while (p) { if (!p.visible) { v = false; break; } p = p.parent; } if (v) r.push(o.parent.name || o.name); } }); return [...new Set(r)]; })() : [],
   pixelRatio: ren ? ren.getPixelRatio() : 0 }; }
 
-window.SK3D = { ok:OK, TQ, attach, update, detach, dispose, state };
+window.SK3D = { ok:OK, TQ, attach, update, detach, dispose, state, has };
 window.dispatchEvent(new Event('sk3d-ready'));

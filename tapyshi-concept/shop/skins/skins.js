@@ -65,7 +65,9 @@
   function open(html, instant){ isOpen = true; ensure(); place(); sh.innerHTML='<div class="sk-grab"></div><button type="button" class="sk-x" data-close aria-label="Закрыть">'+I.x+'</button>'+html;
     if (instant){ sh.classList.add('no-anim'); scrim.classList.add('no-anim'); }
     requestAnimationFrame(function(){ sh.classList.add('on'); scrim.classList.add('on'); }); }
-  function close(){ isOpen = false; if (w.SK3D) w.SK3D.dispose(); if (!sh) return; sh.classList.remove('on','no-anim'); scrim.classList.remove('on','no-anim'); }
+  /* 3D освобождаем после того, как шторка уехала (иначе на выезде мелькает пустая сцена); повторное открытие раньше — отмена */
+  var disposeT = 0;
+  function close(){ isOpen = false; if (w.SK3D){ clearTimeout(disposeT); disposeT = setTimeout(function(){ if (!isOpen) w.SK3D.dispose(); }, 520); } if (!sh) return; sh.classList.remove('on','no-anim'); scrim.classList.remove('on','no-anim'); }
   addEventListener('resize', place); addEventListener('load', place);
   /* таб-бар строится nav.js и может поменять высоту после шрифтов — следим, чтобы зазор всегда был 8 px */
   (function watch(){ var t=document.querySelector('.tabbar'); if (!t) return setTimeout(watch, 50); if (w.ResizeObserver) new ResizeObserver(place).observe(t); place(); })();
@@ -112,9 +114,11 @@
     var D3 = !!(w.SK3D && w.SK3D.ok);
     var note = D3 ? (cm.n===4 ? 'Весь набор' : cm.n ? 'Примерка · '+cm.n+' из 4' : 'Без костюма')
       : trying ? (cm.exact ? 'Примерка · '+cm.n+' из 4' : 'Нет рендера · показан весь набор') : (back ? 'Вид сзади' : 'Весь набор');
+    var keep = D3 && isOpen && sh && sh.querySelector('.sk-ss[data-skset="'+id+'"] .sk-stage.is-3d');   /* тот же набор, 3D готово — сцену не трогаем */
+    var has3d = D3 && w.SK3D.has && w.SK3D.has(s.id);   /* GLB уже разобран в этой сессии — постер не нужен вовсе */
     if (D3){ back = false; img = cm.n===0 ? (MF.base && MF.base[pk] ? render(MF.base[pk]) : render(e.tq)) : (cm.exact ? cm.src : render(e.tq)); }  /* постер, пока грузится GLB */
-    open('<div class="sk-ss sk-tone--'+s.tone+'">'+
-      '<div class="sk-stage big'+(!D3&&trying&&!cm.exact?' is-fallback':'')+(D3?' sk3d':'')+'"><img class="sk-poster" src="'+img+'" alt="">'+
+    open('<div class="sk-ss sk-tone--'+s.tone+'" data-skset="'+s.id+'">'+
+      '<div class="sk-stage big'+(!D3&&trying&&!cm.exact?' is-fallback':'')+(D3?' sk3d':'')+'">'+(has3d?'':'<img class="sk-poster" src="'+img+'" alt="">')+
         '<span class="sk-try'+(trying?(D3||cm.exact?' on':' warn'):'')+'">'+note+'</span>'+
         (D3 ? '<span class="sk-spin" aria-hidden="true">'+I.turn+'<span>Крути пальцем</span></span>' : '')+
         (!D3 && !trying && e && e.back ? '<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
@@ -129,7 +133,10 @@
       '<div class="sk-fill"></div>'+
       '<div class="sk-buyrow">'+lbl+act+'</div>'+
     '</div>', instant);
-    if (D3) w.SK3D.attach(sh.querySelector('.sk-stage'), s.id, Object.keys(view.sel), view.angle != null ? view.angle : null), view.angle = null;
+    if (keep){ /* тап по части: возвращаем прежнюю сцену с живым канвасом, меняем только плашку; 3D — только applyRules */
+      var ns = sh.querySelector('.sk-stage'); keep.querySelector('.sk-try').replaceWith(ns.querySelector('.sk-try')); ns.replaceWith(keep);
+      w.SK3D.update(Object.keys(view.sel)); }
+    else if (D3){ w.SK3D.attach(sh.querySelector('.sk-stage'), s.id, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; }
   }
   function onSheetClick(e){
     var b;
