@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#8fd3ff">
+<link rel="icon" href="data:,">
+<title>99 ночей</title>
+<style>
+@font-face{font-family:N;src:local("Nunito"),local("Nunito ExtraBold"),local("Nunito-ExtraBold")}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#8fd3ff;font-family:Nunito,N,"Nunito Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#33405a}
+body{position:fixed;inset:0}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+:root{--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+.ui{position:fixed;inset:0;pointer-events:none}
+.ui>*{pointer-events:auto}
+.card{background:rgba(255,255,255,.88);border-radius:20px;box-shadow:0 6px 18px rgba(40,60,110,.16),0 1px 0 rgba(255,255,255,.9) inset;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#top{position:absolute;left:calc(10px + var(--sl));top:calc(10px + var(--st));width:min(56vw,230px);padding:10px 12px 10px;pointer-events:none}
+#night{font-weight:900;font-size:20px;display:flex;align-items:center;gap:7px;line-height:1}
+#night small{font-weight:800;font-size:14px;color:#8a93ab}
+#night svg{width:22px;height:22px}
+#phase{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:#6b7590;margin:6px 0 4px}
+.bar{height:8px;border-radius:6px;background:#e7ecf6;overflow:hidden;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;width:50%;transition:width .25s}
+#tbar i{background:linear-gradient(90deg,#ffd45c,#ffb13b)}
+body.isnight #tbar i{background:linear-gradient(90deg,#8aa0ff,#5b6fe0)}
+.stat{display:flex;align-items:center;gap:7px;margin-top:6px}
+.stat svg{width:16px;height:16px;flex:none}
+.stat .bar{flex:1}
+#hpb i{background:linear-gradient(90deg,#7fd6ff,#4f9dff)}
+.stat em{font-style:normal;font-size:10px;font-weight:900;color:#8a93ab;width:50px;text-align:right;white-space:nowrap}
+#pets{display:flex;gap:8px;justify-content:center;margin:4px 0}
+.pet{border:0;padding:4px 4px 6px;border-radius:18px;background:rgba(255,255,255,.8);box-shadow:0 4px 12px rgba(40,60,110,.15);font:inherit;font-weight:900;font-size:12px;color:#33405a;width:76px}
+.pet img{width:68px;height:68px;border-radius:14px;display:block;margin-bottom:3px}
+.pet small{display:block;font-size:10px;color:#8a93ab;font-weight:800}
+.pet.on{background:#fff;box-shadow:0 0 0 3px #5ccf6e,0 6px 16px rgba(40,120,60,.25)}
+.coop{display:flex;gap:8px}
+.coop button{border:0;border-radius:16px;padding:10px 12px;font:inherit;font-weight:900;font-size:13px;background:rgba(255,255,255,.6);color:#9aa3b8;width:120px}
+.coop small{display:block;font-size:10px}
+#store{font-size:12px;font-weight:800;color:#6b7590;margin:-4px 4px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#store i{font-style:normal;display:inline-flex;align-items:center;gap:2px;background:#f5f8fd;border-radius:10px;padding:2px 7px 2px 3px}
+#store svg{width:18px;height:18px}
+#sleepCard{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);padding:16px 22px;text-align:center;pointer-events:none}
+#sleepCard b{display:block;font-size:19px;font-weight:900}
+#sleepCard small{display:block;font-size:13px;font-weight:800;color:#7a849d;margin-top:4px}
+.chip.bag{font-size:13px;min-width:0}
+.chip.bag.full{background:#fff1f1;color:#d93c55}
+
+#hub i{background:linear-gradient(90deg,#ffc36b,#ff9a3c)}
+#fub i{background:linear-gradient(90deg,#ffe066,#ff8a3c)}
+#fub.low i{animation:blink .6s infinite}@keyframes blink{50%{opacity:.35}}
+#pause{position:absolute;right:calc(10px + var(--sr));top:calc(10px + var(--st));width:44px;height:44px;border:0;display:grid;place-items:center}
+#pause svg{width:20px;height:20px}
+#inv{position:absolute;right:calc(10px + var(--sr));top:calc(62px + var(--st));display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.chip{display:flex;align-items:center;gap:5px;padding:5px 10px 5px 6px;font-weight:900;font-size:16px;min-width:62px;border-radius:16px}
+.chip svg{width:24px;height:24px}
+.chip.bump{animation:bump .35s}
+.chip.zero{opacity:.55}
+@keyframes bump{40%{transform:scale(1.18)}}
+#hint{position:absolute;left:50%;top:calc(318px + var(--st));transform:translateX(-50%);padding:9px 16px;font-weight:800;font-size:14px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;pointer-events:none;transition:opacity .3s}
+#hint.warn{background:#fff1f1;color:#d93c55}
+#hint.hide{opacity:0}
+#toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.9);padding:16px 24px;text-align:center;font-weight:900;font-size:24px;opacity:0;transition:all .35s;pointer-events:none;white-space:nowrap}
+#toast small{display:block;font-size:14px;font-weight:800;color:#7a849d;margin-top:4px}
+#toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#joy{position:absolute;left:0;bottom:0;width:50%;height:46%;touch-action:none}
+#jbase{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,255,255,.35);border:3px solid rgba(255,255,255,.75);box-shadow:0 4px 14px rgba(40,60,110,.15);pointer-events:none;transition:opacity .2s}
+#jknob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#fff;box-shadow:0 4px 10px rgba(40,60,110,.25)}
+#acts{position:absolute;right:calc(14px + var(--sr));bottom:calc(18px + var(--sb));width:200px;height:200px;pointer-events:none}
+.btn{position:absolute;border:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font:inherit;font-weight:900;color:#33405a;pointer-events:auto;touch-action:none;background:rgba(255,255,255,.92);box-shadow:0 5px 0 rgba(60,80,130,.18),0 8px 18px rgba(40,60,110,.18);transition:transform .08s}
+.btn:active,.btn.down{transform:translateY(3px) scale(.96);box-shadow:0 2px 0 rgba(60,80,130,.18),0 4px 10px rgba(40,60,110,.18)}
+.btn svg{width:34px;height:34px}
+.btn span{font-size:11px;margin-top:1px;white-space:nowrap}
+.btn .n{position:absolute;right:2px;top:2px;background:#ff6b5e;color:#fff;font-size:11px;border-radius:9px;min-width:18px;height:18px;line-height:18px;padding:0 4px}
+#bAct{right:0;bottom:0;width:104px;height:104px;background:linear-gradient(180deg,#fff7d6,#ffd96a)}
+#bAct svg{width:46px;height:46px}
+#bAct span{font-size:13px}
+#bAct.dim{filter:saturate(.3);opacity:.8}
+#bEat{right:118px;bottom:0;width:62px;height:62px}
+#bTorch{right:112px;bottom:76px;width:62px;height:62px}
+#bCraft{right:22px;bottom:122px;width:62px;height:62px;background:linear-gradient(180deg,#e9f7ff,#bfe6ff)}
+.btn.off{opacity:.45}
+#vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,60,80,0) 55%,rgba(255,40,70,.55));opacity:0;transition:opacity .15s}
+#sheet{position:absolute;left:0;right:0;bottom:0;padding:14px 14px calc(14px + var(--sb));border-radius:26px 26px 0 0;transform:translateY(105%);transition:transform .25s;max-height:70%;overflow:auto;touch-action:pan-y}
+#sheet.on{transform:none}
+#sheet h3{margin:2px 4px 10px;font-size:20px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+#sheet h3 button{border:0;background:#eef2f9;border-radius:14px;width:36px;height:36px;font-size:18px;font-weight:900;color:#6b7590}
+.rc{display:flex;align-items:center;gap:10px;padding:10px;border-radius:18px;background:#f5f8fd;margin-bottom:8px}
+.rc .ic{width:48px;height:48px;border-radius:14px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 2px 6px rgba(40,60,110,.1)}
+.rc .ic svg{width:34px;height:34px}
+.rc .tx{flex:1;min-width:0}
+.rc b{font-size:15px;font-weight:900;display:block}
+.rc em{font-style:normal;font-size:12px;color:#7a849d;font-weight:700;display:block;margin:1px 0 4px}
+.cost{display:flex;gap:6px;flex-wrap:wrap}
+.cost i{font-style:normal;display:flex;align-items:center;gap:2px;font-size:13px;font-weight:900;background:#fff;border-radius:10px;padding:2px 7px 2px 3px}
+.cost i svg{width:18px;height:18px}
+.cost i.no{color:#e0475f;background:#ffeef0}
+.rc button{border:0;border-radius:14px;padding:10px 12px;font:inherit;font-weight:900;font-size:14px;background:#5ccf6e;color:#fff;box-shadow:0 3px 0 #3ea851}
+.rc button:disabled{background:#d5dbe6;box-shadow:0 3px 0 #bcc4d3}
+.rc.done{opacity:.6}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px calc(24px + var(--sr)) calc(24px + var(--sb)) calc(24px + var(--sl));background:linear-gradient(180deg,rgba(143,211,255,.25),rgba(255,255,255,.55));text-align:center}
+.ov.hide,.hide{display:none!important}
+.ov h1{margin:0;font-size:52px;font-weight:900;color:#fff;text-shadow:0 4px 0 #3e8f4f,0 8px 22px rgba(30,70,40,.35);letter-spacing:.5px;line-height:1}
+.ov h2{margin:0;font-size:28px;font-weight:900;color:#33405a}
+.ov p{margin:0 0 8px;font-weight:800;color:#55607a;font-size:15px;max-width:320px}
+.big{border:0;border-radius:22px;padding:16px 26px;min-width:240px;font:inherit;font-size:19px;font-weight:900;color:#fff;background:#5ccf6e;box-shadow:0 5px 0 #3ea851,0 10px 20px rgba(40,120,60,.25)}
+.big.alt{background:#fff;color:#33405a;box-shadow:0 5px 0 #c9d2e3,0 10px 20px rgba(40,60,110,.15)}
+.big small{display:block;font-size:12px;opacity:.85}
+.big:active{transform:translateY(3px)}
+#startOv .card{padding:10px 16px;font-weight:800;font-size:13px;color:#6b7590;max-width:320px}
+#dbg{position:absolute;left:50%;top:calc(4px + var(--st));transform:translateX(-50%);font:11px/1.3 monospace;background:rgba(0,0,0,.55);color:#bfffbf;padding:3px 7px;border-radius:6px;pointer-events:none;white-space:pre}
+.ft{position:absolute;left:0;top:0;font-weight:900;font-size:18px;color:#fff;text-shadow:0 2px 0 rgba(40,60,110,.5),0 0 6px rgba(40,60,110,.4);pointer-events:none;will-change:transform;white-space:nowrap}
+.ft.bad{color:#ff6b7f}
+#rot{display:none}
+@media (orientation:landscape) and (max-height:500px){#rot{display:flex;position:fixed;inset:0;z-index:9;background:#8fd3ff;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#fff;text-align:center;padding:30px}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="ui" id="hud">
+  <div id="top" class="card">
+    <div id="night"><span id="nIco"></span><span id="nTxt">Ночь 1</span><small>/ 10</small></div>
+    <div id="phase"><span id="phName">День</span><span id="phTime">0:00</span></div>
+    <div class="bar" id="tbar"><i></i></div>
+    <div class="stat"><span id="icHp"></span><div class="bar" id="hpb"><i></i></div><em>Силы</em></div>
+    <div class="stat"><span id="icHu"></span><div class="bar" id="hub"><i></i></div><em>Голод</em></div>
+    <div class="stat"><span id="icFu"></span><div class="bar" id="fub"><i></i></div><em id="fLv">Костёр</em></div>
+  </div>
+  <button id="pause" class="card btn" aria-label="Пауза"></button>
+  <div id="inv"></div>
+  <div id="hint" class="card hide"></div>
+  <div id="toast" class="card"></div>
+  <div id="joy"><div id="jbase"><div id="jknob"></div></div></div>
+  <div id="acts">
+    <button class="btn" id="bCraft"><b class="ico"></b><span>Крафт</span></button>
+    <button class="btn hide" id="bTorch"><b class="ico"></b><span>Фонарик</span><i class="n">0</i></button>
+    <button class="btn" id="bEat"><b class="ico"></b><span>Съесть</span><i class="n">0</i></button>
+    <button class="btn" id="bAct"><b class="ico"></b><span>Действие</span></button>
+  </div>
+  <div id="vig"></div>
+  <div id="sheet" class="card"><h3>Крафт <button id="sClose">✕</button></h3><div id="store"></div><div id="recipes"></div></div>
+  <div id="sleepCard" class="card hide"><b id="sleepT">Енот устал и уснул</b><small id="sleepS"></small></div>
+  <div id="dbg" class="hide"></div>
+</div>
+<div class="ui">
+  <div id="startOv" class="ov">
+    <h1>99 ночей</h1>
+    <p>Выживи 10 ночей в лесу: днём собирай ветки и ягоды, ночью держись у костра.</p>
+    <div id="pets"></div>
+    <button class="big" id="bCont"><span>Продолжить</span><small id="contInfo"></small></button>
+    <button class="big alt" id="bNew">Новая игра · соло</button>
+    <div class="coop"><button disabled>Поиск соперника<small>скоро</small></button><button disabled>Игра с другом<small>скоро</small></button></div>
+  </div>
+  <div id="pauseOv" class="ov hide"><h2>Пауза</h2><button class="big" id="bResume">Продолжить</button><button class="big alt" id="bMenu">В меню</button></div>
+  <div id="overOv" class="ov hide"><h2 id="overT">Костёр погас</h2><p id="overS"></p><button class="big" id="bRetry">С последнего рассвета</button><button class="big alt" id="bNew2">Новая игра</button><button class="big alt" id="bMenu2">В меню</button></div>
+  <div id="loading" class="ov" style="background:#8fd3ff"><h1>99 ночей</h1><p>Загрузка…</p></div>
+</div>
+<div id="rot">Поверни телефон вертикально</div>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<script type="module" src="./js/game.js"></script>
+</body>
+</html>
