@@ -150,11 +150,14 @@
     'html.is-tab-host{background:#F8F7FF}' +
     'html.is-tab-away,html.is-tab-away body{height:100%;height:100dvh;overflow:hidden}' +
     'html.is-tab-host .tab-host-layers{position:fixed;inset:0;z-index:2;pointer-events:none;background:transparent}' +
-    'html.is-tab-away .tab-host-layers{background:#F8F7FF}' +
     'html.is-tab-host .tab-pane{position:absolute;inset:0;opacity:0;pointer-events:none;' +
-      'transition:opacity .2s ease;background:#F8F7FF}' +
-    'html.is-tab-host .tab-pane.is-on{opacity:1;pointer-events:auto}' +
-    'html.is-tab-host .tab-pane.is-leave{opacity:0;transition:opacity 0s;pointer-events:none}' +
+      'background:#F8F7FF;z-index:0}' +
+    'html.is-tab-host .tab-pane.is-on{opacity:1;pointer-events:auto;z-index:1}' +
+    'html.is-tab-host .tab-pane.is-back{opacity:1;pointer-events:none;z-index:1;transition:none}' +
+    'html.is-tab-host .tab-pane.is-front{z-index:4;pointer-events:auto}' +
+    'html.is-tab-host .tab-pane.is-pre{opacity:.4;transition:none}' +
+    'html.is-tab-host .tab-pane.is-front.is-on:not(.is-pre){opacity:1;transition:opacity .18s ease}' +
+    '@media (prefers-reduced-motion:reduce){html.is-tab-host .tab-pane.is-front.is-on:not(.is-pre){transition:none}}' +
     'html.is-tab-host .tab-skel{position:absolute;inset:0;z-index:0;background:#F8F7FF;padding:22px 16px;pointer-events:none;box-sizing:border-box}' +
     'html.is-tab-host .tab-skel b{display:block;border-radius:16px;' +
       'background:linear-gradient(90deg,#EDE9F8 0%,#F6F3FC 45%,#EDE9F8 90%);background-size:200% 100%;' +
@@ -166,11 +169,15 @@
     '@keyframes tab-skel-sh{to{background-position:-200% 0}}' +
     '@media (prefers-reduced-motion:reduce){html.is-tab-host .tab-skel b{animation:none}}' +
     'html.is-tab-host .tab-pane.is-ready .tab-skel{opacity:0;transition:opacity .15s ease}' +
-    'html.is-tab-host .tab-frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:transparent;z-index:1;opacity:0;transition:opacity .2s ease}' +
+    'html.is-tab-host .tab-frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:transparent;z-index:1;opacity:0}' +
     'html.is-tab-host .tab-pane.is-ready .tab-frame{opacity:1;background:#F8F7FF}' +
     'html.is-tab-host .tabbar{z-index:50}' +
-    'html.is-tab-host body>:not(.tabbar):not(.tab-host-layers){transition:opacity .2s ease}' +
-    'html.is-tab-away body>:not(.tabbar):not(.tab-host-layers){opacity:0!important;pointer-events:none!important;transition:opacity 0s!important}' +
+    'html.is-tab-away body>:not(.tabbar):not(.tab-host-layers){opacity:0;pointer-events:none}' +
+    'html.is-reveal-native body>:not(.tabbar):not(.tab-host-layers){' +
+      'position:relative;z-index:3;opacity:.4;pointer-events:none;transition:none}' +
+    'html.is-reveal-native-in body>:not(.tabbar):not(.tab-host-layers){' +
+      'opacity:1;pointer-events:auto;transition:opacity .18s ease}' +
+    '@media (prefers-reduced-motion:reduce){html.is-reveal-native-in body>:not(.tabbar):not(.tab-host-layers){transition:none}}' +
     'html.is-tab-frame .tabbar{display:none!important}';
   document.head.appendChild(css);
   document.documentElement.classList.add('is-tab-host');
@@ -274,18 +281,73 @@
     return '<div class="tab-skel" aria-hidden="true"><b class="h"></b><b class="chip"></b><b class="card"></b><b class="card"></b><b class="card s"></b></div>';
   }
 
+  var shownId = active;
+  var pendingId = null;
+  var revealGuard = 0;
+
+  function panePainted(id) {
+    if (id === active) return true;
+    var p = panes[id];
+    if (!p) return false;
+    try {
+      var doc = p.iframe.contentDocument;
+      if (!doc || !doc.body) return false;
+      var app = doc.getElementById('app');
+      if (app) return app.childElementCount > 0;
+      return doc.body.childElementCount > 0;
+    } catch (e) { return false; }
+  }
+
   function markReady(id) {
     var p = panes[id];
     if (!p) return;
-    var ready = false;
+    if (!panePainted(id)) return;
+    p.el.classList.add('is-ready');
+    if (typeof p._onPainted === 'function') {
+      var fn = p._onPainted;
+      p._onPainted = null;
+      fn();
+    }
+  }
+
+  function afterPainted(id, cb) {
+    var called = false;
+    function once() {
+      if (called) return;
+      called = true;
+      cb();
+    }
+    if (id === active) {
+      requestAnimationFrame(function () { requestAnimationFrame(once); });
+      return;
+    }
+    var p = panes[id];
+    if (!p) { once(); return; }
+    function inFrame() {
+      try {
+        var w = p.iframe.contentWindow;
+        if (w && typeof w.requestAnimationFrame === 'function') {
+          w.requestAnimationFrame(function () { w.requestAnimationFrame(once); });
+          return;
+        }
+      } catch (e) {}
+      requestAnimationFrame(function () { requestAnimationFrame(once); });
+    }
+    if (panePainted(id)) { inFrame(); return; }
+    p._onPainted = function () { p._onPainted = null; inFrame(); };
+    p.iframe.addEventListener('load', function () {
+      markReady(id);
+      if (panePainted(id)) inFrame();
+    }, { once: true });
     try {
       var doc = p.iframe.contentDocument;
-      if (doc && doc.body && (doc.body.childElementCount > 0 || (doc.getElementById('app') && doc.getElementById('app').childElementCount > 0))) {
-        ready = true;
+      if (doc && doc.documentElement) {
+        var mo = new MutationObserver(function () {
+          if (panePainted(id)) { mo.disconnect(); inFrame(); }
+        });
+        mo.observe(doc.documentElement, { childList: true, subtree: true });
       }
     } catch (e) {}
-    if (p.iframe.getAttribute('data-ready') === '1') ready = true;
-    if (ready) p.el.classList.add('is-ready');
   }
 
   function ensure(id, href) {
@@ -316,25 +378,42 @@
     } catch (e) {}
   }
 
-  function show(id) {
-    var k, on, native = (id === active);
+  function reduceMotion() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+  }
+
+  function onOpacityEnd(el, cb) {
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      el.removeEventListener('transitionend', onEnd);
+      cb();
+    }
+    function onEnd(e) {
+      if (e.propertyName && e.propertyName !== 'opacity') return;
+      finish();
+    }
+    el.addEventListener('transitionend', onEnd);
+    /* только страховка, если transitionend не пришёл; старт анимации ждёт rAF кадра, не этот таймер */
+    setTimeout(finish, 400);
+  }
+
+  function finishReveal(id) {
+    if (pendingId !== id) return;
+    var native = (id === active), k, on;
+    document.documentElement.classList.remove('is-reveal-native', 'is-reveal-native-in');
     document.documentElement.classList.toggle('is-tab-away', !native);
     for (k in panes) {
       if (!Object.prototype.hasOwnProperty.call(panes, k)) continue;
       on = !native && k === id;
-      if (on) {
-        panes[k].el.classList.remove('is-leave');
-        panes[k].el.classList.add('is-on');
-      } else if (panes[k].el.classList.contains('is-on')) {
-        panes[k].el.classList.add('is-leave');
-        panes[k].el.classList.remove('is-on');
-      } else {
-        panes[k].el.classList.remove('is-leave', 'is-on');
-      }
+      panes[k].el.classList.toggle('is-on', on);
+      panes[k].el.classList.remove('is-back', 'is-front', 'is-pre');
       panes[k].el.setAttribute('aria-hidden', on ? 'false' : 'true');
     }
+    shownId = id;
+    pendingId = null;
     if (native) {
-      /* шит мог остаться только во вложенной вкладке — на нативной его снимем, не трогая историю */
       document.body.classList.remove('has-sheet', 'is-sheet');
       try { window.dispatchEvent(new Event('resize')); } catch (e) {}
     } else {
@@ -342,6 +421,57 @@
       markReady(id);
       syncHostSheet(sheetOpenIn(sheetDocFor(id)));
     }
+  }
+
+  function startReveal(id) {
+    if (pendingId !== id) return;
+    var native = (id === active), k, incoming = null, html = document.documentElement;
+    for (k in panes) {
+      if (!Object.prototype.hasOwnProperty.call(panes, k)) continue;
+      panes[k].el.classList.remove('is-front', 'is-pre');
+      if (panes[k].el.classList.contains('is-on')) panes[k].el.classList.add('is-back');
+    }
+    if (native) {
+      /* питомец выезжает поверх текущего iframe; тот остаётся видимым до конца анимации */
+      html.classList.remove('is-tab-away');
+      html.classList.remove('is-reveal-native-in');
+      html.classList.add('is-reveal-native');
+      void html.offsetWidth;
+      html.classList.add('is-reveal-native-in');
+      if (reduceMotion()) { finishReveal(id); return; }
+      onOpacityEnd(document.body, function () { finishReveal(id); });
+      return;
+    }
+    incoming = panes[id] && panes[id].el;
+    if (!incoming) { finishReveal(id); return; }
+    incoming.classList.remove('is-back');
+    incoming.classList.add('is-front', 'is-pre', 'is-on');
+    incoming.setAttribute('aria-hidden', 'false');
+    void incoming.offsetWidth;
+    incoming.classList.remove('is-pre');
+    if (reduceMotion()) { finishReveal(id); return; }
+    onOpacityEnd(incoming, function () { finishReveal(id); });
+  }
+
+  function show(id) {
+    if (id !== active) ensure(id);
+    markReady(id);
+    if (id === shownId && pendingId == null) {
+      if (id === active) {
+        document.documentElement.classList.remove('is-tab-away', 'is-reveal-native', 'is-reveal-native-in');
+        try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+      } else {
+        wake(id);
+        syncHostSheet(sheetOpenIn(sheetDocFor(id)));
+      }
+      return;
+    }
+    var token = ++revealGuard;
+    pendingId = id;
+    afterPainted(id, function () {
+      if (token !== revealGuard || pendingId !== id) return;
+      startReveal(id);
+    });
   }
 
   function go(id, href, hist) {

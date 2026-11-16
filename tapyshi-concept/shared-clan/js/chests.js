@@ -2,6 +2,10 @@
 (function(){
 var S = T.ch = {};
 S.bal = 12000;
+if (typeof window !== 'undefined' && window.TapyshiBal) {
+  S.bal = window.TapyshiBal.get();
+  window.TapyshiBal.on(function (n) { S.bal = n; });
+}
 S.R = { c:{n:'Обычный',k:'c'}, r:{n:'Редкий',k:'r'}, l:{n:'Легендарный',k:'l'} };
 var I=function(p){return T.img(p+'.png');};
 S.list = [

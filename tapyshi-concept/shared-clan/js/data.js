@@ -5,6 +5,10 @@
 window.T = window.T || {};
 T.PETS = { raccoon: 'Енот', capybara: 'Капибара', dragon: 'Дракон', goose: 'Гусь' };
 T.me = { name: 'Дима', coins: 12000, energy: 120, energyMax: 300 };
+if (typeof window !== 'undefined' && window.TapyshiBal) {
+  T.me.coins = window.TapyshiBal.get();
+  window.TapyshiBal.on(function (n) { T.me.coins = n; });
+}
 T.clan = {
   name: 'Дикий зоопарк', icon: 'paw', color: 'orange', lvl: 2, members: 27, cap: 45, online: 6,
   wins: 64, nextWins: 100, nextCap: 50,

@@ -7,7 +7,8 @@ var BASE=(window.TAP_BASE||'../shared/');
 var ME={name:'Ты',petName:'Булочка',pet:'raccoon',lvl:12};
 /* соперник подписан именем игрока из MAX; бот — «Бот» */
 var OPP={random:{name:'Кира',pet:'goose',lvl:12,tag:'игрок MAX'},bot:{name:'Бот',pet:'capybara',lvl:8,tag:'тренировка'},friend:{name:'Саша',pet:'dragon',lvl:22,tag:'друг из MAX'}};
-var BAL=12000, STAKES=[300,500], DEF=300;
+var STAKES=[300,500], DEF=300;
+function bal(){ try{ if(window.TapyshiBal) return window.TapyshiBal.get(); }catch(e){} return 12000; }
 function pet(k,pose){return BASE+'pets/'+k+'_'+(pose||'neutral')+'.webp';}
 function petAva(k,pose,lvl){ if(k && window.TAP_petThumb) return TAP_petThumb(k, lvl); return pet(k,pose||'happy'); }
 function friendsPill(){
@@ -66,7 +67,7 @@ function sheet(o){
   '<div class="sh-head"><div class="sh-icon">'+P[g.prop]+'</div><div><h2>'+g.title+'</h2><p class="sh-sub">'+modeChip(g)+'<span class="rec">'+I.cup+'<span>Рекорд <b>'+g.rec+'</b></span></span></p></div></div>'+
   '<h4 class="sh-h">С кем играем</h4><div class="opts">'+modes.map(function(x){return '<button class="opt selectable spring'+(x[0]===m?' on':'')+'" data-mode="'+x[0]+'"><span class="oi oi-'+x[0]+'">'+IC[x[1]]+'</span><span class="ot"><b>'+x[2]+'</b><small>'+x[3]+'</small></span><span class="radio"></span></button>';}).join('')+'</div>'+
   '<div class="sh-var">'+(m==='bot'?'<div class="botnote"><span class="oi oi-bot">'+IC.bot+'</span><span><b>Без ставки</b><small>С ботом играем на интерес — монеты не списываются</small></span></div>':
-  '<div class="stakebox"><div class="sk-h"><h4 class="sh-h">Ставка</h4><span class="bal">'+COIN('',16)+'на счету <b>'+fmt(BAL)+'</b></span></div>'+
+  '<div class="stakebox"><div class="sk-h"><h4 class="sh-h">Ставка</h4><span class="bal">'+COIN('',16)+'на счету <b>'+fmt(bal())+'</b></span></div>'+
   '<div class="stakes">'+STAKES.map(function(s){return '<button class="stk spring'+(s===st?' on':'')+'" data-stake="'+s+'"><span class="stack">'+COIN('',30)+COIN('',30)+(s>300?COIN('',30):'')+'</span><span class="sv"><b>'+fmt(s)+'</b><small>банк '+fmt(s*2)+'</small></span><span class="radio"></span></button>';}).join('')+'</div></div>')+'</div>'+
   '<button class="btn btn--primary btn--l" data-act="start">'+cta+(m==='bot'?'':'<span class="btn-tag">'+COIN('',16)+fmt(st)+'</span>')+'</button></section>';
 }
@@ -301,3 +302,8 @@ TAP.render=function(o){
 };
 TAP.game=game;TAP.OPP=OPP;
 })();
+
+if (window.TapyshiBal && window.TapyshiBal.on) window.TapyshiBal.on(function(n){
+  var el=document.querySelector('.stakebox .bal b, .bal b');
+  if(el) el.textContent=fmt(n);
+});

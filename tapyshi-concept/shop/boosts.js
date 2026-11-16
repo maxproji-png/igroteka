@@ -59,6 +59,7 @@ function buy(id){var b=byId(id),lv=S.lv[id];if(lv>=b.lv.length||S.bal<b.lv[lv].p
 var host,balEl;
 var balFns=[];
 function render(){balFns.forEach(function(f){f(S.bal)});if(balEl)balEl.innerHTML=coin(24)+'<span class="num">'+fmt(S.bal)+'</span>';
+  var demo=document.getElementById('demo');if(demo)demo.textContent=fmt(S.bal);
   if(host)host.innerHTML=BOOSTS.map(function(b){return card(b,S.lv[b.id],S.bal)}).join('');}
 window.SHOP={BOOSTS:BOOSTS,card:card,state:state,
   mount:function(h,bal){host=h;balEl=bal;render();
