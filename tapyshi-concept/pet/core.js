@@ -727,6 +727,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     document.body.classList.add('has-sheet');
     requestAnimationFrame(() => { bg.classList.add('on'); sh.classList.add('on'); });
     sh.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
+    bindChan(sh);
     sh.querySelectorAll('[data-claim]').forEach(b => b.addEventListener('click', () => {
       const name = b.getAttribute('data-claim') || 'Награда';
       const coins = Math.floor(+b.getAttribute('data-coins') || 0);
@@ -753,6 +754,70 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   function claimed(id) {
     try { return !!(JSON.parse(localStorage.getItem('tapyshi.claims') || '{}') || {})[id]; } catch (e) { return false; }
   }
+  /* --- карточка «Подпишись на канал ТАПЫШИ» (разовая: шапка «Тапыш» + 300 монет) --- */
+  const TAPYSHI_CHANNEL_URL = 'https://max.ru/channel_tapyshi';
+  const CHAN_COINS = 300;
+  const CHAN_ID = 'o-channel';                         // отметка в общем tapyshi.claims, как у остальных заданий
+  const CHAN_OPENED_KEY = 'tapyshi.channel.opened';    // нажали «Подписаться» → дальше «Забрать»
+  const HAT_KEY = 'tapyshi.reward.hat_tapysh';         // только флаг выдачи шапки, без скина/модели
+  const HAT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.6" r="2.6" fill="var(--violet)"/><path d="M4.6 16.4C4.6 10.6 7.9 6.6 12 6.6s7.4 4 7.4 9.8z" fill="var(--violet)"/><path d="M8.2 8.8c1-.9 2.3-1.4 3.8-1.4" stroke="rgb(var(--white-rgb) / .55)" stroke-width="1.6" stroke-linecap="round" fill="none"/><rect x="3.2" y="15.2" width="17.6" height="5.2" rx="2.6" fill="var(--violet-edge)"/></svg>';
+  const CHAN_ICO = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 13.2c0-1.2 1-2.2 2.2-2.2H12l9.4-5.2c.9-.5 2 .1 2 1.2v18c0 1-1.1 1.7-2 1.2L12 21H8.2C7 21 6 20 6 18.8z" fill="var(--violet)"/><path d="M12 21l1.6 5.2c.2.8-.4 1.6-1.3 1.6h-1.5c-.6 0-1.1-.4-1.3-1L8 21z" fill="var(--violet-edge)"/><path d="M26.4 12.6c1 .9 1.6 2.1 1.6 3.4s-.6 2.5-1.6 3.4" stroke="var(--violet)" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
+  function lsFlag(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } }
+  function setFlag(k) { try { localStorage.setItem(k, '1'); } catch (e) {} }
+  function chanState() { return claimed(CHAN_ID) ? 'done' : lsFlag(CHAN_OPENED_KEY) ? 'claim' : 'sub'; }
+  function chanHtml() {
+    const st = chanState();
+    const act = st === 'done' ? '<span class="chan-got"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.4l2.8 2.8 6.2-6.4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Получено</span>'
+      : st === 'claim' ? '<button type="button" class="btn btn--success btn--s btn--wide" data-chan="claim">Забрать</button>'
+      : '<button type="button" class="btn btn--primary btn--s btn--wide" data-chan="sub">Подписаться</button>';
+    const rw = '<span class="chan-rw"><span class="chip chip--s chip--violet chan-hat">' + HAT_SVG + 'Шапка «Тапыш»</span><span class="chip chip--s chip--sun chan-coin"><img src="' + coinSrc(16) + '" width="14" height="14" alt="">+' + fmt(CHAN_COINS) + '</span></span>';
+    return '<div class="trow chan ' + st + '" data-task="' + CHAN_ID + '">' +
+      '<div class="chan-top"><span class="chan-ico">' + CHAN_ICO + '</span><div class="tinfo"><b>Подпишись на канал ТАПЫШИ</b>' + rw + '</div></div>' + act + '</div>';
+  }
+  function openChannel(url) {
+    const W = window.WebApp;
+    try {
+      if (W && /^https:\/\/max\.ru\//.test(url) && typeof W.openMaxLink === 'function') return W.openMaxLink(url);
+      if (W && typeof W.openLink === 'function') return W.openLink(url);
+    } catch (e) {}
+    try { window.open(url, '_blank', 'noopener'); } catch (e) {}
+  }
+  function popCoins(from) {
+    if (RM || !from) return;
+    const r = from.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, src = coinSrc(24);
+    for (let i = 0; i < 6; i++) {
+      const c = new Image(); c.src = src; c.alt = ''; c.width = 24; c.height = 24;
+      c.style.cssText = 'position:fixed;left:' + (cx - 12) + 'px;top:' + (cy - 12) + 'px;z-index:260;pointer-events:none;will-change:transform,opacity';
+      document.body.appendChild(c);
+      const a = -Math.PI / 2 + (i - 2.5) * .42, d = 46 + (i % 3) * 14, dx = Math.cos(a) * d, dy = Math.sin(a) * d;
+      c.animate([{ transform: 'translate(0,0) scale(.3)', opacity: 0 }, { transform: 'translate(' + dx * .7 + 'px,' + dy * .7 + 'px) scale(1.1)', opacity: 1, offset: .35 },
+        { transform: 'translate(' + dx + 'px,' + (dy + 26) + 'px) scale(.8)', opacity: 0 }], { duration: 620 + i * 30, easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = () => c.remove();
+    }
+  }
+  function bindChan(root) {
+    root.querySelectorAll('[data-chan]').forEach(b => b.addEventListener('click', () => {
+      const card = b.closest('.chan');
+      if (b.dataset.chan === 'sub') {
+        openChannel(TAPYSHI_CHANNEL_URL);
+        setFlag(CHAN_OPENED_KEY);
+      } else {
+        if (claimed(CHAN_ID)) return;                  // повторно не начисляем
+        b.disabled = true;
+        try {
+          const raw = JSON.parse(localStorage.getItem('tapyshi.claims') || '{}') || {};
+          raw[CHAN_ID] = 1; localStorage.setItem('tapyshi.claims', JSON.stringify(raw));
+        } catch (e) {}
+        setFlag(HAT_KEY);
+        if (window.TapyshiBal) { window.TapyshiBal.add(CHAN_COINS); S.coins = window.TapyshiBal.get(); }
+        popCoins(b);
+        toast('Канал ТАПЫШИ · +' + fmt(CHAN_COINS) + ' и шапка «Тапыш»');
+      }
+      if (!card) return;
+      const t = document.createElement('div'); t.innerHTML = chanHtml();
+      const next = t.firstChild; card.replaceWith(next); bindChan(next);
+      if (!RM) next.classList.add('boing');
+    }));
+  }
   function tasksHtml() {
     const taps = Math.min(300, S.taps | 0);
     const rows = [
@@ -772,7 +837,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     }
     const daily = rows.filter(q => q.kind === 'daily').map(row).join('');
     const once = rows.filter(q => q.kind === 'once').map(row).join('');
-    return '<p class="sheet-sub">Ежедневно 800 монет · разовые 2 000</p><p class="tsec">Сегодня</p>'+daily+'<p class="tsec">Разовые</p>'+once;
+    return '<p class="sheet-sub">Ежедневно 800 монет · разовые 2 000</p>'+chanHtml()+'<p class="tsec">Сегодня</p>'+daily+'<p class="tsec">Разовые</p>'+once;
   }
   function rewardHtml() {
     return '<p class="sheet-sub">Заходи каждый день — награда растёт. За неделю 660 монет</p><div class="days">' +
