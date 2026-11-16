@@ -1,5 +1,5 @@
 // Эволюции питомцев: 4 стихии × 6 стадий. Пороги уровня и загрузка GLB (с кешем).
-import { GLTFLoader } from './../lib/addons/loaders/GLTFLoader.js?v=tc11132310';
+import { webglOK } from './webgl.js';
 
 export const PETS = {
   raccoon:  { id: 'raccoon',  label: 'Енот',     halo: [140, 200, 255],
@@ -34,9 +34,19 @@ export function evoUrl(pet, stage) {
   return `${root}models/evo/${pet}/${pet}_stage_${stage}.glb`;
 }
 
-const loader = new GLTFLoader();
 const cache = new Map();
 const inflight = new Map();
+let loader = null, loaderP = null;
+function getLoader() {
+  if (!webglOK()) return Promise.reject(new Error('WebGL unavailable'));
+  if (loader) return Promise.resolve(loader);
+  if (loaderP) return loaderP;
+  loaderP = import('../lib/addons/loaders/GLTFLoader.js?v=tc11132310')
+    .then(m => { loader = new m.GLTFLoader(); return loader; })
+    .catch(err => { loaderP = null; throw err; });
+  return loaderP;
+}
+
 
 function prep(root) {
   root.traverse(o => {
@@ -61,7 +71,7 @@ export function loadEvo(pet, stage) {
   const key = pet + ':' + stage;
   if (cache.has(key)) return Promise.resolve(cache.get(key));
   if (inflight.has(key)) return inflight.get(key);
-  const p = loader.loadAsync(evoUrl(pet, stage)).then(g => {
+  const p = getLoader().then(L => L.loadAsync(evoUrl(pet, stage))).then(g => {
     const root = prep(g.scene);
     cache.set(key, root);
     inflight.delete(key);
@@ -78,6 +88,17 @@ export function nearbyEvoStages(stage) {
   return n < 6 ? [n, n + 1] : [n];
 }
 export function preloadEvo(pet, stages) {
-  if (!Array.isArray(stages) || !stages.length) return Promise.resolve([]);
+  if (!webglOK() || !Array.isArray(stages) || !stages.length) return Promise.resolve([]);
   return Promise.all(stages.map(s => loadEvo(pet, s).catch(() => null)));
+}
+
+export function scheduleNearbyPreload(pet, stage) {
+  const stages = nearbyEvoStages(stage);
+  const run = () => preloadEvo(pet, stages);
+  const kick = () => {
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 2500 });
+    else setTimeout(run, 200);
+  };
+  if (document.readyState === 'complete') kick();
+  else addEventListener('load', kick, { once: true });
 }

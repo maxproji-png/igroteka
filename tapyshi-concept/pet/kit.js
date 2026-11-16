@@ -3,24 +3,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from './../lib/addons/loaders/GLTFLoader.js?v=tc11132310';
 import { RoundedBoxGeometry } from './../lib/addons/geometries/RoundedBoxGeometry.js?v=tc11132310';
 export { THREE };
+import { webglOK } from './webgl.js';
+export { webglOK };
 
 export const C = (hex) => new THREE.Color(hex);
-
-// Проверка WebGL до создания THREE.WebGLRenderer — иначе three.js пишет
-// Error creating WebGL context и бросает исключение (питомец на главной пропадает).
-let _webgl = undefined;
-export function webglOK() {
-  if (_webgl !== undefined) return _webgl;
-  try {
-    const c = document.createElement('canvas');
-    const g = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl');
-    if (!g) { _webgl = false; return _webgl; }
-    const l = g.getExtension('WEBGL_lose_context');
-    if (l) l.loseContext();
-    _webgl = true;
-  } catch (e) { _webgl = false; }
-  return _webgl;
-}
 
 // ---------- рендер ----------
 export function makeRenderer(canvas, { exposure = 1.0, shadows = true, alpha = false } = {}) {
