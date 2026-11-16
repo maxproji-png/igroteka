@@ -4,7 +4,7 @@ import { webglOK } from './webgl.js';
 import { PETS } from './evo.js';
 export { webglOK };
 
-function posterUrl(pet, stage) {
+export function posterUrl(pet, stage) {
   const root = (document.documentElement.dataset.root || './').replace(/\/?$/, '/');
   return `${root}shared/pets/stage/${pet}_${stage}.png`;
 }
@@ -14,14 +14,14 @@ async function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', 
   canvas.style.display = 'none';
   canvas.style.pointerEvents = 'none';
   host.classList.add('is-fallback');
-  let img = host.querySelector('img.pet-poster');
+  let img = host.querySelector('img.pet-poster, img.pet-standin');
   if (!img) {
     img = document.createElement('img');
-    img.className = 'pet-poster';
     img.alt = 'Питомец';
     img.draggable = false;
     host.appendChild(img);
   }
+  img.classList.add('pet-poster', 'pet-standin');
   let current = { pet, stage, object: null };
   let yaw = 0, onSpinSettle = null;
 
@@ -42,8 +42,10 @@ async function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', 
     const id = PETS[petId] ? petId : 'raccoon';
     const n = Math.max(1, Math.min(6, stg | 0));
     current = { pet: id, stage: n, object: null };
+    img.style.visibility = 'hidden';
     img.src = posterUrl(id, n);
     try { if (img.decode) await img.decode(); } catch (e) {}
+    img.style.visibility = '';
     if (onProgress) onProgress(1);
     return current;
   }
@@ -63,6 +65,21 @@ async function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', 
     get current() { return current; },
     preload() { return Promise.resolve(); },
     fallback: true
+  };
+}
+
+export function emptyStage() {
+  const miss = () => ({ x: 0, y: 0 });
+  return {
+    cam: null, toScreen: miss, headTop: miss, requestDraw() {}, setHappy() {},
+    hit: () => ({ x: 0, y: 0, rx: 1, ry: 1 }),
+    show: async () => null,
+    measure: () => ({ fallback: true, empty: true }),
+    relayout() {}, spinBy() {}, spinEnd(_v, onSettle) { onSettle && onSettle(); },
+    get yaw() { return 0; }, set onSpinSettle(_fn) {},
+    get current() { return { pet: null, stage: null }; },
+    preload() { return Promise.resolve(); },
+    fallback: true, empty: true
   };
 }
 

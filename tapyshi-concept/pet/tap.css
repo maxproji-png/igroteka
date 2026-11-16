@@ -16,8 +16,8 @@ svg.ic{display:block;flex:none}
   -webkit-mask:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 30%,transparent 70%);mask:radial-gradient(closest-side,#000 0,rgba(0,0,0,.6) 30%,transparent 70%)}
 .bokeh{position:absolute;border-radius:50%;opacity:.6;background:radial-gradient(closest-side,var(--c,var(--white)),transparent)}
 .pet-wrap{position:absolute;inset:0;z-index:2;pointer-events:none;will-change:transform}
-canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;pointer-events:auto}
-.pet-wrap:not(.is-ready) canvas.scene,.pet-wrap:not(.is-ready) .pet-poster{visibility:hidden}
+canvas.scene{position:absolute;inset:0;z-index:2;width:100%;height:100%;display:block;touch-action:manipulation;pointer-events:auto;opacity:0;visibility:hidden;transition:opacity .28s ease}
+.pet-wrap.is-painted:not(.is-fallback) canvas.scene{opacity:1;visibility:visible}
 .hud{position:absolute;inset:0;pointer-events:none;z-index:5}
 .hud .pe{pointer-events:auto}
 .card{background:var(--white);box-shadow:var(--sh-md)}
@@ -97,6 +97,7 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
 .plus-img{position:absolute;left:0;top:0;z-index:41;width:130px;height:70px;margin:-35px 0 0 -65px;pointer-events:none;opacity:0;will-change:transform,opacity;display:block}
 /* зона тапа (вариант A): вся игровая середина; кнопки HUD (.pe, z-index выше) остаются кликабельными */
 .tapzone{position:absolute;left:0;right:0;top:64px;bottom:calc(var(--tabbar-space) + 74px);z-index:3;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html:not([data-pet="ready"]) .tapzone,html:not([data-pet="ready"]) canvas.scene,html:not([data-pet="ready"]) .pet-standin,html:not([data-pet="ready"]) .pet-poster{pointer-events:none!important}
 
 .lvl-txt{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;min-width:0;line-height:1.15}
 .lvl-txt span{font-weight:1000}
@@ -145,11 +146,28 @@ body.is-fresh .lvl.has-nick #lvlLab{font-size:13px;font-weight:900;color:var(--i
 .rb,.up{transition:transform .12s}
 .rb:active,.up:active{transform:scale(.94)}
 
-/* 2D-постер, если нет WebGL */
+/* 2D-постер (фоллбэк) и стендин до первого кадра 3D — одна картинка, совпадающая по месту */
 .pet-wrap.is-fallback{pointer-events:none}
-.pet-poster{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 88px);width:min(78%,340px);height:auto;min-height:38%;max-height:58%;object-fit:contain;
-  transform:translateX(-50%);pointer-events:none;filter:drop-shadow(0 22px 16px rgb(50 70 130 / .28));user-select:none;-webkit-user-drag:none}
-@media (max-height:760px){.pet-poster{bottom:calc(var(--tabbar-space) + 78px);max-height:54%}}
+.pet-standin,.pet-poster{position:absolute;left:50%;z-index:1;height:auto;object-fit:contain;transform:translateX(-50%);
+  pointer-events:none;filter:drop-shadow(0 22px 16px rgb(50 70 130 / .28));user-select:none;-webkit-user-drag:none;
+  opacity:1;transition:opacity .28s ease}
+/* под 3D: размер подогнан к модели (дно как у питомца, без прыжка при кроссфейде) */
+.pet-standin{bottom:calc(var(--tabbar-space) + 86px);width:268px;min-height:0;max-height:none}
+/* 2D-фоллбэк оставляет прежнюю раскладку постера */
+.pet-wrap.is-fallback .pet-standin,.pet-poster{bottom:calc(var(--tabbar-space) + 88px);width:min(78%,340px);min-height:38%;max-height:58%}
+@media (max-height:760px){
+  .pet-standin{bottom:calc(var(--tabbar-space) + 76px)}
+  .pet-wrap.is-fallback .pet-standin,.pet-poster{bottom:calc(var(--tabbar-space) + 78px);max-height:54%}
+}
+/* холодная сеть: лоадер поверх приглушённого силуэта, чтобы «Загружаем» читалось */
+.pet-wrap.has-loader:not(.is-painted) .pet-standin{opacity:.42}
+.pet-standin.is-empty,.pet-standin.is-spent,.pet-standin:not([src]){opacity:0!important;visibility:hidden}
+/* 3D готов: постер уходит, холст проявляется поверх (alpha) */
+.pet-wrap.is-painted:not(.is-fallback) .pet-standin{opacity:0}
+.pet-wrap.is-fallback.is-painted .pet-standin{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .pet-standin,.pet-poster,canvas.scene{transition:none}
+}
 
 /* тост на главной */
 .toast{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 86px);z-index:70;transform:translate(-50%,20px);opacity:0;pointer-events:none;

@@ -10,13 +10,100 @@
 <link rel="stylesheet" href="shared/tokens.css?v=tc11161045">
 <link rel="stylesheet" href="shared/components.css?v=tc11150155">
 <link rel="stylesheet" href="shared/coin.css?v=tc11150155">
-<link rel="stylesheet" href="pet/tap.css?v=tc11161415">
+<link rel="stylesheet" href="pet/tap.css?v=tc11161505">
 <script type="importmap">{"imports":{"three":"./lib/three.module.min.js?v=tc11132310"}}</script>
+<script>
+/* Выбор питомца/стадии до первой отрисовки. Единственный источник: window.__resolvePetStart / window.__pet.
+   core.js и сцена читают этот же результат. Не зашивать src постера в разметку. */
+(function (w, d) {
+  var PETS = { raccoon: 1, capybara: 1, dragon: 1, goose: 1 };
+  var STAGE_AT = [1, 5, 10, 15, 20, 25];
+  var LEVEL_MIN = 1, LEVEL_MAX = 30;
+  function validPet(id) { return !!PETS[id]; }
+  function validStage(s) { s = s | 0; return s >= 1 && s <= 6; }
+  function validLevel(l) { l = l | 0; return l >= LEVEL_MIN && l <= LEVEL_MAX; }
+  function stageOf(level) {
+    var lv = Math.max(LEVEL_MIN, Math.floor(level) || 1), i;
+    for (i = STAGE_AT.length - 1; i >= 0; i--) if (lv >= STAGE_AT[i]) return i + 1;
+    return 1;
+  }
+  function firstLevelOf(stage) { return STAGE_AT[Math.max(0, Math.min(5, (stage | 0) - 1))]; }
+  function posterUrl(pet, stage) {
+    var root = (d.documentElement.dataset.root || './').replace(/\/?$/, '/');
+    return root + 'shared/pets/stage/' + pet + '_' + stage + '.png';
+  }
+  function readStore(kind, key) {
+    try {
+      var raw = (kind === 'session' ? sessionStorage : localStorage).getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function resolve() {
+    var q = new URLSearchParams(location.search);
+    var fresh = q.get('fresh') === '1' || q.get('start') === '1';
+    var known = true, pet = null, level = null;
+    if (q.has('pet')) {
+      if (!validPet(q.get('pet'))) known = false;
+      else pet = q.get('pet');
+    }
+    if (q.has('level')) {
+      if (!validLevel(q.get('level'))) known = false;
+      else level = q.get('level') | 0;
+    } else if (q.has('stage')) {
+      if (!validStage(q.get('stage'))) known = false;
+      else level = firstLevelOf(q.get('stage') | 0);
+    }
+    if (known && !pet && fresh) {
+      var s = readStore('session', 'tapyshi.start');
+      if (s && s.fresh && validPet(s.pet)) pet = s.pet;
+    }
+    if (known && !fresh) {
+      var h = readStore('local', 'tapyshi.home');
+      if (h) {
+        if (!pet && validPet(h.pet)) pet = h.pet;
+        if (level == null && validLevel(h.level)) level = h.level | 0;
+      }
+    }
+    if (!known) return { fresh: fresh, pet: null, level: null, stage: null, known: false, src: '', resolved: true };
+    if (!pet) pet = 'raccoon';
+    if (level == null) level = fresh ? 1 : 7;
+    var stage = stageOf(level);
+    if (!validPet(pet) || !validStage(stage)) {
+      return { fresh: fresh, pet: null, level: null, stage: null, known: false, src: '', resolved: true };
+    }
+    return { fresh: fresh, pet: pet, level: level, stage: stage, known: true, src: posterUrl(pet, stage), resolved: true };
+  }
+  var r = resolve();
+  w.__resolvePetStart = resolve;
+  w.__pet = r;
+  if (r.src) {
+    var link = d.createElement('link');
+    link.id = 'petStandinPreload';
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = r.src;
+    d.head.appendChild(link);
+  }
+})(window, document);
+</script>
 </head>
 <body>
 <span aria-hidden="true" style="position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Тапыши</span>
-<div class="app"></div>
+<div class="app"><img class="pet-standin is-empty" id="petStandin" alt="" width="256" height="256" draggable="false" decoding="async"><script>
+(function () {
+  var el = document.getElementById('petStandin'), p = window.__pet;
+  if (el && p && p.known && p.src) {
+    el.classList.remove('is-empty');
+    el.removeAttribute('hidden');
+    el.src = p.src;
+  } else if (el) {
+    el.removeAttribute('src');
+    el.classList.add('is-empty');
+    el.hidden = true;
+  }
+})();
+</script></div>
 <script src="pet/icons.js?v=tc11150155"></script>
 <script src="shared/nav.js?v=tc11132310"></script>
-<script type="module" src="pet/fx.js?v=tc11161415"></script>
+<script type="module" src="pet/fx.js?v=tc11161505"></script>
 </body></html>

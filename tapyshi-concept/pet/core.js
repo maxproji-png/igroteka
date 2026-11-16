@@ -1,25 +1,23 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
-import { petStage } from './stage.js';
+import { petStage, posterUrl, emptyStage } from './stage.js';
 import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js';
 import { getPlayerNick } from '../shared/nick.js';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
 export function readStart() {
-  const q = new URLSearchParams(location.search);
-  const fresh = q.get('fresh') === '1' || q.get('start') === '1';
-  if (!fresh) return { fresh: false, pet: 'raccoon' };
-  let pet = q.get('pet') || '';
-  try {
-    const raw = sessionStorage.getItem('tapyshi.start');
-    const s = raw ? JSON.parse(raw) : null;
-    if (s && s.fresh && !PETS[pet] && PETS[s.pet]) pet = s.pet;
-  } catch (e) {}
-  if (!PETS[pet]) pet = 'raccoon';
-  return { fresh: true, pet };
+  if (typeof window !== 'undefined' && typeof window.__resolvePetStart === 'function') {
+    return window.__resolvePetStart();
+  }
+  if (window.__pet && window.__pet.resolved) return window.__pet;
+  return { fresh: false, pet: 'raccoon', level: 7, stage: 2, known: true, src: '', resolved: true };
 }
 export const START = readStart();
+function persistHome(pet, level) {
+  if (!pet || !PETS[pet]) return;
+  try { localStorage.setItem('tapyshi.home', JSON.stringify({ pet, level: level | 0 })); } catch (e) {}
+}
 if (START.fresh) { S.coins = 0; S.energy = 300; S.max = 300; }
 export const COMBO_MS = 1000;
 export const fmt = n => String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
@@ -101,7 +99,7 @@ export function plusURL(text, tier) { return spriteURL(plusCanvas(text, tier, SD
 
 /* ---------------- разметка HUD ---------------- */
 const HUD = `
-  <div class="pet-wrap" id="petWrap"><canvas class="scene"></canvas><span class="pet-load" id="petLoad" aria-live="polite" aria-label="Загружаем"><i class="pet-load-sh"></i><i class="pet-load-r"></i><b>Загружаем<span class="pet-load-pc"></span></b><i class="pet-load-bar"><i></i></i></span></div>
+  <div class="pet-wrap" id="petWrap"><img class="pet-standin" id="petStandin" alt="" width="256" height="256" draggable="false" decoding="async"><canvas class="scene"></canvas><span class="pet-load" id="petLoad" aria-live="polite" aria-label="Загружаем"><i class="pet-load-sh"></i><i class="pet-load-r"></i><b>Загружаем<span class="pet-load-pc"></span></b><i class="pet-load-bar"><i></i></i></span></div>
   <div class="hud">
     <div class="top">
       <div class="pill card bal" id="bal"><span class="cico" id="balIco"></span><span class="num" id="balNum"></span></div>
@@ -135,14 +133,14 @@ const HUD = `
 
 /* ---------------- загрузка питомца (стиль магазина: «Загружаем», %, полоска только растёт) ---------------- */
 const LOAD_DELAY = 250, LOAD_MIN = 400, LOAD_FADE = 280;
-function bindPetLoader(el) {
+function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const box = el.petLoad, hint = el.hint, wrap = el.wrap;
-  let shownAt = 0, done = false, lastPc = -1;
+  let shownAt = 0, done = false, painted = false, lastPc = -1;
   const log = [];
   const stamp = (ev, extra) => {
-    const rec = Object.assign({ t: Math.round(performance.now()), ev, pc: lastPc, loader: !!(box && box.classList.contains('on') && !box.classList.contains('out')), hint: !!(hint && hint.classList.contains('in') && !hint.classList.contains('gone')) }, extra || {});
+    const rec = Object.assign({ t: Math.round(performance.now()), ev, pc: lastPc, loader: !!(box && box.classList.contains('on') && !box.classList.contains('out')), hint: !!(hint && hint.classList.contains('in') && !hint.classList.contains('gone')), painted: !!(wrap && wrap.classList.contains('is-painted')) }, extra || {});
     log.push(rec);
-    window.__petLoad = { pc: Math.max(0, lastPc), shown: rec.loader, ready: ev === 'ready' || (window.__petLoad && window.__petLoad.ready), log };
+    window.__petLoad = { pc: Math.max(0, lastPc), shown: rec.loader, ready: ev === 'ready' || (window.__petLoad && window.__petLoad.ready), painted, log };
   };
   const progress = p => {
     const pc = Math.max(0, Math.min(100, Math.floor((+p || 0) * 100)));
@@ -156,19 +154,40 @@ function bindPetLoader(el) {
     box.dataset.pc = String(pc);
     stamp('progress');
   };
-  const showTimer = setTimeout(() => {
+  const armLoader = () => {
     if (done || !box) return;
     box.classList.add('on');
+    if (wrap) wrap.classList.add('has-loader');
     shownAt = performance.now();
     stamp('loader-on');
-  }, LOAD_DELAY);
+  };
+  const showTimer = immediate ? 0 : setTimeout(armLoader, LOAD_DELAY);
+  if (immediate) armLoader();
   stamp('init');
+  function frames(n = 2) {
+    return new Promise(r => {
+      const step = () => { n -= 1; if (n <= 0) r(); else requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }
+  async function paint() {
+    if (painted) return;
+    painted = true;
+    if (wrap) wrap.classList.add('is-painted');
+    if (el.standin && wrap && !wrap.classList.contains('is-fallback')) {
+      el.standin.classList.add('is-spent');
+    }
+    stamp('painted');
+    await frames(2);
+  }
   async function finish() {
     clearTimeout(showTimer);
     done = true;
     progress(1);
+    await paint();
     if (!shownAt) {
       if (box) box.classList.remove('on');
+      if (wrap) wrap.classList.remove('has-loader');
       reveal();
       return;
     }
@@ -180,29 +199,64 @@ function bindPetLoader(el) {
       await new Promise(r => setTimeout(r, LOAD_FADE));
       box.classList.remove('on');
     }
+    if (wrap) wrap.classList.remove('has-loader');
     reveal();
   }
   function reveal() {
-    if (wrap) wrap.classList.add('is-ready');
-    if (hint) { hint.classList.add('in'); hint.removeAttribute('aria-hidden'); }
+    if (wrap) wrap.classList.add('is-ready', 'is-painted');
+    if (showHint && hint) { hint.classList.add('in'); hint.removeAttribute('aria-hidden'); }
     document.documentElement.dataset.pet = 'ready';
     stamp('ready');
   }
   document.documentElement.dataset.pet = 'loading';
   if (hint) hint.setAttribute('aria-hidden', 'true');
-  window.__petLoad = { pc: 0, shown: false, ready: false, log };
-  return { progress, finish, log };
+  window.__petLoad = { pc: 0, shown: false, ready: false, painted: false, log };
+  return { progress, paint, finish, log };
 }
 
 /* ---------------- запуск ---------------- */
 export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' }) {
   const app = document.querySelector('.app');
+  const bootStandin = document.getElementById('petStandin');
   app.insertAdjacentHTML('afterbegin', HUD);
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
   const $ = id => document.getElementById(id);
-  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad') };
+  const wrapEl = $('petWrap');
+  const hudStandin = $('petStandin');
+  if (bootStandin && wrapEl && bootStandin !== hudStandin) {
+    if (hudStandin) hudStandin.replaceWith(bootStandin);
+    else wrapEl.insertBefore(bootStandin, wrapEl.firstChild);
+  }
+  const standin = $('petStandin');
+  if (standin) {
+    if (START.known && START.src) {
+      if (standin.getAttribute('src') !== START.src) standin.src = START.src;
+      standin.classList.remove('is-empty');
+      standin.hidden = false;
+    } else {
+      standin.removeAttribute('src');
+      standin.classList.add('is-empty');
+      standin.hidden = true;
+    }
+  }
+  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: wrapEl, flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad'), standin };
   const ico = new Image(); ico.alt = ''; ico.src = coinSrc(24); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
+  if (el.enNum) el.enNum.textContent = fmt(S.energy);
+  // подписи плашки сразу из window.__pet, не ждать 3D — иначе на кадрах загрузки чужие «Иней / стадия 2»
+  if (START.known) {
+    const stg = START.stage, lv = START.level;
+    const nm = START.fresh ? (PETS[START.pet] && PETS[START.pet].label) || '' : stageName(START.pet, stg);
+    if (el.stgLab) el.stgLab.textContent = 'стадия ' + stg + '/6';
+    if (el.lvlN) el.lvlN.textContent = lv;
+    if (el.lvlLab) el.lvlLab.textContent = 'ур. ' + lv;
+    if (el.lvlName) el.lvlName.textContent = nm;
+  } else {
+    if (el.stgLab) el.stgLab.textContent = '';
+    if (el.lvlN) el.lvlN.textContent = '';
+    if (el.lvlLab) el.lvlLab.textContent = '';
+    if (el.lvlName) el.lvlName.textContent = '';
+  }
 
   // защита от зума/выделения/меню
   addEventListener('dblclick', e => e.preventDefault(), { passive: false });
@@ -212,16 +266,21 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   let appRect = app.getBoundingClientRect();
   const canvas = app.querySelector('canvas.scene');
   if (START.fresh) document.body.classList.add('is-fresh');
-  const loadUi = bindPetLoader(el);
+  const loadUi = bindPetLoader(el, { immediate: !START.known, showHint: !!START.known });
   let st;
-  try {
-    st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.fresh ? 1 : stageOf(7), onProgress: p => loadUi.progress(p) });
-  } catch (e) {
-    console.warn('Сцена питомца не поднялась', e);
-    try { await loadUi.finish(); } catch (err) {}
-    throw e;
+  if (!START.known) {
+    st = emptyStage();
+  } else {
+    try {
+      st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.stage, onProgress: p => loadUi.progress(p) });
+    } catch (e) {
+      console.warn('Сцена питомца не поднялась', e);
+      try { await loadUi.finish(); } catch (err) {}
+      throw e;
+    }
+    try { await loadUi.paint(); } catch (err) {}
   }
-  if (input === 'zone') bindZone();
+  if (input === 'zone' && START.known) bindZone();
 
   // Мультитач: зона тапа на всю игровую середину (между верхними плашками и нижней панелью).
   // Каждое новое касание = отдельный тап, даже если несколько пальцев легли в одном кадре.
@@ -403,6 +462,10 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
 
   let hintT = 0, hintGone = false;
   function tap(cx, cy) {
+    if (document.documentElement.dataset.pet !== 'ready') {
+      window.__ignoredTaps = (window.__ignoredTaps || 0) + 1;
+      return;
+    }
     if (S.energy < 1) return;
     const now = performance.now();
     S.combo = (window.__holdCombo && S.combo > 0) || now - S.last < COMBO_MS ? S.combo + 1 : 1; S.last = now;
@@ -491,13 +554,16 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   if (el.btnReward) el.btnReward.addEventListener('click', () => openSheet('Награда', REWARD_HTML));
 
   /* --- эволюции: уровень, стадия, демо-переключатель --- */
-  const E = { pet: START.pet, level: START.fresh ? 1 : 7 };
+  const E = { pet: START.known ? START.pet : null, level: START.known ? START.level : 1 };
+  if (START.known) persistHome(E.pet, E.level);
   const SPECIES = { raccoon: 'Енот', capybara: 'Капибара', dragon: 'Дракончик', goose: 'Гусь' };
   function plateName(stg) {
+    if (!E.pet || !PETS[E.pet]) return '';
     if (START.fresh) return SPECIES[E.pet] || PETS[E.pet].label;
     return stageName(E.pet, stg);
   }
   function paintPlate() {
+    if (!E.pet) return;
     const stg = stageOf(E.level);
     const nm = plateName(stg);
     el.lvlN.textContent = E.level;
@@ -530,11 +596,20 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     const petChanged = nextPet !== E.pet;
     const stChanged = nextSt !== prevSt || petChanged;
     E.pet = nextPet; E.level = nextLv;
-    if (stChanged) {
+    persistHome(E.pet, E.level);
+    if (st && st.empty) {
+      try {
+        st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: nextPet, stage: nextSt });
+        if (el.wrap) el.wrap.classList.add('is-painted', 'is-ready');
+        if (el.standin) { el.standin.classList.add('is-spent', 'is-empty'); el.standin.removeAttribute('src'); el.standin.hidden = true; }
+        if (input === 'zone') bindZone();
+      } catch (e) { console.warn('Сцена питомца не поднялась', e); }
+    } else if (stChanged) {
       await st.show(E.pet, nextSt);
       layout();
       if (evolve && nextSt > prevSt && !petChanged) playEvolve();
       if (petChanged) st.preload(E.pet);
+      if (el.standin) el.standin.classList.add('is-spent');
     }
     paintPlate();
   }

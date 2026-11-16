@@ -28,6 +28,7 @@ function onReady(c) {
 
 // баланс: экспоненциальный твин к цели, запись текста не чаще 50 мс
 function balTick(now, dt) {
+  if (!ctx) return false;
   const target = S.coins;
   if (shown === target) return false;
   const k = RM ? 1 : 1 - Math.exp(-dt * 9);
@@ -37,15 +38,17 @@ function balTick(now, dt) {
   return true;
 }
 function pulse(now, big) {
+  if (!ctx) return;
   if (RM || (!big && now - lastPulse < 280)) return; lastPulse = now;
   ctx.el.balIco.animate([{ transform: 'scale(1)' }, { transform: `scale(${big ? 1.24 : 1.1})`, offset: .35 }, { transform: 'scale(.97)', offset: .7 }, { transform: 'scale(1)' }],
     { duration: big ? 420 : 300, easing: 'ease-out' });
 }
 
 function onTap({ x, y, gain, tier, now }) {
+  if (!ctx) return;
   addTicker(balTick); pulse(now, false);
   // +1 у пальца: чуть выше точки касания, чтобы не прятался под пальцем
-  plus.tap(x, y, gain, tier, now);
+  if (plus) plus.tap(x, y, gain, tier, now);
   if (RM) return;
   // мягкий блик в точке касания
   if (now - lastGlint >= MERGE_MS) { lastGlint = now; const g = glints.next(), gr = Math.random() * 90;
@@ -67,6 +70,7 @@ function flyCoin(sx, sy) {
   play(c, frames, { duration: FLY_MS, easing: 'cubic-bezier(.45,.05,.55,1)' }).onfinish = land;
 }
 function land() {
+  if (!ctx || !shine) return;
   const now = performance.now(); pulse(now, true);
   shine.animate([{ opacity: 0, transform: 'translateX(-60px) skewX(-20deg)' }, { opacity: 1, offset: .2 }, { opacity: 0, transform: 'translateX(200px) skewX(-20deg)' }], { duration: 520, easing: 'ease-out' });
 }
