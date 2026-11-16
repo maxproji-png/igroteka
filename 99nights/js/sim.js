@@ -197,14 +197,16 @@ export function context(s, pid) {
   // v0.8 (QA1-02): ветки берутся сначала из рюкзака, потом из сундука — и для розжига, и для подкидывания
   // §15.1 (v0.8.6): топливо > max − 8 — ветка не тратится: «В костёр» серая, подсказка «Костёр полный — положи ветки в сундук» (у сундука — сразу «В сундук»)
   const nearChest = dist(p, CFG.CHEST) < 2.3 && RES.some(k => p.inv[k] > 0); let full = null;
-  if (df < 2.9) { const sticks = have(s, p, 'stick');
-    if (s.fire.fuel <= 0 ? sticks >= (s.firstLight ? 1 : CFG.RELIGHT_STICKS) : sticks > 0) { if (!fireFull(s)) return { kind: s.fire.fuel <= 0 ? 'ignite' : 'fuel', x: 0, z: 0 }; full = { kind: 'fuel', full: true, x: 0, z: 0 }; } }
+  // §17 (v0.8.8, вариант б): с наступления ночи «В костёр» берёт ветки только из рюкзака — сундук закрыт; днём — и из сундука (QA1-02)
+  if (df < 2.9) { const night = s.phase === 'night', sticks = night ? (p.inv.stick || 0) : have(s, p, 'stick'), need = s.fire.fuel <= 0 ? (s.firstLight ? 1 : CFG.RELIGHT_STICKS) : 1;
+    if (sticks >= need) { if (!fireFull(s)) return { kind: s.fire.fuel <= 0 ? 'ignite' : 'fuel', x: 0, z: 0 }; full = { kind: 'fuel', full: true, x: 0, z: 0 }; }
+    else if (night && !fireFull(s)) full = { kind: s.fire.fuel <= 0 ? 'ignite' : 'fuel', closed: true, x: 0, z: 0 }; }   // §17: серая, по тапу — «Ночью сундук закрыт»
   if (nearChest) return { kind: 'deposit', x: CFG.CHEST.x, z: CFG.CHEST.z };
   for (const n of s.nodes) { if (!n.alive || n.k === 'rock' || (n.k === 'bush' && !n.berry) || (n.k === 'stump' && !n.loot)) continue;
     const d = dist(p, n) - (n.r || 0) * (n.s || 1); if (d < 1.4 && d < bd) { bd = d; best = { kind: n.k, id: n.id, x: n.x, z: n.z }; } }
   if (best) return best;
   if (dist(p, CFG.BENCH) < 2.6) return { kind: 'bench', x: CFG.BENCH.x, z: CFG.BENCH.z };
-  return full;   // §15.1: у полного костра — серая «В костёр» (верстак/сундук рядом важнее)
+  return full;   // §15.1 / §17: у полного костра или ночью без веток в рюкзаке — серая «В костёр»/«Разжечь» (верстак/сундук рядом важнее)
 }
 export const fireFull = s => s.fire.fuel > 0 && s.fire.fuel > fireMax(s) - CFG.FUEL_STICK;   // §15.1: ветка «не влезет» — не тратим
 export const nearBench = (s, p) => dist(p, CFG.BENCH) < 3.2;
@@ -243,7 +245,9 @@ function act(s, p) {
   if (gk) { p.pend = { id: c.id, t: CFG.GATHER_T / G }; return; }
   switch (c.kind) {
     case 'ignite': case 'fuel': { if (c.full) { p.cd = .5; return ev(s, { t: 'msg', pid: p.id, text: 'Костёр полный — положи ветки в сундук', full: 1 }); }   // §15.1
+      if (c.closed) { p.cd = .5; return ev(s, { t: 'msg', pid: p.id, text: 'Ночью сундук закрыт — собирай ветки в рюкзак', full: 1 }); }   // §17
       const was = s.fire.fuel, first = was <= 0 && s.firstLight, n = was > 0 || first ? 1 : CFG.RELIGHT_STICKS;
+      if (s.phase === 'night' && (p.inv.stick || 0) < n) { p.cd = .5; return ev(s, { t: 'msg', pid: p.id, text: 'Ночью сундук закрыт — собирай ветки в рюкзак', full: 1 }); }   // §17: страховка (контекст мог устареть)
       const fromChest = pay(s, p, { stick: n }).stick || 0;
       s.fire.fuel = Math.min(fireMax(s), first ? Math.round(fireMax(s) * CFG.FIRST_LIGHT) : s.fire.fuel + CFG.FUEL_STICK * n);
       if (was <= 0) s.firstLight = false; ev(s, { t: 'fuel', pid: p.id, n: Math.round(s.fire.fuel - was), relit: was <= 0, sticks: n, fromChest }); break; }

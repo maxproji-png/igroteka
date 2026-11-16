@@ -1,10 +1,10 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.8.7';
-import * as SIM from './sim.js?v=0.8.7';
-import { GameSfx } from './sfx.js?v=0.8.7';
-import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.7';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.8.8';
+import * as SIM from './sim.js?v=0.8.8';
+import { GameSfx } from './sfx.js?v=0.8.8';
+import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.8';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
@@ -361,7 +361,7 @@ let ZZ_TEX = null, BEAM = null;
 // SlotAccent (узелок) не трогаем; геометрия запекается с цветами вершин один раз на цвет, материал — общий питомцев (ночная обводка). +1 draw call на питомца.
 const SCARF_AT = { raccoon: [.47, 1], capybara: [.47, 1.05], dragon: [.48, 1], goose: [.50, .95] }; let scarfP = null; const scarfGeo = {};
 // v0.8: модели художника обновляются под тем же именем — версия в URL, чтобы кэш браузера/Pages не отдавал старые .glb
-function vu(u) { return u + '?v=0.8.7'; }
+function vu(u) { return u + '?v=0.8.8'; }
 function loadScarf() { return scarfP || (scarfP = getLoader().then(L => L.loadAsync(vu('models/art/slot_scarf.glb'))).then(g => { const root = g.scene; root.updateMatrixWorld(true); const ms = []; root.traverse(o => { if (o.isMesh) ms.push(o); }); return { root, ms }; })); }
 function scarfMesh(sc, petK, color) { let g = scarfGeo[color];
   if (!g) { for (const o of sc.ms) if (o.material.name === 'SlotColor') o.material.color = new THREE.Color(color); g = scarfGeo[color] = bakePetMeshes(sc.ms, new THREE.Matrix4().copy(sc.root.matrixWorld).invert()).geometry; }
@@ -618,12 +618,14 @@ function ctxHints(dt) { if ((CH.t -= dt) > 0 || !S || mode !== 'play') return; C
   if (night && !asleep && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .25 && say('fuelN', 'Костёр слабеет — подбрось веток!', 12, true)) return;
   // §15 п.4: «Подбрось веток» — сразу: перебивает обычную (не тревожную) подсказку; пока висит карточка обучения с тем же текстом (TUT.update) — пузырь не дублируем
   if (!asleep && !(hintT > 0 && $('hint').classList.contains('warn')) && !(TUT.on && TUT.feedHint) && feedHintDue()) { CH.fh.n++; CH.fh.next = S.t + 20; CH.cd.fuel = 0; if (say('fuel', 'Подбрось веток в костёр, пока день', 0)) return; }
+  // §17 (v0.8.8): за 10 с до ночи — «Скоро ночь — возьми ветки в рюкзак» (заменила прежнее «Скоро ночь — запаси веток у костра»); один раз за день, и при обучении; перебивает обычную подсказку
+  if (!night && !asleep && S.t > 5 && SIM.dayLen(S) - S.t <= 10 && !(hintT > 0 && ($('hint').classList.contains('warn') || $('hint').textContent === 'Подбрось веток в костёр, пока день')) && say('dusk' + S.stage + ':' + S.night, 'Скоро ночь — возьми ветки в рюкзак', 999)) return;
   if (hintT > 0 || asleep) return;
   const food = (p.inv.berry || 0) + (p.inv.pie || 0) + (SIM.nearFood(p) ? S.chest.berry : 0);
   if (p.hunger < 30 && (food ? say('eat', 'Проголодался — нажми «Съесть»', 20) : say('hungry', 'Голодно — собери ягоды с кустов или возьми из сундука', 25, true))) return;
   if (night && Math.hypot(p.x, p.z) > lightRv && p.str < 55 && say('dark', 'Силы тают во тьме — вернись в круг света', 14, true)) return;
   if (target && target.full && say('full', 'Костёр полный — положи ветки в сундук', 20)) return;   // §15.1
-  if (!night && !TUT.on && SIM.dayLen(S) - S.t < 12 && S.t > 5 && say('dusk' + S.night, 'Скоро ночь — запаси веток у костра', 999)) return; }
+  /* §17: «Ночью сундук закрыт» — только по тапу (событие msg из сима): у костра ночью с пустым рюкзаком стоят часто, не надоедаем */ }
 
 // ---------- крафт-панель ----------
 function renderRecipes() {
@@ -848,7 +850,7 @@ function animFire(dt) {
 // ---------- кадр ----------
 const STEP = 1 / 60; let acc = 0, hudT = 0, tgtT = 0, target = null, actShown = '';
 const ACT = { push: ['paw', 'Толкнуть'], fuel: ['fire', 'В костёр'], ignite: ['fire', 'Разжечь'], deposit: ['chest', 'В сундук'], tree: ['axe', 'Рубить'], bush: ['berry', 'Собрать'], branch: ['stick', 'Подобрать'], stone: ['stone', 'Подобрать'], stump: ['cloth', 'Обыскать'], bench: ['bench', 'Верстак'], wake: ['wake', 'Держи: будить'], none: ['hand', 'Действие'] };
-function updActBtn() { const k = target ? target.kind : 'none', full = !!(target && target.full), key = k + (full ? ':full' : ''); if (key === actShown) return; actShown = key; const b = $('bAct'); ico(b.querySelector('.ico'), ACT[k][0]); b.querySelector('span').textContent = ACT[k][1]; b.classList.toggle('dim', k === 'none' || full); b.classList.toggle('full', full); }   // §15.1: полный костёр — «В костёр» серая
+function updActBtn() { const k = target ? target.kind : 'none', full = !!(target && (target.full || target.closed)), key = k + (full ? ':full' : ''); if (key === actShown) return; actShown = key; const b = $('bAct'); ico(b.querySelector('.ico'), ACT[k][0]); b.querySelector('span').textContent = ACT[k][1]; b.classList.toggle('dim', k === 'none' || full); b.classList.toggle('full', full); }   // §15.1: полный костёр, §17: ночью без веток в рюкзаке — «В костёр» серая
 function frame(dt) {
   sfx.update(dt); vfx.update(dt);
   if (mode === 'menu') { const a = performance.now() * .00006; camera.position.set(Math.sin(a) * 13, 6.5, Math.cos(a) * 13); camera.lookAt(0, 1.2, 0); applyLight(0, dt); animFire(dt); updWeather(dt); syncAudio(); if (S) { syncPlayers(S, dt); } return; }
@@ -989,7 +991,7 @@ const API = { get S() { return S; }, setS: v => { S = v; }, get PID() { return P
   initWorld, startPlay, only, toast, hint, showMenu, handleEvents, syncNodes, syncBuilds, account, stageName, PV, scene, camera, THREE, sfx, IC, me, input, setPause };
 (async () => {
   showMenu(); loop();
-  if (NET) import('./coop.js?v=0.8.7').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
+  if (NET) import('./coop.js?v=0.8.8').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
   try { await Promise.race([loadPet(pet), new Promise(r => setTimeout(r, 6000))]); } catch (e) { console.warn('pet', e.message); }
   await Promise.race([assetsP, new Promise(r => setTimeout(r, 8000))]); $('loading').classList.add('hide'); window.__g.ready = true;
   if (QA_NIGHT && !NET) startQaNight(QA_NIGHT);
