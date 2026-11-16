@@ -58,28 +58,44 @@ function size(){ if (!host) return false; const w = host.clientWidth, h = host.c
   const needW = 2 * R * 1.06, needH = (H * Math.cos(EL) + 2 * R * Math.sin(EL)) * 1.06, asp = w / h;
   let hw = needW / 2, hh = hw / asp; if (hh * 2 < needH) { hh = needH / 2; hw = hh * asp; }
   cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.updateProjectionMatrix(); return true; }
-function draw(){ if (dirty) return; dirty = true; requestAnimationFrame(() => { dirty = false; if (!ren || !host) return; pivot.rotation.y = THREE.MathUtils.degToRad(yaw); ren.render(scene, cam); }); }
+function draw(){ if (dirty) return; dirty = true; requestAnimationFrame(() => { dirty = false; if (!ren || !host) return; pivot.rotation.y = THREE.MathUtils.degToRad(yaw); ren.render(scene, cam); drawn = !!(cur && cache[cur] && cache[cur].visible); }); }
 
 /* центр по bbox: голова+тело енота (без хвоста) → x,z = 0; лапы на полу → y = 0 */
 function center(root){ const b = new THREE.Box3(); ['base_head','base_body'].forEach(n => { const o = root.getObjectByName(n); if (o) b.expandByObject(o); });
   if (b.isEmpty()) b.expandByObject(root.getObjectByName('body_base') || root);
   const c = b.getCenter(new THREE.Vector3()); root.position.set(-c.x, -0, -c.z); return { dx:-c.x, dz:-c.z }; }
 
-const pending = {};   // fix2: один запрос на набор (предзагрузка + открытие не качают GLB дважды)
-function load(set){
+/* fix3: GLB качаем fetch'ем (можно отменить) и разбираем parseAsync. Открытый/тапнутый набор — в приоритете:
+   фоновая предзагрузка идёт строго по одному файлу и только когда нет приоритетной загрузки; если пользователь
+   открыл другой набор, фоновая загрузка отменяется и встаёт в очередь заново (на Slow 4G не делим канал). */
+const pending = {}, ctrl = {}, idleQ = [];
+function load(set, idle){
   if (cache[set]) return Promise.resolve(cache[set]);
-  if (!pending[set]) pending[set] = new GLTFLoader().loadAsync('skins/glb/' + FILES[set] + '.glb' + V)
-    .then(g => { const off = center(g.scene); g.userData = off; cache[set] = g.scene; delete pending[set]; return g.scene; })
-    .catch(e => { delete pending[set]; throw e; });
+  if (pending[set]){ if (!idle) ctrl[set].idle = false; return pending[set]; }
+  const c = new AbortController(); c.idle = !!idle; ctrl[set] = c;
+  if (!idle) for (const k in ctrl) if (k !== set && ctrl[k].idle){ ctrl[k].abort(); if (!idleQ.includes(k)) idleQ.unshift(k); }
+  pending[set] = fetch('skins/glb/' + FILES[set] + '.glb' + V, { signal:c.signal })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+    .then(buf => new GLTFLoader().parseAsync(buf, 'skins/glb/'))
+    .then(g => { const off = center(g.scene); g.userData = off; cache[set] = g.scene; return g.scene; })
+    .finally(() => { delete pending[set]; delete ctrl[set]; setTimeout(pump, 0); });
   return pending[set];
 }
-/* предзагрузка: разбор GLB без рендерера (простой на «Скинах», pointerdown по карточке) */
-function preload(set){ if (!OK || !FILES[set] || cache[set]) return; load(set).catch(() => {}); }
+function pump(){
+  if (Object.keys(pending).length) return;                       // по одному файлу; приоритетная загрузка — первой
+  const i = idleQ.findIndex(x => !cache[x]); if (i < 0) { idleQ.length = 0; return; }
+  const s = idleQ.splice(i, 1)[0]; load(s, true).catch(() => {});
+}
+/* предзагрузка: idle — фоновая очередь (простой на «Скинах»), без idle — сразу (pointerdown по карточке) */
+function preload(set, idle){ if (!OK || !FILES[set] || cache[set]) return;
+  if (idle){ if (!idleQ.includes(set) && !pending[set]) idleQ.push(set); pump(); } else load(set).catch(() => {}); }
 function show(set){ for (const k in cache) cache[k].visible = (k === set); }
 
 /* attach: окно набора перерисовалось — переносим канвас в новую сцену, грузим/переключаем модель, применяем правила */
-/* attach: окно набора открыто/перерисовано. fix2: постера в 3D-режиме нет вовсе — пока GLB грузится, видна нейтральная
-   заглушка .sk-load; как только первый кадр 3D отрисован (синхронно) — .is-3d: заглушка display:none, канвас visible. */
+/* attach: окно набора открыто/перерисовано. Постера в 3D-режиме нет — пока модель не готова, видна заглушка .sk-load.
+   fix3: заглушка держится до первого РЕАЛЬНО показанного кадра с моделью: GLB скачан и разобран (текстуры внутри GLB
+   уже декодированы parseAsync) → compileAsync (шейдеры) → render → rAF → ещё раз render и в том же такте .is-3d
+   (канвас visible, заглушка display:none). Из кэша при живом рендерере — синхронно, как раньше (без заглушки). */
 async function attach(stage, set, sel, angle){
   if (!OK) return false;
   if (!ren) init();
@@ -87,15 +103,29 @@ async function attach(stage, set, sel, angle){
   if (angle != null) { yaw = angle; vel = 0; stop(); }
   parts = new Set(sel); want = set;
   if (cur !== set || !cache[set] || cache[set].parent !== pivot){
-    if (!cache[set]) stage.classList.remove('is-3d');        // ещё не загружен: канвас скрыт, видна заглушка
     const tok = ++loadTok;
-    try { const root = cache[set] || await load(set);          // из кэша — синхронно, без await
-      if (tok !== loadTok || !ren || host !== stage) return false; if (root.parent !== pivot) pivot.add(root); cur = set; }
-    catch (e) { console.warn('3D: не загрузилось', set, e); if (window.SK3D_FALLBACK) window.SK3D_FALLBACK(stage); else stage.classList.add('is-3d-fail'); return false; } }
+    if (!cache[set]){
+      stage.classList.remove('is-3d'); drawn = false;           // ещё не загружен: канвас скрыт, видна заглушка
+      try {
+        const root = await load(set);
+        if (tok !== loadTok || !ren || host !== stage) return false;
+        if (root.parent !== pivot) pivot.add(root); cur = set; show(cur); applyRules(cache[cur], parts);
+        size(); pivot.rotation.y = THREE.MathUtils.degToRad(yaw);
+        /* шейдеры: асинхронно, если есть KHR_parallel_shader_compile (иначе three пишет предупреждение) — синхронно */
+        if (ren.extensions.has('KHR_parallel_shader_compile')) { try { await ren.compileAsync(scene, cam); } catch (e) { ren.compile(scene, cam); } } else ren.compile(scene, cam);
+        if (tok !== loadTok || !ren || host !== stage) return false;
+        renderNow();                                              // первый кадр с моделью в буфере
+        await new Promise(r => requestAnimationFrame(r));
+        if (tok !== loadTok || !ren || host !== stage) return false;
+      } catch (e) { if (tok !== loadTok) return false; console.warn('3D: не загрузилось', set, e);
+        if (window.SK3D_FALLBACK) window.SK3D_FALLBACK(stage); else stage.classList.add('is-3d-fail'); return false; }
+    } else { const root = cache[set]; if (root.parent !== pivot) pivot.add(root); cur = set; }
+  }
   show(cur); applyRules(cache[cur], parts);
   renderNow(); host.classList.add('is-3d'); host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); return true;
 }
-function renderNow(){ if (!ren || !host) return; size(); pivot.rotation.y = THREE.MathUtils.degToRad(yaw); ren.render(scene, cam); }
+let drawn = false;   // последний render содержал модель (для проверок: SK3D.frame())
+function renderNow(){ if (!ren || !host) return; size(); pivot.rotation.y = THREE.MathUtils.degToRad(yaw); ren.render(scene, cam); drawn = !!(cur && cache[cur] && cache[cur].parent === pivot && cache[cur].visible); }
 function has(set){ return !!cache[set]; }
 /* тап по части: только applyRules + кадр в том же такте (без rAF), чтобы после переноса сцены в DOM не было пустого кадра */
 function update(sel){ if (!cur || !cache[cur]) return; parts = new Set(sel); applyRules(cache[cur], parts); if (host) host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); renderNow(); }
@@ -108,11 +138,12 @@ function dispose(){
   if (shadow){ shadow.geometry.dispose(); shadow.material.map.dispose(); shadow.material.dispose(); }
   if (ren){ ren.dispose(); ren.forceContextLoss(); }
   if (ro) ro.disconnect();
-  ren = scene = cam = pivot = shadow = canvas = ro = null; cur = want = null; yaw = TQ; sw = shh = 0;
+  ren = scene = cam = pivot = shadow = canvas = ro = null; cur = want = null; drawn = false; yaw = TQ; sw = shh = 0;
 }
 function state(){ return { ok:OK, ready:!!(cur && host && host.classList.contains('is-3d')), cached:Object.keys(cache), set:cur, yaw:Math.round(((yaw % 360) + 360) % 360),
   visible: cur ? (() => { const r = []; cache[cur].traverse(o => { if (o.isMesh) { let v = true, p = o; while (p) { if (!p.visible) { v = false; break; } p = p.parent; } if (v) r.push(o.parent.name || o.name); } }); return [...new Set(r)]; })() : [],
   pixelRatio: ren ? ren.getPixelRatio() : 0 }; }
 
-window.SK3D = { ok:OK, TQ, attach, update, detach, dispose, state, has, preload };
+function frame(){ return { model: drawn && !!host && host.classList.contains('is-3d') }; }
+window.SK3D = { ok:OK, TQ, attach, update, detach, dispose, state, has, preload, frame };
 window.dispatchEvent(new Event('sk3d-ready'));

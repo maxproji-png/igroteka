@@ -86,15 +86,27 @@
     if (!w.SK3D.ok){ setSheet(view.set, true); return; }
     w.SK3D.attach(st, view.set, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; });
   /* предзагрузка GLB (простой на «Скинах», pointerdown по карточке); до загрузки модуля — в очередь */
-  var preQ = [];
-  function preload(id){ if (!GL) return; if (w.SK3D && w.SK3D.preload) w.SK3D.preload(id); else if (preQ.indexOf(id) < 0) preQ.push(id); }
-  function flushPre(){ if (w.SK3D && w.SK3D.preload) preQ.splice(0).forEach(function(id){ w.SK3D.preload(id); }); }
-  /* страховка: модуль 3D не загрузился вовсе (сеть/ошибка) — через 15 с показываем постер как запасной вариант */
-  var failT = 0;
-  function failLater(){ clearTimeout(failT); failT = setTimeout(function(){ var st = isOpen && sh && sh.querySelector('.sk-ss .sk-stage.sk3d');
-    if (st && !w.SK3D && !st.classList.contains('is-3d')) fallbackPoster(st); }, 15000); }
-  function fallbackPoster(st){ if (st.querySelector('.sk-poster') || !st.dataset.poster) return; st.classList.add('is-3d-fail');
-    var im = document.createElement('img'); im.className = 'sk-poster'; im.alt = ''; im.src = st.dataset.poster; st.insertBefore(im, st.firstChild); }
+  var preQ = [];   /* fix3: idle=true — фоновая очередь по одному файлу, без idle — сразу и в приоритете */
+  function preload(id, idle){ if (!GL) return; if (w.SK3D && w.SK3D.preload) w.SK3D.preload(id, !!idle); else preQ.push([id, !!idle]); }
+  function flushPre(){ if (w.SK3D && w.SK3D.preload) preQ.splice(0).forEach(function(q){ w.SK3D.preload(q[0], q[1]); }); }
+  /* страховка: модуль 3D не загрузился вовсе (сеть/ошибка). fix3: без таймера — на Slow 4G модуль может идти дольше 15 с,
+     и таймер показывал постер посреди загрузки. Модуль (со всеми import) исполняется до DOMContentLoaded: если после него
+     SK3D так и нет — модуль упал, только тогда постер-фолбэк */
+  var dcl = document.readyState === 'complete';   /* readyState 'interactive' наступает ДО исполнения модулей — ждём само событие */
+  function modFailed(){ return !w.SK3D && dcl; }
+  function failCheck(){ var st = isOpen && sh && sh.querySelector('.sk-ss .sk-stage.sk3d'); if (st && modFailed() && !st.classList.contains('is-3d')) fallbackPoster(st); }
+  document.addEventListener('DOMContentLoaded', function(){ dcl = true; setTimeout(failCheck, 0); });
+  function fallbackPoster(st){ if (st.querySelector('.sk-poster') || !st.dataset.poster) return;
+    var im = document.createElement('img'); im.className = 'sk-poster'; im.alt = ''; im.src = st.dataset.poster; st.insertBefore(im, st.firstChild);
+    if (!st.querySelector('.sk-load')) st.insertAdjacentHTML('afterbegin', LOAD);
+    st.classList.add('is-3d-fail'); waitImg(st); }
+  /* fix3: картинка сцены (режим без WebGL / аварийный постер / окно части) ещё не скачана — держим заглушку,
+     пустую сцену не показываем; из кэша картинка готова сразу, класс не ставится вовсе */
+  var LOAD = '<span class="sk-load" aria-label="Загружаем"><i class="sk-load-sh"></i><i class="sk-load-r"></i><b>Загружаем</b></span>';
+  function waitImg(st){ var im = st && st.querySelector('img'); if (!im) return;
+    if (im.complete && im.naturalWidth) { st.classList.remove('is-wait'); return; }
+    st.classList.add('is-wait'); var done = function(){ st.classList.remove('is-wait'); };
+    im.addEventListener('load', done, { once:true }); im.addEventListener('error', done, { once:true }); }
   w.SK3D_FALLBACK = fallbackPoster;
   var isOpen = false;
   function partSheet(id, instant){
@@ -104,7 +116,7 @@
       : '<button class="sk-btn '+(can?'sk-btn--buy':'sk-btn--off')+'" '+(can?'data-buy="'+p.id+'"':'disabled')+'>'+(can?'Купить за ':'')+coin(22)+'<span class="cx-num">'+fmt(p.price)+'</span></button>';
     open('<div class="sk-ps sk-tone--'+s.tone+'">'+
       (function(){ var on = partOnPet(p, view.pet), pk = petOf(s, view.pet);
-        return '<div class="sk-stage"><img class="'+(on?'':'is-item')+'" src="'+(on||p.img)+'" alt=""><span class="sk-stage-note">'+(on?PET_IN[pk]+' · ст. '+s.pets[pk].st:'крупный план')+'</span></div>'; })()+
+        return '<div class="sk-stage"><img class="'+(on?'':'is-item')+'" src="'+(on||p.img)+'" alt="">'+LOAD+'<span class="sk-stage-note">'+(on?PET_IN[pk]+' · ст. '+s.pets[pk].st:'крупный план')+'</span></div>'; })()+
       '<div class="sk-meta">'+rchip(s)+'<span class="sk-slot">'+SLOT[p.slot]+'</span></div>'+
       '<h3 class="sk-h">'+p.name+'</h3><p class="sk-desc">'+p.desc+'</p>'+
       '<button type="button" class="sk-setrow" data-set="'+s.id+'"><span class="sk-setrow-t"><small>Часть набора · '+n+' из 4</small><b>«'+s.name+'»</b></span>'+
@@ -113,6 +125,7 @@
       '<div class="sk-fill"></div>'+
       '<div class="sk-buyrow">'+(have?'<span class="sk-have">'+I.check+'Уже в коллекции</span>':'<span class="sk-pr"><small>Часть отдельно</small>'+stub()+'</span>')+act+'</div>'+
     '</div>', instant);
+    waitImg(sh.querySelector('.sk-ps .sk-stage'));
   }
   /* окно набора: питомец сверху (текущий, без переключателя), тап по части — примерка на питомце */
   function selInfo(s){ var sel = view.sel, ids = s.parts.filter(function(p){ return sel[p.id]; }),
@@ -140,7 +153,7 @@
     if (D3){ back = false; img = cm.n===0 ? (MF.base && MF.base[pk] ? render(MF.base[pk]) : render(e.tq)) : (cm.exact ? cm.src : render(e.tq)); }  /* адрес постера — только для аварийного фолбэка, в разметку не идёт */
     open('<div class="sk-ss sk-tone--'+s.tone+'" data-skset="'+s.id+'">'+
       '<div class="sk-stage big'+(!D3&&trying&&!cm.exact?' is-fallback':'')+(D3?' sk3d':'')+'"'+(D3?' data-poster="'+img+'"':'')+'>'+
-        (D3 ? (has3d ? '' : '<span class="sk-load" aria-label="Загружаем 3D"><i class="sk-load-sh"></i><i class="sk-load-r"></i><b>Загружаем 3D</b></span>') : '<img class="sk-poster" src="'+img+'" alt="">')+
+        (D3 ? (has3d ? '' : '<span class="sk-load" aria-label="Загружаем 3D"><i class="sk-load-sh"></i><i class="sk-load-r"></i><b>Загружаем 3D</b></span>') : '<img class="sk-poster" src="'+img+'" alt="">'+LOAD)+
         '<span class="sk-try'+(trying?(D3||cm.exact?' on':' warn'):'')+'">'+note+'</span>'+
         (D3 ? '<span class="sk-spin" aria-hidden="true">'+I.turn+'<span>Крути пальцем</span></span>' : '')+
         (!D3 && !trying && e && e.back ? '<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
@@ -159,7 +172,8 @@
       var ns = sh.querySelector('.sk-stage'); keep.querySelector('.sk-try').replaceWith(ns.querySelector('.sk-try')); ns.replaceWith(keep);
       if (M3){ if (keep.classList.contains('is-3d')) w.SK3D.update(Object.keys(view.sel)); else w.SK3D.attach(keep, s.id, Object.keys(view.sel), null); } }
     else if (M3){ w.SK3D.attach(sh.querySelector('.sk-stage'), s.id, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; }
-    else if (D3) failLater();   /* модуль ещё грузится: лоадер, подключимся по sk3d-ready */
+    else if (D3) failCheck();   /* модуль ещё грузится: лоадер, подключимся по sk3d-ready (или фолбэк, если модуль упал) */
+    if (!D3) waitImg(sh.querySelector('.sk-ss .sk-stage'));
   }
   function onSheetClick(e){
     var b;
