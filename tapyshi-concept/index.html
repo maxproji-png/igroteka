@@ -49,12 +49,12 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
 <link rel="stylesheet" href="shared/tokens.css?v=tc11161045" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="shared/components.css?v=tc11150155" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="shared/coin.css?v=tc11150155" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="pet/tap.css?v=tc11161718" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="pet/tap.css?v=tc11161748" media="print" onload="this.media='all'">
 <noscript>
 <link rel="stylesheet" href="shared/tokens.css?v=tc11161045">
 <link rel="stylesheet" href="shared/components.css?v=tc11150155">
 <link rel="stylesheet" href="shared/coin.css?v=tc11150155">
-<link rel="stylesheet" href="pet/tap.css?v=tc11161718">
+<link rel="stylesheet" href="pet/tap.css?v=tc11161748">
 </noscript>
 <script type="importmap">{"imports":{"three":"./lib/three.module.min.js?v=tc11132310"}}</script>
 <script>
@@ -134,28 +134,83 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
      decode() с таймаутом; при ошибке/зависании, если байты есть, всё равно показываем. */
   w.__petBootAt = performance.now();
   var POSTER_DECODE_MS = 2000;
-  /* Реальная сеть (не HTTP-кэш): transferSize тела > 0, либо долго нет первого байта. */
-  w.__petNetLoading = function () {
-    try {
+  /* Постер не complete дольше этого — считаем сетью (долгий TTFB, записи в Resource Timing ещё нет).
+     800 мс: холодный Slow 4G (RTT 400) успевает отличиться, тёплый кэш даже при CPU 4x обычно complete раньше. */
+  var POSTER_NET_MS = 800;
+  var CODE_RE = /\.(glb|js|mjs|wasm)(\?|$)/i;
+  var ASSET_RE = /\.(glb|js|mjs|wasm|png|jpe?g|webp|gif|css|woff2?)(\?|$)/i;
+  function entryFromNet(e) {
+    var body = e.decodedBodySize || e.encodedBodySize || 0;
+    if (e.transferSize > 0 && (body === 0 || e.transferSize >= Math.max(400, body * 0.4))) return true;
+    if (!e.responseEnd) {
       var now = performance.now();
+      var started = e.startTime || 0;
+      var rs = e.responseStart || 0;
+      var ttfb = rs ? (rs - (e.requestStart || started)) : 0;
+      if (!rs && now - started > 150) return true;
+      if (rs && ttfb >= 80) return true;
+    }
+    return false;
+  }
+  /* mode 'code' — только JS/GLB (постер уже виден, 2D-путь не держит лоадер из-за скачанного png). */
+  w.__petNetLoading = function (mode) {
+    try {
+      var codeOnly = mode === 'code';
+      var re = codeOnly ? CODE_RE : ASSET_RE;
       var list = performance.getEntriesByType('resource');
       for (var i = 0; i < list.length; i++) {
         var e = list[i];
-        var name = String(e.name || '');
-        if (!/\.(glb|js|mjs|wasm)(\?|$)/i.test(name)) continue;
-        var body = e.decodedBodySize || e.encodedBodySize || 0;
-        /* тело пришло по сети, не 304/кэш (у 304 transferSize ≈ заголовки) */
-        if (e.transferSize > 0 && (body === 0 || e.transferSize >= Math.max(400, body * 0.4))) return true;
-        if (!e.responseEnd) {
-          var started = e.startTime || 0;
-          var rs = e.responseStart || 0;
-          var ttfb = rs ? (rs - (e.requestStart || started)) : 0;
-          if (!rs && now - started > 150) return true;
-          if (rs && ttfb >= 80) return true;
+        if (!re.test(String(e.name || ''))) continue;
+        if (entryFromNet(e)) return true;
+      }
+      if (codeOnly) return false;
+      /* нет записи в Resource Timing (запрос ещё в TTFB): постер запрошен, байтов нет дольше N мс.
+         Если запись уже есть и тело из кэша (transferSize=0) — это медленный decode (CPU 4x), не сеть. */
+      var img = d.getElementById('petStandin');
+      if (img && img.getAttribute('src') && !(img.complete && img.naturalWidth)) {
+        var src = img.currentSrc || img.src || '';
+        var cached = false;
+        for (var j = 0; j < list.length; j++) {
+          var pe = list[j], pn = String(pe.name || '');
+          if (src && pn !== src && pn.indexOf(src.replace(/^\.\//, '')) < 0 && !/pets\/stage\//.test(pn)) continue;
+          if (!/\.(png|jpe?g|webp|gif)(\?|$)/i.test(pn)) continue;
+          if (pe.responseEnd && !(pe.transferSize > 0 && (pe.decodedBodySize || pe.encodedBodySize || 0) && pe.transferSize >= Math.max(400, (pe.decodedBodySize || pe.encodedBodySize) * 0.4))) {
+            cached = true; break;
+          }
         }
+        if (cached) return false;
+        var tSrc = typeof w.__petPosterSrcAt === 'number' ? w.__petPosterSrcAt : w.__petBootAt;
+        if (performance.now() - tSrc >= POSTER_NET_MS) return true;
       }
     } catch (err) {}
     return false;
+  };
+  w.__petNetProgress = function () {
+    /* доля по байтам постера и модулей, только растёт снаружи (вызывающий сам хранит last). */
+    var got = 0, tot = 0, hasGlb = false, hasPoster = false;
+    try {
+      var list = performance.getEntriesByType('resource');
+      for (var i = 0; i < list.length; i++) {
+        var e = list[i], n = String(e.name || '');
+        var isGlb = /\.glb(\?|$)/i.test(n);
+        var isCode = /three\.module|GLTFLoader|stage3d|addons|evo|core\.js|fx\.js/i.test(n) || isGlb;
+        var isPoster = /\.(png|jpe?g|webp|gif)(\?|$)/i.test(n) && /pets\/stage|pet_standin|standin/i.test(n);
+        if (!isCode && !isPoster && !/\/pet\/.*\.(js|mjs)(\?|$)/i.test(n)) continue;
+        if (isPoster) hasPoster = true;
+        if (isGlb) hasGlb = true;
+        var enc = e.encodedBodySize || e.decodedBodySize || 0;
+        if (e.responseEnd) {
+          var sz = enc || e.transferSize || 0;
+          got += sz; tot += sz;
+        } else {
+          got += e.transferSize || 0;
+          tot += Math.max(enc, e.transferSize || 0, isPoster ? 80000 : (/three\.module/i.test(n) ? 655000 : (/GLTFLoader/i.test(n) ? 30000 : 0)));
+        }
+      }
+    } catch (err) {}
+    if (tot <= 0) return 0;
+    var cap = hasGlb ? 89 : (hasPoster ? 90 : 55);
+    return Math.max(0, Math.min(cap, Math.floor(100 * got / tot)));
   };
   function coverSil(on) {
     var sil = d.getElementById('petSil');
@@ -213,7 +268,10 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
       if (!same) {
         img.classList.remove('is-decoded');
         coverSil(false);
+        w.__petPosterSrcAt = performance.now();
         img.src = src;
+      } else if (!w.__petPosterSrcAt) {
+        w.__petPosterSrcAt = w.__petBootAt;
       }
       if (img.complete && img.naturalWidth) afterBytes();
       else {
@@ -250,21 +308,51 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
     var boot = document.getElementById('petBoot');
     var p = window.__pet;
     var BOOT_LOADER_MS = 300;
+    var POSTER_NET_MS = 800;
+    var bootPc = -1;
     function posterHasBytes() {
       return !!(el && el.complete && el.naturalWidth);
     }
+    function applyBootPc(pc) {
+      if (!load || !load.classList.contains('on') || load.classList.contains('out')) return;
+      pc = Math.max(0, Math.min(100, pc | 0));
+      if (pc < bootPc) return;
+      bootPc = pc;
+      load.classList.add('has-pc');
+      load.style.setProperty('--pc', pc + '%');
+      var lab = load.querySelector('.pet-load-pc');
+      if (lab) lab.textContent = pc + '%';
+      load.dataset.pc = String(pc);
+    }
+    function tickBootPc() {
+      if (document.documentElement.dataset.pet === 'ready') return;
+      if (typeof window.__petNetProgress === 'function') applyBootPc(window.__petNetProgress());
+      window.__petBootPcTimer = setTimeout(tickBootPc, 200);
+    }
     function showLoader() {
       if (document.documentElement.dataset.pet === 'ready') return;
-      var net = typeof window.__petNetLoading === 'function' && window.__petNetLoading();
-      /* Надпись только при реальной сети. Тёплый кэш (постер/модули из кэша, парсинг 3D) — не показываем. */
-      if (!net) return;
-      if (window.__petPosterReady || posterHasBytes()) {
-        /* постер уже есть — лоадер не срочен; всё равно можно, если GLB/JS ещё качаются по сети */
+      var posterUp = !!(window.__petPosterReady || posterHasBytes());
+      var net = typeof window.__petNetLoading === 'function' && window.__petNetLoading(posterUp ? 'code' : undefined);
+      if (!net) {
+        /* постер запрошен, но записи Resource Timing ещё нет — проверим снова в N мс */
+        if (!posterUp && el && el.getAttribute('src') && !posterHasBytes()) {
+          var tSrc = window.__petPosterSrcAt || window.__petBootAt || 0;
+          var left = POSTER_NET_MS - (performance.now() - tSrc);
+          if (left < 0) left = 0;
+          if (!window.__petBootLoaderRetry) {
+            window.__petBootLoaderRetry = 1;
+            window.__petBootLoaderTimer = setTimeout(showLoader, left + 16);
+          }
+        }
+        return;
       }
       if (load) load.classList.add('on');
       if (boot) boot.classList.add('has-loader');
+      if (!window.__petLoaderShownAt) window.__petLoaderShownAt = performance.now();
+      if (!window.__petBootPcTimer) tickBootPc();
     }
-    /* С первого кадра только силуэт. «Загружаем» — через 300 мс, и только если идёт сеть. */
+    /* С первого кадра только силуэт. «Загружаем» — если через 300 мс идёт сеть,
+       или постер так и не complete спустя POSTER_NET_MS (долгий TTFB без записи timing). */
     window.__petBootLoaderTimer = setTimeout(showLoader, BOOT_LOADER_MS);
     if (window.__revealPetPoster && el && p && p.known && p.src) {
       window.__revealPetPoster(el, p.src);
@@ -276,5 +364,5 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
 </div>
 <script src="pet/icons.js?v=tc11150155" defer></script>
 <script src="shared/nav.js?v=tc11161740" defer></script>
-<script type="module" src="pet/fx.js?v=tc11161718"></script>
+<script type="module" src="pet/fx.js?v=tc11161748"></script>
 </body></html>

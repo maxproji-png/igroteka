@@ -144,12 +144,13 @@ function bootElapsed() {
   const t0 = typeof window.__petBootAt === 'number' ? window.__petBootAt : 0;
   return performance.now() - t0;
 }
-function netLoading() {
-  return typeof window.__petNetLoading === 'function' && !!window.__petNetLoading();
+function netLoading(mode) {
+  return typeof window.__petNetLoading === 'function' && !!window.__petNetLoading(mode);
 }
 function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const box = el.petLoad, hint = el.hint, wrap = el.wrap;
   let shownAt = 0, done = false, painted = false, lastPc = -1;
+  if (box && box.dataset.pc) lastPc = Math.max(lastPc, parseInt(box.dataset.pc, 10) || -1);
   let downloadDone = false, showTimer = 0;
   const log = [];
   const stamp = (ev, extra) => {
@@ -160,7 +161,7 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const armLoader = () => {
     if (done || !box) return;
     if (downloadDone && posterIsVisible(el)) return;
-    if (!netLoading()) return;
+    if (!netLoading(posterIsVisible(el) ? 'code' : undefined)) return;
     box.classList.remove('out');
     box.classList.add('on');
     if (wrap) wrap.classList.add('has-loader');
@@ -170,7 +171,7 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const scheduleLoader = () => {
     if (done || shownAt) return;
     if (downloadDone && posterIsVisible(el)) return;
-    if (!netLoading()) return;
+    if (!netLoading(posterIsVisible(el) ? 'code' : undefined)) return;
     clearTimeout(showTimer);
     showTimer = 0;
     const waitBoot = Math.max(0, LOAD_BOOT - bootElapsed());
@@ -233,34 +234,21 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   /* Пока onProgress от GLB ещё нет (качается three.js), берём % из Resource Timing. */
   function tickNetPc() {
     if (done || downloadDone || !shownAt) return;
-    try {
-      let got = 0, tot = 0, hasGlb = false;
-      const list = performance.getEntriesByType('resource');
-      for (let i = 0; i < list.length; i++) {
-        const e = list[i], n = String(e.name || '');
-        if (!/\.(js|mjs|glb|wasm)(\?|$)/i.test(n)) continue;
-        if (!/three|GLTFLoader|stage3d|addons|evo|\.glb/i.test(n)) continue;
-        const enc = e.encodedBodySize || e.decodedBodySize || 0;
-        if (e.responseEnd) {
-          const sz = enc || e.transferSize || 0;
-          got += sz; tot += sz;
-        } else {
-          got += e.transferSize || 0;
-          tot += Math.max(enc, e.transferSize || 0, /three\.module/i.test(n) ? 655000 : /GLTFLoader/i.test(n) ? 30000 : 0);
-        }
-        if (/\.glb/i.test(n)) hasGlb = true;
-      }
-      if (tot > 0) applyPc(Math.min(hasGlb ? 89 : 55, Math.floor(100 * got / tot)));
-    } catch (e) {}
+    if (typeof window.__petNetProgress === 'function') applyPc(window.__petNetProgress());
   }
   const netPcTimer = setInterval(tickNetPc, 200);
   if (window.__petBootLoaderTimer) { /* таймер инлайн-скрипта: модули его не отменяют */ }
   if (box && box.classList.contains('on') && !box.classList.contains('out')) {
-    if (!netLoading()) {
-      hideLoaderNow('loader-boot-cancel');
+    /* инлайн уже включил лоадер (2D Slow 4G: постер ещё качался). Не гасим, если силуэт всё ещё ждёт
+       или по сети ещё идут JS/GLB. Стартовый момент — с инлайн-показа, чтобы выдержать ≥400 мс. */
+    if (posterIsVisible(el) && !netLoading('code')) {
+      shownAt = window.__petLoaderShownAt || performance.now() || 1;
+      if (wrap) wrap.classList.add('has-loader');
+      stamp('loader-boot');
+      hideLoaderEarly();
     } else {
       if (wrap) wrap.classList.add('has-loader');
-      shownAt = performance.now() || 1;
+      shownAt = window.__petLoaderShownAt || performance.now() || 1;
       stamp('loader-boot');
     }
   } else {
