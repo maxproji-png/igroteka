@@ -149,15 +149,23 @@
   css.textContent =
     'html.is-tab-host{background:#F8F7FF}' +
     'html.is-tab-away,html.is-tab-away body{height:100%;height:100dvh;overflow:hidden}' +
+    'html.is-tab-host body>:not(.tabbar):not(.tab-host-layers){position:relative;z-index:1}' +
     'html.is-tab-host .tab-host-layers{position:fixed;inset:0;z-index:2;pointer-events:none;background:transparent}' +
+    'html.is-cover-tabs .tab-host-layers,html.is-tab-away .tab-host-layers{' +
+      'z-index:80;-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}' +
     'html.is-tab-host .tab-pane{position:absolute;inset:0;opacity:0;pointer-events:none;' +
       'background:#F8F7FF;z-index:0}' +
     'html.is-tab-host .tab-pane.is-on{opacity:1;pointer-events:auto;z-index:1}' +
     'html.is-tab-host .tab-pane.is-back{opacity:1;pointer-events:none;z-index:1;transition:none}' +
-    'html.is-tab-host .tab-pane.is-front{z-index:4;pointer-events:auto}' +
+    'html.is-tab-host .tab-pane.is-front{z-index:4;pointer-events:auto;' +
+      '-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}' +
     'html.is-tab-host .tab-pane.is-pre{opacity:.4;transition:none}' +
     'html.is-tab-host .tab-pane.is-front.is-on:not(.is-pre){opacity:1;transition:opacity .18s ease}' +
     '@media (prefers-reduced-motion:reduce){html.is-tab-host .tab-pane.is-front.is-on:not(.is-pre){transition:none}}' +
+    'html.is-cover-tabs .hud,html.is-cover-tabs .tap-hint,html.is-cover-tabs .vtag,' +
+    'html.is-cover-tabs .toast,html.is-cover-tabs .combo,html.is-cover-tabs .flash,' +
+    'html.is-cover-tabs .plus-img,html.is-cover-tabs .fcoin,html.is-cover-tabs .evo-flash,' +
+    'html.is-cover-tabs .demo{visibility:hidden!important;opacity:0!important;pointer-events:none!important;transition:none!important}' +
     'html.is-tab-host .tab-skel{position:absolute;inset:0;z-index:0;background:#F8F7FF;padding:22px 16px;pointer-events:none;box-sizing:border-box}' +
     'html.is-tab-host .tab-skel b{display:block;border-radius:16px;' +
       'background:linear-gradient(90deg,#EDE9F8 0%,#F6F3FC 45%,#EDE9F8 90%);background-size:200% 100%;' +
@@ -171,10 +179,12 @@
     'html.is-tab-host .tab-pane.is-ready .tab-skel{opacity:0;transition:opacity .15s ease}' +
     'html.is-tab-host .tab-frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:transparent;z-index:1;opacity:0}' +
     'html.is-tab-host .tab-pane.is-ready .tab-frame{opacity:1;background:#F8F7FF}' +
-    'html.is-tab-host .tabbar{z-index:50}' +
+    'html.is-tab-host .tabbar{z-index:100}' +
     'html.is-tab-away body>:not(.tabbar):not(.tab-host-layers){opacity:0;pointer-events:none}' +
+    'html.is-reveal-native .tab-host-layers{z-index:2;-webkit-transform:none;transform:none}' +
     'html.is-reveal-native body>:not(.tabbar):not(.tab-host-layers){' +
-      'position:relative;z-index:3;opacity:.4;pointer-events:none;transition:none}' +
+      'position:relative;z-index:3;opacity:.4;pointer-events:none;transition:none;' +
+      '-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}' +
     'html.is-reveal-native-in body>:not(.tabbar):not(.tab-host-layers){' +
       'opacity:1;pointer-events:auto;transition:opacity .18s ease}' +
     '@media (prefers-reduced-motion:reduce){html.is-reveal-native-in body>:not(.tabbar):not(.tab-host-layers){transition:none}}' +
@@ -403,6 +413,7 @@
     if (pendingId !== id) return;
     var native = (id === active), k, on;
     document.documentElement.classList.remove('is-reveal-native', 'is-reveal-native-in');
+    document.documentElement.classList.toggle('is-cover-tabs', !native);
     document.documentElement.classList.toggle('is-tab-away', !native);
     for (k in panes) {
       if (!Object.prototype.hasOwnProperty.call(panes, k)) continue;
@@ -433,7 +444,7 @@
     }
     if (native) {
       /* питомец выезжает поверх текущего iframe; тот остаётся видимым до конца анимации */
-      html.classList.remove('is-tab-away');
+      html.classList.remove('is-cover-tabs', 'is-tab-away');
       html.classList.remove('is-reveal-native-in');
       html.classList.add('is-reveal-native');
       void html.offsetWidth;
@@ -444,6 +455,8 @@
     }
     incoming = panes[id] && panes[id].el;
     if (!incoming) { finishReveal(id); return; }
+    /* новый экран выше HUD главной; оверлеи главной сразу прячем, сцена остаётся под fade */
+    html.classList.add('is-cover-tabs');
     incoming.classList.remove('is-back');
     incoming.classList.add('is-front', 'is-pre', 'is-on');
     incoming.setAttribute('aria-hidden', 'false');
@@ -458,7 +471,7 @@
     markReady(id);
     if (id === shownId && pendingId == null) {
       if (id === active) {
-        document.documentElement.classList.remove('is-tab-away', 'is-reveal-native', 'is-reveal-native-in');
+        document.documentElement.classList.remove('is-tab-away', 'is-reveal-native', 'is-reveal-native-in', 'is-cover-tabs');
         try { window.dispatchEvent(new Event('resize')); } catch (e) {}
       } else {
         wake(id);
