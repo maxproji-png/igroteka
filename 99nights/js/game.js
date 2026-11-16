@@ -1,10 +1,10 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.8.5';
-import * as SIM from './sim.js?v=0.8.5';
-import { GameSfx } from './sfx.js?v=0.8.5';
-import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.5';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.8.6';
+import * as SIM from './sim.js?v=0.8.6';
+import { GameSfx } from './sfx.js?v=0.8.6';
+import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.6';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
@@ -361,7 +361,7 @@ let ZZ_TEX = null, BEAM = null;
 // SlotAccent (узелок) не трогаем; геометрия запекается с цветами вершин один раз на цвет, материал — общий питомцев (ночная обводка). +1 draw call на питомца.
 const SCARF_AT = { raccoon: [.47, 1], capybara: [.47, 1.05], dragon: [.48, 1], goose: [.50, .95] }; let scarfP = null; const scarfGeo = {};
 // v0.8: модели художника обновляются под тем же именем — версия в URL, чтобы кэш браузера/Pages не отдавал старые .glb
-function vu(u) { return u + '?v=0.8.5'; }
+function vu(u) { return u + '?v=0.8.6'; }
 function loadScarf() { return scarfP || (scarfP = getLoader().then(L => L.loadAsync(vu('models/art/slot_scarf.glb'))).then(g => { const root = g.scene; root.updateMatrixWorld(true); const ms = []; root.traverse(o => { if (o.isMesh) ms.push(o); }); return { root, ms }; })); }
 function scarfMesh(sc, petK, color) { let g = scarfGeo[color];
   if (!g) { for (const o of sc.ms) if (o.material.name === 'SlotColor') o.material.color = new THREE.Color(color); g = scarfGeo[color] = bakePetMeshes(sc.ms, new THREE.Matrix4().copy(sc.root.matrixWorld).invert()).geometry; }
@@ -542,7 +542,7 @@ function updHUD() {
   for (const [k] of INV) { const v = p.inv[k] || 0; if (lastInv[k] !== v) { if (lastInv[k] !== undefined && v > lastInv[k]) bump(k); lastInv[k] = v; $('iv_' + k).querySelector('b').textContent = v; $('iv_' + k).classList.toggle('zero', !v); } }
   if (!night && !TUT.on && S.fire.fuel <= 0 && S.t < 3 && S.firstLight && hintT <= 0) hint('Костёр не горит — подойди и нажми «Разжечь»', 2);
   const used = SIM.bagSlots(p.inv), cap = SIM.bagCap(p); $('iv_bag').querySelector('b').textContent = used + '/' + cap; $('iv_bag').classList.toggle('full', used >= cap);
-  const food = (p.inv.berry || 0) + (p.inv.pie || 0) + (SIM.nearFood(p) && !(p.inv.berry > 0) ? S.chest.berry || 0 : 0); $('bEat').querySelector('.n').textContent = food;   // §11.5: у костра — и ягоды из сундука $('bEat').classList.toggle('off', !food); ico($('bEat').querySelector('.ico'), p.inv.pie > 0 && p.hunger < 60 ? 'pie' : 'berry');
+  const food = (p.inv.berry || 0) + (p.inv.pie || 0) + (SIM.nearFood(p) && !(p.inv.berry > 0) ? S.chest.berry || 0 : 0); $('bEat').querySelector('.n').textContent = food;   /* §11.5: у костра — и ягоды из сундука */ $('bEat').classList.toggle('off', !food); ico($('bEat').querySelector('.ico'), p.inv.pie > 0 && p.hunger < 60 ? 'pie' : 'berry');
   const bt = $('bTorch'); bt.classList.toggle('hide', !p.has.flash); bt.querySelector('.n').textContent = Math.round(p.flash.charge) + '%'; bt.classList.toggle('down', p.flash.on);
   const sl = p.sleep > 0 || p.rest > 0; $('sleepCard').classList.toggle('hide', !sl);
   if (sl) { $('sleepT').textContent = PETS[p.pet].name + (p.rest > 0 ? ' отдыхает у костра' : ' устал и уснул'); $('sleepS').textContent = p.rest > 0 ? 'Встанет через ' + Math.ceil(p.rest / S.timeScale) + ' с' : 'Грёзы унесут к костру через ' + Math.ceil(p.sleep / S.timeScale) + ' с'; }
@@ -599,22 +599,30 @@ const TUT = { on: false, i: 0, fed: false, full: false, feedHint: false, doneT: 
     else if (t === 'dawn' && id === 'night') { this.go('dawn'); this.doneT = 7; } },
   update(dt) { if (!this.on || mode !== 'play') return; const id = TUT_STEPS[this.i].id;
     if (id === 'ignite' && S.fire.fuel > 0) this.go('gather');
-    // «До ночи 20 с, костёр ещё не кормили после розжига, топливо < 40%» → «Подбрось веток в костёр, пока день»
-    if (S.phase === 'day' && !this.fed && !this.feedHint && id !== 'ignite' && SIM.dayLen(S) - S.t <= 20 && S.fire.fuel / SIM.fireMax(S) < .4) { this.feedHint = true; this.show('Подбрось веток в костёр, пока день'); $('tut').classList.remove('hide'); }
+    // §15 п.4 (v0.8.6): сразу, как топливо < 40% и костёр ещё не кормили после розжига → карточка «Подбрось веток в костёр, пока день» (висит, пока не покормят)
+    if (S.phase === 'day' && !this.fed && !this.feedHint && id !== 'ignite' && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .4) { this.feedHint = true; this.show('Подбрось веток в костёр, пока день'); $('tut').classList.remove('hide'); }
     if (this.doneT > 0 && (this.doneT -= dt) <= 0) { this.stop(true); return; }
     const at = this.feedHint ? { x: 0, z: 0 } : TUT_STEPS[this.i].at(); tutArrow.visible = !!at;
     if (at) { tutArrow.position.set(at.x, (at === CFG.BENCH || at === CFG.CHEST ? 2.4 : at.x === 0 && at.z === 0 ? 2.8 : 1.9) + Math.abs(Math.sin(performance.now() * .005)) * .35, at.z); tutArrow.rotation.y += dt * 2; } } };
 $('tutSkip').addEventListener('click', e => { e.stopPropagation(); TUT.stop(true); hint('Обучение пропущено', 1.5); });
 // контекстные подсказки (v0.7): голод, силы во тьме, слабый костёр, скоро ночь — с паузами, не чаще одной за раз
-const CH = { t: 0, cd: {} };
-function ctxHints(dt) { if ((CH.t -= dt) > 0 || !S || mode !== 'play') return; CH.t = 1; if (hintT > 0) return; const p = me(), now = performance.now(), night = S.phase === 'night';
-  const say = (k, txt, cd, warn) => { if ((CH.cd[k] || 0) > now) return false; CH.cd[k] = now + cd * 1000; hint(txt, 2.6, warn); return true; };
+const CH = { t: 0, cd: {}, fh: { key: '', n: 0, next: 0 }, log: [] };
+// §15 п.4 (v0.8.6): дневное «Подбрось веток» — сразу при топливе < 40 %, пока не покормили — повтор раз в 20 с игрового времени, не больше 3 раз за день
+function feedHintDue() { const fh = CH.fh, key = S.stage + ':' + S.night; if (fh.key !== key) { fh.key = key; fh.n = 0; fh.next = 0; }
+  return S.phase === 'day' && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .4 && fh.n < 3 && S.t >= fh.next; }
+function feedHintFed() { if (S && S.phase === 'day') CH.fh.next = Math.max(CH.fh.next, S.t + 20); }
+function ctxHints(dt) { if ((CH.t -= dt) > 0 || !S || mode !== 'play') return; CH.t = 1; const p = me(), now = performance.now(), night = S.phase === 'night';
+  const say = (k, txt, cd, warn) => { if ((CH.cd[k] || 0) > now) return false; CH.cd[k] = now + cd * 1000; hint(txt, 2.6, warn); CH.log.push([k, +S.t.toFixed(1), S.phase, Math.round(S.fire.fuel / SIM.fireMax(S) * 100)]); return true; };
+  const asleep = p.sleep > 0 || p.rest > 0;
+  // QA4-02 (v0.8.6): ночное «Костёр слабеет» — критическое: свой ключ и кулдаун, обучение его не глушит, перебивает обычную подсказку
+  if (night && !asleep && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .25 && say('fuelN', 'Костёр слабеет — подбрось веток!', 12, true)) return;
+  // §15 п.4: «Подбрось веток» — сразу: перебивает обычную (не тревожную) подсказку; пока висит карточка обучения с тем же текстом (TUT.update) — пузырь не дублируем
+  if (!asleep && !(hintT > 0 && $('hint').classList.contains('warn')) && !(TUT.on && TUT.feedHint) && feedHintDue()) { CH.fh.n++; CH.fh.next = S.t + 20; CH.cd.fuel = 0; if (say('fuel', 'Подбрось веток в костёр, пока день', 0)) return; }
+  if (hintT > 0 || asleep) return;
   const food = (p.inv.berry || 0) + (p.inv.pie || 0) + (SIM.nearFood(p) ? S.chest.berry : 0);
-  if (p.sleep > 0 || p.rest > 0) return;
   if (p.hunger < 30 && (food ? say('eat', 'Проголодался — нажми «Съесть»', 20) : say('hungry', 'Голодно — собери ягоды с кустов или возьми из сундука', 25, true))) return;
   if (night && Math.hypot(p.x, p.z) > lightRv && p.str < 55 && say('dark', 'Силы тают во тьме — вернись в круг света', 14, true)) return;
-  // v0.8 (баланс §9.1): днём при топливе < 40% — «Подбрось веток в костёр, пока день» (ветки берутся и из сундука)
-  if (S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < (night ? .25 : .4) && !TUT.on && say('fuel', night ? 'Костёр слабеет — подбрось веток!' : 'Подбрось веток в костёр, пока день', night ? 12 : 30, night)) return;
+  if (target && target.full && say('full', 'Костёр полный — положи ветки в сундук', 20)) return;   // §15.1
   if (!night && !TUT.on && SIM.dayLen(S) - S.t < 12 && S.t > 5 && say('dusk' + S.night, 'Скоро ночь — запаси веток у костра', 999)) return; }
 
 // ---------- крафт-панель ----------
@@ -656,12 +664,12 @@ function handleEvents() {
       case 'hit': { const n = S.nodes.find(q => q.id === e.id); if (n) { SHAKE.set(n.id, .3); FLASH.set(n.id, .18); } vfx.hit([e.x, 1, e.z], { kind: 'tree' }); sfx.play('chop'); shake(.18); FB.squash = .16; buzz(18); FB.n.hit++; break; }
       case 'node': nodesChanged = true; break;
       case 'full': hint('Рюкзак полон — отнеси всё в сундук у костра', 2.4, true); TUT.on && TUT.ev('full', e); sfx.play('ui', { kind: 'timeout' }); break;
-      case 'fuel': floatText('+' + e.n + ' огня', 0, 2.4, 0); if (e.fromChest && !TUT.on && (handleEvents.chestT || 0) < performance.now()) { hint(e.relit && e.sticks > 1 ? 'Розжиг: 2 ветки (взято из сундука)' : 'Ветка взята из сундука', 1.6); handleEvents.chestT = performance.now() + 8000; } burst(0, 1, 0, '#ffb13b', 8, 1.8); fireFx.burst(); FB.fire = 1; buzz(10); TUT.on && TUT.ev('fuel', e); if (e.relit) { sfx.play('fire', { kind: 'ignite' }); toast(S.firstLight === false && S.night === STAGES[S.stage - 1].from && S.phase === 'day' ? 'Костёр зажжён!' : 'Костёр снова горит!'); } else sfx.play('fire', { kind: 'feed' }); break;
+      case 'fuel': floatText('+' + e.n + ' огня', 0, 2.4, 0); if (!e.relit) feedHintFed(); if (e.fromChest && !TUT.on && (handleEvents.chestT || 0) < performance.now()) { hint(e.relit && e.sticks > 1 ? 'Розжиг: 2 ветки (взято из сундука)' : 'Ветка взята из сундука', 1.6); handleEvents.chestT = performance.now() + 8000; } burst(0, 1, 0, '#ffb13b', 8, 1.8); fireFx.burst(); FB.fire = 1; buzz(10); TUT.on && TUT.ev('fuel', e); if (e.relit) { sfx.play('fire', { kind: 'ignite' }); toast(S.firstLight === false && S.night === STAGES[S.stage - 1].from && S.phase === 'day' ? 'Костёр зажжён!' : 'Костёр снова горит!'); } else sfx.play('fire', { kind: 'feed' }); break;
       case 'deposit': { const t = Object.entries(e.moved).map(([k, n]) => n + ' ' + RN[k]).join(', '); hint('В сундук: ' + t + (e.full ? ' · сундук полон (' + CFG.CHEST_SLOTS + ' слота)' : ''), e.full ? 3 : 2.2, !!e.full); TUT.on && TUT.ev('deposit', e); burst(CFG.CHEST.x, 1, CFG.CHEST.z, '#ffd36b', 8, 1.5); sfx.play('chest', { kind: 'in' }); break; }
       case 'craft': { const fc = Object.entries(e.fromChest || {}); toast(e.name, fc.length ? 'Взято из сундука: ' + fc.map(([k, n]) => n + ' ' + RN[k]).join(', ') : 'Готово!'); const p = me(); burst(p.x, 1, p.z, '#ffd36b', 10, 2);
         if (e.id === 'fire2' || e.id === 'fire3') { sfx.play('fire', { kind: 'upgrade' }); fireFx.burst(); FB.fire = 1.5; } else sfx.play('craft'); buzz(25); syncBuilds(S); renderRecipes(); TUT.on && TUT.ev('craft', e); break; }
       case 'eat': { const p = me(); floatText(e.k === 'pie' ? 'Пирожок!' : 'Ням!', p.x, 2, p.z); sfx.play('eat', { item: e.k === 'pie' ? 'pie' : 'berries' }); break; }
-      case 'msg': hint(e.text, 2, e.warn); if (e.warn) sfx.play('ui', { kind: 'timeout' }); break;
+      case 'msg': if (e.full && e.pid !== PID) break; hint(e.text, 2, e.warn); if (e.warn) sfx.play('ui', { kind: 'timeout' }); break;
       case 'push': { const p = me(); vfx.hit([p.x + Math.sin(p.face), .8, p.z + Math.cos(p.face)], { kind: 'enemy' }); sfx.play('push'); shake(.22); FB.squash = .2; buzz(20); break; }
       case 'poof': vfx.poof([e.x, e.k === 'moth' ? 1.6 : .7, e.z], { kind: e.k === 'moth' ? 'moth' : 'mist' }); sfx.play('poof');   // звук poof — из пака (обёртка больше не перехватывает) floatText('Пуф!', e.x, 1.6, e.z); break;
       case 'shoo': burst(e.x, 1.5, e.z, '#3d4670', 5, 2); sfx.play('crow', { kind: 'flap' }); break;
@@ -677,7 +685,7 @@ function handleEvents() {
         else if (e.k === 'mist') sfx.play('mist', { kind: 'puff' }); break;
       // v0.8.1 (§11.4): гусь гогочет за 5 с до того, как угроза дойдёт до костра (событие симуляции), — звук и значок над гусем
       case 'honk': { const gp = Object.values(S.players).find(q => PETS[q.pet].warn); if (!gp) break; const pv = PV.get(gp.id); if (pv) floatText('Га-га!', gp.x, 2.3, gp.z);
-        sfx.play('pet', { kind: 'idle', pet: 'goose' }); if ((handleEvents.gooseT || 0) < performance.now()) { hint('Га-га! К костру ' + ({ mist: 'катится клубочек мглы', moth: 'летит мотылёк', crow: 'летит ворон' }[e.k] || 'идёт угроза'), 2.2); handleEvents.gooseT = performance.now() + 4000; } break; }
+        sfx.play('pet', { kind: 'idle', pet: 'goose' }); if ((handleEvents.gooseT || 0) < performance.now()) { hint('Га-га! К костру ' + ({ mist: 'катится клубочек мглы', moth: 'летит мотылёк', crow: 'летит ворон', moose: 'идёт Лось' }[e.k] || 'идёт угроза'), 2.2); handleEvents.gooseT = performance.now() + 4000; } break; }
       case 'ember': { const q = S.players[e.pid]; if (q) floatText(e.charge ? 'Огонёк: +50% фонарика' : 'Огонёк!', q.x, 2.2, q.z); sfx.play('lamp', { kind: 'charge' }); break; }
       case 'flash': sfx.play('lamp', { kind: e.on ? 'on' : 'charge' }); if (e.empty) hint('Фонарик разрядился — заряди его у костра', 2.2, true); break;
       case 'sleep': { const pv = PV.get(e.pid || PID); if (pv) { vfx.petTired(pv.g); pv.zzT = 3; } } hint(PETS[me().pet].name + ' устал и уснул…', 2.5, true); sfx.play('pet', { kind: 'sleep', pet: me().pet }); sfx.play('ping', { tired: true }); break;
@@ -840,7 +848,7 @@ function animFire(dt) {
 // ---------- кадр ----------
 const STEP = 1 / 60; let acc = 0, hudT = 0, tgtT = 0, target = null, actShown = '';
 const ACT = { push: ['paw', 'Толкнуть'], fuel: ['fire', 'В костёр'], ignite: ['fire', 'Разжечь'], deposit: ['chest', 'В сундук'], tree: ['axe', 'Рубить'], bush: ['berry', 'Собрать'], branch: ['stick', 'Подобрать'], stone: ['stone', 'Подобрать'], stump: ['cloth', 'Обыскать'], bench: ['bench', 'Верстак'], wake: ['wake', 'Держи: будить'], none: ['hand', 'Действие'] };
-function updActBtn() { const k = target ? target.kind : 'none'; if (k === actShown) return; actShown = k; const b = $('bAct'); ico(b.querySelector('.ico'), ACT[k][0]); b.querySelector('span').textContent = ACT[k][1]; b.classList.toggle('dim', k === 'none'); }
+function updActBtn() { const k = target ? target.kind : 'none', full = !!(target && target.full), key = k + (full ? ':full' : ''); if (key === actShown) return; actShown = key; const b = $('bAct'); ico(b.querySelector('.ico'), ACT[k][0]); b.querySelector('span').textContent = ACT[k][1]; b.classList.toggle('dim', k === 'none' || full); b.classList.toggle('full', full); }   // §15.1: полный костёр — «В костёр» серая
 function frame(dt) {
   sfx.update(dt); vfx.update(dt);
   if (mode === 'menu') { const a = performance.now() * .00006; camera.position.set(Math.sin(a) * 13, 6.5, Math.cos(a) * 13); camera.lookAt(0, 1.2, 0); applyLight(0, dt); animFire(dt); updWeather(dt); syncAudio(); if (S) { syncPlayers(S, dt); } return; }
@@ -849,7 +857,7 @@ function frame(dt) {
   if (COOP && COOP.active()) { cmdQ.length = 0; COOP.frame(dt); handleEvents(); if (mode !== 'play') return; }   // кооп: мир с сервера, свой питомец — предсказание
   else { acc += dt; let n = 0; while (acc >= STEP && n < 5) { for (let k = 0; k < FAST; k++) { SIM.step(S, STEP, k ? [] : cmdQ.splice(0)); handleEvents(); if (mode !== 'play') return; } acc -= STEP; n++; } if (n >= 5) acc = 0; }
   if ((frame.nsT = (frame.nsT || 0) - dt) <= 0) { frame.nsT = .2; const c = camera.position, q = camera.quaternion, cs = c.x.toFixed(1) + c.z.toFixed(1) + q.y.toFixed(2) + q.w.toFixed(2) + q.x.toFixed(2);
-    syncNodes(S, cs !== frame.camSig); frame.camSig = cs; }   // страховка (узлы, изменённые не событием) + пересборка при движении камеры   // страховка: узлы, изменённые не событием (отрастание, тесты)
+    syncNodes(S, cs !== frame.camSig); frame.camSig = cs; }   // страховка (узлы, изменённые не событием, отрастание, тесты) + пересборка при движении камеры
   if (SHAKE.size) { for (const [id, sh] of SHAKE) { if (sh - dt <= 0) SHAKE.delete(id); else SHAKE.set(id, sh - dt); } syncNodes(S, true); }
   updFlash(dt);
   syncPlayers(S, dt); syncEnemies(S, dt); updCamera(dt, moveAmt);
@@ -958,7 +966,7 @@ function loop() {
 window.__g = { scene, input, SIM, get S() { return S; }, get mode() { return mode; }, send, save, loadSave, startStage, continueGame, showMap, showMenu, account, saveAcc, sfx, vfx, fireFx, setMute, renderer, camera, cam, quality: QUALITY, assets: ASSET_STATE, occ: OCC, get coop() { return COOP; }, get PID() { return PID; },
   teleport: (x, z) => { const p = me(); p.x = x; p.z = z; const cp = Math.cos(cam.pitch); camera.position.set(x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, z + Math.cos(cam.yaw) * cp * cam.dist); cam.look.set(x, 1.1, z); },
   look: (yaw, pitch) => { cam.yaw = yaw; if (pitch) cam.pitch = pitch; dragT = performance.now(); },
-  tut: TUT, fb: FB, startQaNight, hintLog, toastTest: (a, b) => toast(a, b), hintTest: t => hint(t, 3), stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };
+  tut: TUT, fb: FB, ch: CH, IC, startQaNight, hintLog, toastTest: (a, b) => toast(a, b), hintTest: t => hint(t, 3), stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };
 
 // подмена процедурных заглушек на GLB художника (js/assets.js): запекаем и меняем геометрию у инстансов, мешей лагеря и врагов.
 // Нет url или файл не загрузился — остаётся заглушка. Один GLB может кормить несколько ключей (include/exclude).
@@ -981,7 +989,7 @@ const API = { get S() { return S; }, setS: v => { S = v; }, get PID() { return P
   initWorld, startPlay, only, toast, hint, showMenu, handleEvents, syncNodes, syncBuilds, account, stageName, PV, scene, camera, THREE, sfx, IC, me, input, setPause };
 (async () => {
   showMenu(); loop();
-  if (NET) import('./coop.js?v=0.8.5').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
+  if (NET) import('./coop.js?v=0.8.6').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
   try { await Promise.race([loadPet(pet), new Promise(r => setTimeout(r, 6000))]); } catch (e) { console.warn('pet', e.message); }
   await Promise.race([assetsP, new Promise(r => setTimeout(r, 8000))]); $('loading').classList.add('hide'); window.__g.ready = true;
   if (QA_NIGHT && !NET) startQaNight(QA_NIGHT);
