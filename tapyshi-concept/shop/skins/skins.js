@@ -79,7 +79,7 @@
      или если 3D так и не загрузилось (ошибка/таймаут). */
   var GL = (function(){ try { var c=document.createElement('canvas'), g=c.getContext('webgl2')||c.getContext('webgl'); if (!g) return false;
     var l=g.getExtension('WEBGL_lose_context'); if (l) l.loseContext(); return true; } catch(e){ return false; } })();
-  function use3d(){ return GL && !(w.SK3D && !w.SK3D.ok); }
+  function use3d(){ return GL && !modErr && !(w.SK3D && !w.SK3D.ok); }
   /* модуль 3D грузится позже классических скриптов: окно уже открыто с лоадером — просто подключаем 3D к той же сцене, без перерисовки */
   addEventListener('sk3d-ready', function(){ flushPre();
     var st = isOpen && sh && sh.querySelector('.sk-ss .sk-stage.sk3d');
@@ -88,15 +88,20 @@
     w.SK3D.attach(st, view.set, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; });
   /* предзагрузка GLB (простой на «Скинах», pointerdown по карточке); до загрузки модуля — в очередь */
   var preQ = [];   /* fix3: idle=true — фоновая очередь по одному файлу, без idle — сразу и в приоритете */
-  function preload(id, idle){ if (!GL) return; if (w.SK3D && w.SK3D.preload) w.SK3D.preload(id, !!idle); else preQ.push([id, !!idle]); }
+  function preload(id, idle){ if (!GL) return; load3d(); if (w.SK3D && w.SK3D.preload) w.SK3D.preload(id, !!idle); else preQ.push([id, !!idle]); }
   function flushPre(){ if (w.SK3D && w.SK3D.preload) preQ.splice(0).forEach(function(q){ w.SK3D.preload(q[0], q[1]); }); }
-  /* страховка: модуль 3D не загрузился вовсе (сеть/ошибка). fix3: без таймера — на Slow 4G модуль может идти дольше 15 с,
-     и таймер показывал постер посреди загрузки. Модуль (со всеми import) исполняется до DOMContentLoaded: если после него
-     SK3D так и нет — модуль упал, только тогда постер-фолбэк */
-  var dcl = document.readyState === 'complete';   /* readyState 'interactive' наступает ДО исполнения модулей — ждём само событие */
-  function modFailed(){ return !w.SK3D && dcl; }
-  function failCheck(){ var st = isOpen && sh && sh.querySelector('.sk-ss .sk-stage.sk3d'); if (st && modFailed() && !st.classList.contains('is-3d')) fallbackPoster(st); }
-  document.addEventListener('DOMContentLoaded', function(){ dcl = true; setTimeout(failCheck, 0); });
+  /* fix5: 3D-модули (viewer3d.js → three, GLTFLoader, tryon_rules) подключаем сами и только при WebGL: на «Бустах» и без WebGL
+     они не грузятся вовсе. Старт — открытие «Скинов», pointerdown на карточке набора или открытие окна набора.
+     Все зависимости сразу как <link rel=modulepreload> (параллельно, без цепочки), затем import() точки входа.
+     Если модуль не загрузился (сеть/ошибка) — флаг modErr: открытое окно получает постер-фолбэк, следующие — сразу webp */
+  var D3EL = document.getElementById('sk3d'), D3URLS = ((D3EL && D3EL.getAttribute('data-3d')) || '').split(/\s+/).filter(Boolean);
+  var modState = 0, modErr = false;   /* 0 — не начинали, 1 — грузим, 2 — готово */
+  function load3d(){ if (!GL || modState || !D3URLS.length) return; modState = 1;
+    D3URLS.forEach(function(u){ var abs = new URL(u, document.baseURI).href; if ([].some.call(document.querySelectorAll('link[rel=modulepreload]'), function(x){ return x.href === abs; })) return; var l = document.createElement('link'); l.rel = 'modulepreload'; l.href = u; document.head.appendChild(l); });
+    var entry = new URL(D3URLS[0], document.baseURI).href;
+    try { import(entry).then(function(){ modState = 2; }, function(e){ modErr = true; console.warn('3D: модуль не загрузился', e); failCheck(); }); }
+    catch (e) { modErr = true; failCheck(); } }
+  function failCheck(){ var st = isOpen && sh && sh.querySelector('.sk-ss .sk-stage.sk3d'); if (st && modErr && !w.SK3D && !st.classList.contains('is-3d')) fallbackPoster(st); }
   function fallbackPoster(st){ if (st.querySelector('.sk-poster') || !st.dataset.poster) return;
     var im = document.createElement('img'); im.className = 'sk-poster'; im.alt = ''; im.src = st.dataset.poster; st.insertBefore(im, st.firstChild);
     if (!st.querySelector('.sk-load')) st.insertAdjacentHTML('afterbegin', LOAD);
@@ -183,7 +188,7 @@
       var ns = sh.querySelector('.sk-stage'); keep.querySelector('.sk-try').replaceWith(ns.querySelector('.sk-try')); ns.replaceWith(keep);
       if (M3){ if (keep.classList.contains('is-3d')) w.SK3D.update(Object.keys(view.sel)); else w.SK3D.attach(keep, s.id, Object.keys(view.sel), null); } }
     else if (M3){ w.SK3D.attach(sh.querySelector('.sk-stage'), s.id, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; }
-    else if (D3) failCheck();   /* модуль ещё грузится: лоадер, подключимся по sk3d-ready (или фолбэк, если модуль упал) */
+    else if (D3){ load3d(); failCheck(); }   /* модуль ещё грузится: лоадер, подключимся по sk3d-ready (или фолбэк, если модуль упал) */
     if (!D3) waitImg(sh.querySelector('.sk-ss .sk-stage'));
   }
   function onSheetClick(e){
@@ -205,5 +210,5 @@
   function bal(){ return w.SHOP ? w.SHOP.bal() : 0; }
 
   w.SK = { SETS:SETS, SLOT:SLOT, PET:PET, PET_ORDER:PET_ORDER, S:S, I:I, fmt:fmt, owned:owned, setPrice:setPrice, petImg:petImg, petOf:petOf, comboImg:comboImg, selInfo:selInfo, petThumb:petThumb, stub:stub, pips:pips, rchip:rchip,
-    partSheet:partSheet, preload:preload, tileOf:tileOf, setSheet:setSheet, close:close, view:view, onChange:function(f){ listeners.push(f); }, coin:coin, changed:changed, partById:partById, setById:setById, render:render };
+    partSheet:partSheet, preload:preload, load3d:load3d, tileOf:tileOf, setSheet:setSheet, close:close, view:view, onChange:function(f){ listeners.push(f); }, coin:coin, changed:changed, partById:partById, setById:setById, render:render };
 })(window);

@@ -184,14 +184,24 @@ img.cpng{display:inline-block;flex:none;object-fit:contain;vertical-align:middle
 
 /* fix4: скелетон плиток частей и мини-превью, пока webp не загружен. Место зарезервировано самой плиткой (aspect-ratio / размеры),
    высота шторки не меняется. Ошибка загрузки — тот же скелетон без шиммера; prefers-reduced-motion — без шиммера */
-.sk-p4-i.is-sk,.sk-mini.is-sk{background:#EEEAFF}
+/* fix5: контрастнее — фон #E6E1FA, тонкая внутренняя обводка, в центре мягкий силуэт (кружок + «подставка») тоном темнее,
+   поверх — заметный, но плавный шиммер (без мигания). Слои фона: [шиммер] [силуэт-кружок] [силуэт-подставка] [фон].
+   Ошибка и prefers-reduced-motion — тот же контрастный вариант, шиммер убран за край */
+.sk-p4-i.is-sk,.sk-mini.is-sk{background:#E6E1FA}
 .sk-p4-i.is-sk>img,.sk-mini.is-sk>img{visibility:hidden}
 .sk-p4-i.is-sk::before,.sk-mini.is-sk::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:#EEEAFF linear-gradient(100deg,rgb(248 247 255 / 0) 25%,rgb(248 247 255 / .95) 50%,rgb(248 247 255 / 0) 75%) no-repeat;background-size:220% 100%;
-  animation:sk-shim 1.25s ease-in-out infinite}
-.sk-p4-i.is-sk-err::before,.sk-mini.is-sk-err::before{animation:none;background:#EEEAFF}
-@keyframes sk-shim{from{background-position:130% 0}to{background-position:-130% 0}}
-@media (prefers-reduced-motion:reduce){.sk-p4-i.is-sk::before,.sk-mini.is-sk::before{animation:none;background:#EEEAFF}}
+  box-shadow:inset 0 0 0 1.5px #D4CBF6;
+  background:
+    linear-gradient(105deg,rgb(255 255 255 / 0) 30%,rgb(255 255 255 / .78) 50%,rgb(255 255 255 / 0) 70%),
+    radial-gradient(circle at 50% 44%,#D2C8F6 0 23%,rgb(210 200 246 / 0) 24%),
+    radial-gradient(ellipse 30% 7% at 50% 76%,#DAD2F8 0 92%,rgb(218 210 248 / 0) 100%),
+    #E6E1FA;
+  background-repeat:no-repeat;background-size:260% 100%,100% 100%,100% 100%,auto;background-position:130% 0,0 0,0 0,0 0;
+  animation:sk-shim 1.6s ease-in-out infinite}
+.sk-mini.is-sk::before{box-shadow:inset 0 0 0 1px #D4CBF6;background-size:260% 100%,100% 100%,0 0,auto}   /* мини-превью: только кружок */
+.sk-p4-i.is-sk-err::before,.sk-mini.is-sk-err::before{animation:none;background-position:300% 0,0 0,0 0,0 0}
+@keyframes sk-shim{from{background-position:130% 0,0 0,0 0,0 0}to{background-position:-30% 0,0 0,0 0,0 0}}
+@media (prefers-reduced-motion:reduce){.sk-p4-i.is-sk::before,.sk-mini.is-sk::before{animation:none;background-position:300% 0,0 0,0 0,0 0}}
 
 /* fix4: прогресс в заглушке 3D — процент (Nunito, tabular-nums, место под «100%» зарезервировано) и тонкая полоска в цвете набора.
    До первого значения прогресса полоска и процент невидимы, но место занимают — размер заглушки не меняется */

@@ -34,7 +34,7 @@
   /* вкладки «Бусты / Скины»: ?tab=skins или #skins / #part-<id> / #set-<id> открывают «Скины» */
   var tabs=document.getElementById('shoptabs');
   function go(t){ [].forEach.call(tabs.querySelectorAll('[data-t]'),function(x){x.classList.toggle('on',x.dataset.t===t)});
-    document.getElementById('tab-boosts').hidden=t!=='boosts'; host.hidden=t!=='skins'; }
+    document.getElementById('tab-boosts').hidden=t!=='boosts'; host.hidden=t!=='skins'; if(t==='skins'&&SK.load3d) SK.load3d(); }  /* fix5: 3D-модули — только на «Скинах» и только при WebGL */
   tabs.addEventListener('click',function(e){ var x=e.target.closest('[data-t]'); if(x) go(x.dataset.t); });
   if(window.SHOP&&SHOP.onBal) SHOP.onBal(function(){ paint(); });
   var h=location.hash.slice(1), m, pm=location.search.match(/[?&]pet[=-](\w+)/);

@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <script type="importmap">{"imports":{"three":"../lib/three.module.min.js?v=tc11132310"}}</script>
+<!-- fix5: modulepreload 3D-модулей добавляется из JS и только при WebGL. Здесь — лишь ранний старт, если страница
+     открыта сразу на «Скинах» (?tab=skins, #skins, #set-…, #part-…); на «Бустах» и без WebGL ничего не грузится -->
+<script id="sk3d" data-3d="skins/viewer3d.js?v=tc11161159 ../lib/three.module.min.js?v=tc11132310 ../lib/addons/loaders/GLTFLoader.js?v=tc11132310 skins/glb/tryon_rules.mjs?v=tc11152225">(function(){try{var l=location,s=document.currentScript;if(!/[?&]tab=skins/.test(l.search)&&!/^#(skins|set-|part-)/.test(l.hash))return;
+var c=document.createElement('canvas');if(!(c.getContext('webgl2')||c.getContext('webgl')))return;
+s.getAttribute('data-3d').split(/\s+/).forEach(function(u){if(!u)return;var k=document.createElement('link');k.rel='modulepreload';k.href=u;document.head.appendChild(k)})}catch(e){}})();</script>
 <title>Тапыши · Магазин · Бусты и скины</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="icon" href="../favicon.ico" sizes="any">
@@ -13,11 +18,7 @@
 <link rel="stylesheet" href="../shared/components.css?v=tc11150155">
 <link rel="stylesheet" href="../shared/coin.css?v=tc11150155">
 <link rel="stylesheet" href="boosts.css?v=tc11152125">
-<link rel="stylesheet" href="skins/skins.css?v=tc11161159">
-<!-- fix2: 3D-модули качаем сразу, параллельно с остальным — окно набора не ждёт их цепочку -->
-<link rel="modulepreload" href="skins/viewer3d.js?v=tc11161159">
-<link rel="modulepreload" href="../lib/three.module.min.js?v=tc11132310">
-<link rel="modulepreload" href="../lib/addons/loaders/GLTFLoader.js?v=tc11132310">
+<link rel="stylesheet" href="skins/skins.css?v=tc11161312">
 <style>
 /* Магазин: раздел «Бусты» + тизер «скоро». Цвета — только токены. */
 .scroll{padding:0 16px calc(var(--tabbar-space,72px) + 28px)}
@@ -56,9 +57,10 @@ n.addEventListener('click',function(){n.classList.add('done');n.innerHTML='<svg 
 </script>
 <script src="../shared/pet-thumb.js?v=tc11152125"></script>
 <script src="skins/manifest.js?v=tc11152145"></script>
-<script src="skins/skins.js?v=tc11161159"></script>
-<script src="skins/tab.js?v=tc11161152"></script>
-<script type="module" src="skins/viewer3d.js?v=tc11161159"></script>
+<!-- fix5: 3D-модули больше не грузятся статически: skins.js подключает их сам (modulepreload + import) и только при WebGL —
+     при открытии «Скинов», по pointerdown на карточке или при открытии набора. Список модулей — в data-3d скрипта #sk3d в head -->
+<script src="skins/skins.js?v=tc11161312"></script>
+<script src="skins/tab.js?v=tc11161312"></script>
 <script src="../shared/nav.js?v=tc11150140"></script>
 </body>
 </html>
