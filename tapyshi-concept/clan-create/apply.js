@@ -40,7 +40,7 @@
     var pc = document.querySelector('.prog .pc');
     if (pc) pc.innerHTML = '1<small>%</small>';
     var tx = document.querySelector('.prog .tx small');
-    if (tx) tx.textContent = '12 500 из 1,5 млн';
+    if (tx) tx.textContent = '12 500 из 1 500 000';
     var you = document.querySelector('.legend .you b');
     if (you) you.textContent = '12 500';
 

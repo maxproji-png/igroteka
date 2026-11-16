@@ -4,7 +4,7 @@
   var ROOT = T.ROOT || '../shared/';
   T.img = function (p) { return ROOT + 'img/' + p; };
   T.fmt = function (n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'); };
-  T.short = function (n) { if (n >= 1e6) return (n / 1e6).toFixed(2).replace('.', ',').replace(/0$/, '') + '\u00A0млн'; if (n >= 1e4) return Math.round(n / 1e3) + '\u00A0тыс'; return T.fmt(n); };
+  T.short = T.fmt;
   T.IC = {
     paw: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="15.5" rx="5.2" ry="4.4" fill="currentColor"/><circle cx="5.4" cy="10" r="2.3" fill="currentColor"/><circle cx="9.2" cy="5.8" r="2.4" fill="currentColor"/><circle cx="14.8" cy="5.8" r="2.4" fill="currentColor"/><circle cx="18.6" cy="10" r="2.3" fill="currentColor"/></svg>',
     shield: '<svg viewBox="0 0 24 24"><path d="M12 2 L20.5 5 Q21 15 12 22 Q3 15 3.5 5Z" fill="currentColor"/><path d="M12 7.5 l1.4 2.9 3.2.5 -2.3 2.2 .5 3.1 -2.8 -1.5 -2.8 1.5 .5 -3.1 -2.3 -2.2 3.2 -.5z" fill="#fff" opacity=".9"/></svg>',

@@ -74,7 +74,7 @@
     return a ? a[Math.max(0, Math.min(5, stageOf(lvl) - 1))] : '';
   }
   function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0'); }
-  function short(n) { return n >= 1e6 ? (Math.round(n / 1e5) / 10 + '').replace('.', ',') + '\u00a0млн' : fmt(n); }
+  function short(n) { return fmt(n); }
   function plural(n, a, b, c) { var m = n % 100, d = n % 10; return (m > 10 && m < 20) || !d || d > 4 ? c : d === 1 ? a : b; }
   function coin(px) { return (w.T && T.coin) ? T.coin('', px || 24) : ''; }
   function hash(s) {
