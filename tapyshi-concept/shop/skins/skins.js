@@ -65,10 +65,11 @@
   function open(html, instant){ isOpen = true; ensure(); place(); sh.innerHTML='<div class="sk-grab"></div><button type="button" class="sk-x" data-close aria-label="Закрыть">'+I.x+'</button>'+html;
     skel(sh);
     if (instant){ sh.classList.add('no-anim'); scrim.classList.add('no-anim'); }
+    document.body.classList.add('has-sheet');
     requestAnimationFrame(function(){ sh.classList.add('on'); scrim.classList.add('on'); }); }
   /* 3D освобождаем после того, как шторка уехала (иначе на выезде мелькает пустая сцена); повторное открытие раньше — отмена */
   var disposeT = 0;
-  function close(){ isOpen = false; if (w.SK3D){ clearTimeout(disposeT); disposeT = setTimeout(function(){ if (!isOpen) w.SK3D.dispose(); }, 520); } if (!sh) return; sh.classList.remove('on','no-anim'); scrim.classList.remove('on','no-anim'); }
+  function close(){ isOpen = false; if (w.SK3D){ clearTimeout(disposeT); disposeT = setTimeout(function(){ if (!isOpen) w.SK3D.dispose(); }, 520); } document.body.classList.remove('has-sheet'); if (!sh) return; sh.classList.remove('on','no-anim'); scrim.classList.remove('on','no-anim'); }
   addEventListener('resize', place); addEventListener('load', place);
   /* таб-бар строится nav.js и может поменять высоту после шрифтов — следим, чтобы зазор всегда был 8 px */
   (function watch(){ var t=document.querySelector('.tabbar'); if (!t) return setTimeout(watch, 50); if (w.ResizeObserver) new ResizeObserver(place).observe(t); place(); })();

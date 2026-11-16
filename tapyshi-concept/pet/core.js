@@ -19,6 +19,10 @@ function persistHome(pet, level) {
   try { localStorage.setItem('tapyshi.home', JSON.stringify({ pet, level: level | 0 })); } catch (e) {}
 }
 if (START.fresh) { S.coins = 0; S.energy = 300; S.max = 300; }
+if (typeof window !== 'undefined' && window.TapyshiBal) {
+  if (START.fresh) window.TapyshiBal.set(S.coins);
+  else S.coins = window.TapyshiBal.get();
+}
 export const COMBO_MS = 1000;
 export const fmt = n => String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
 export const fmtGain = g => '+' + String(g).replace('.', ',');
@@ -372,6 +376,11 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: wrapEl, flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad'), standin, sil: $('petSil') };
   const ico = new Image(); ico.alt = ''; ico.src = coinSrc(24); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
+  if (window.TapyshiBal) window.TapyshiBal.on(function (n) {
+    if (S.coins === n) return;
+    S.coins = n;
+    if (el.balNum) el.balNum.textContent = fmt(n);
+  });
   if (el.enNum) el.enNum.textContent = fmt(S.energy);
   // подписи плашки сразу из window.__pet, не ждать 3D — иначе на кадрах загрузки чужие «Иней / стадия 2»
   if (START.known) {
@@ -638,6 +647,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     S.combo = (window.__holdCombo && S.combo > 0) || now - S.last < COMBO_MS ? S.combo + 1 : 1; S.last = now;
     const prev = S.mult; S.mult = S.combo >= 50 ? 2 : S.combo >= 20 ? 1.5 : 1;
     const gain = S.power * S.mult; S.energy -= 1; S.coins += gain; S.taps++;
+    if (window.TapyshiBal) window.TapyshiBal.set(S.coins);
     window.__taps = (window.__taps || 0) + 1; window.__tapCount = window.__taps;
     const x = cx - appRect.left, y = cy - appRect.top;
     squash(x);

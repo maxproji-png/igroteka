@@ -11,6 +11,7 @@ var BOOSTS=[
 /* демо: баланс 4 200 → видны все три состояния */
 var DEMO={bal:4200,lv:{tap:1,energy:2,regen:2,offline:2}};
 var S=JSON.parse(JSON.stringify(DEMO));
+if(window.TapyshiBal) S.bal=window.TapyshiBal.get();
 var BOLT='<svg class="bolt" width="14" height="14" viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M13.5 2 L4.5 13.5 H11 L9.8 22 L19.5 9.8 H13 Z" style="fill:var(--sun);stroke:var(--sun-edge)" stroke-width="1.8" stroke-linejoin="round"/></svg>';
 var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 L10 17.5 L19 7"/></svg>';
 var ARR='<svg class="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 H18 M13 6 L19 12 L13 18"/></svg>';
@@ -51,7 +52,8 @@ function sheet(id){var b=byId(id),lv=S.lv[id],max=b.lv.length,st=state(b,lv,S.ba
   setTimeout(function(){var c=document.querySelector('[data-confirm]');if(c)c.addEventListener('click',function(){buy(id)});},0);}
 function closeSheet(){if(T.closeSheet)return T.closeSheet();var bg=document.querySelector('.sheet-bg'),sh=document.querySelector('.sheet');if(bg)bg.classList.remove('on');if(sh)sh.classList.remove('on');}
 function buy(id){var b=byId(id),lv=S.lv[id];if(lv>=b.lv.length||S.bal<b.lv[lv].p)return;
-  S.bal-=b.lv[lv].p;S.lv[id]=lv+1;closeSheet();render();
+  if(window.TapyshiBal){if(!window.TapyshiBal.spend(b.lv[lv].p))return;S.bal=window.TapyshiBal.get();}
+  else S.bal-=b.lv[lv].p;S.lv[id]=lv+1;closeSheet();render();
   var c=document.querySelector('.bc[data-id="'+id+'"]');if(c){c.classList.add('bump');}
   if(T.toast)T.toast(b.n+' — ур. '+(lv+1)+'!');}
 var host,balEl;
@@ -62,9 +64,10 @@ window.SHOP={BOOSTS:BOOSTS,card:card,state:state,
   mount:function(h,bal){host=h;balEl=bal;render();
     h.addEventListener('click',function(e){var c=e.target.closest('.bc');if(c)sheet(c.dataset.id);});
     var m=(location.hash||'').match(/^#buy-(\w+)$/);if(m&&byId(m[1]))setTimeout(function(){sheet(m[1])},300);},
-  reset:function(){S=JSON.parse(JSON.stringify(DEMO));render();},
+  reset:function(){var bal=window.TapyshiBal?window.TapyshiBal.get():S.bal;S=JSON.parse(JSON.stringify(DEMO));S.bal=bal;render();},
   /* общий баланс магазина — его же тратит вкладка «Скины» (skins/skins.js) */
-  bal:function(){return S.bal;},
-  spend:function(n){if(S.bal<n)return false;S.bal-=n;render();return true;},
+  bal:function(){if(window.TapyshiBal) S.bal=window.TapyshiBal.get();return S.bal;},
+  spend:function(n){if(window.TapyshiBal){if(!window.TapyshiBal.spend(n))return false;S.bal=window.TapyshiBal.get();render();return true;}if(S.bal<n)return false;S.bal-=n;render();return true;},
   onBal:function(f){balFns.push(f);}};
+if(window.TapyshiBal) window.TapyshiBal.on(function(n){if(S.bal===n)return;S.bal=n;render();});
 })();
