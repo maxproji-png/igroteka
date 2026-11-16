@@ -14,9 +14,9 @@ export const CFG = {
   // v0.8 (баланс §10, заменяет §9.2; гипотеза, проверка — test/balance-sim.mjs): по группам ночей 1–3 / 4–9 / 10–12
   MIST_DMG: [1.5, 2.5, 3.5], MIST_MAX_BLOW: [8, 0, 20], MOTH_DMG: 1, CROW_STAY: 15, FOG10_BURN: 1.15,
   // §12 (v0.8.3): ветер 11–12, мотыльки 11/12 двумя волнами, урон клубочка 11–12; кооп — горение/мотыльки/клубочки за каждого игрока сверх первого
-  WIND_BURN: 1.35, MOTHS11: 5, MOTHS12: 6, MIST_DMG_WIND: 4, COOP_BURN_K: [[1, 1.1, 1.2, 1.1], [1, 1.2, 1.4, 1.6], [1, 1.7, 1.6, 1.65]], COOP_MOTH: 1, COOP_MIST: 1,   // §14: множитель горения ночью по числу игроков (соло, 2, 3, 4) для ночей 1–3 / 4–9 / 10–12; §14.1 (v0.8.6): ночи 10–12 — двое ×1,7 (при ×1,6 медиана ночи 12 = 28 % > 25 %); §16 (v0.8.7): четверо — ночи 1–3 ×1,1, 10–12 ×1,65 (финал)
+  WIND_BURN: 1.35, MOTHS11: 5, MOTHS12: 6, MIST_DMG_WIND: 4, COOP_BURN_K: [[1, 1.1, 1.2, 1.1], [1, 1.2, 1.4, 1.6], [1, 2.2, 3.4, 4.5]], COOP_MOTH: 1, COOP_MIST: 1,   // §14: множитель горения ночью по числу игроков (соло, 2, 3, 4) для ночей 1–3 / 4–9 / 10–12; §14.1 (v0.8.6): ночи 10–12 — двое ×1,7 (при ×1,6 медиана ночи 12 = 28 % > 25 %); §16 (v0.8.7): четверо — ночи 1–3 ×1,1, 10–12 ×1,65 (финал)
   BAG_BASKET: 12, BAG_BASKET2: 16,   // v0.8.3: с v0.8.0 эта пара случайно оказалась внутри комментария (MIST_MAX_BLOW: 0 — без лимита) → вместимость с корзинкой была NaN
-  SPEED: 4.4, PLAYER_R: .38, GATHER_T: .25,   // §15 п.5: замах сбора, с (енот — /1,2)
+  SPEED: 4.4, PLAYER_R: .38,   // §18.4 (v0.8.9): замах сбора GATHER_T убран — сбор не задерживается
   FIRE: { x: 0, z: 0 }, BENCH: { x: 3.6, z: -2.4 }, CHEST: { x: -3.6, z: -2.4 }, BED: { x: 0, z: 2.8 }, LAMP: { x: 0, z: -4.2 },
   FENCE_MAX: 6, TRAP_MAX: 3,
   UPG_MUL: [1, 1, 1.4, 1.8, 2.2],                // множитель апгрейдов костра/верстака по стартовому составу
@@ -201,7 +201,8 @@ export function context(s, pid) {
   if (df < 2.9) { const night = s.phase === 'night', sticks = night ? (p.inv.stick || 0) : have(s, p, 'stick'), need = s.fire.fuel <= 0 ? (s.firstLight ? 1 : CFG.RELIGHT_STICKS) : 1;
     if (sticks >= need) { if (!fireFull(s)) return { kind: s.fire.fuel <= 0 ? 'ignite' : 'fuel', x: 0, z: 0 }; full = { kind: 'fuel', full: true, x: 0, z: 0 }; }
     else if (night && !fireFull(s)) full = { kind: s.fire.fuel <= 0 ? 'ignite' : 'fuel', closed: true, x: 0, z: 0 }; }   // §17: серая, по тапу — «Ночью сундук закрыт»
-  if (nearChest) return { kind: 'deposit', x: CFG.CHEST.x, z: CFG.CHEST.z };
+  // QA5-06 (v0.8.9): ночью сундук закрыт и для веток — «В сундук» кладёт только камешки, ягоды и лоскутки; если в рюкзаке одни ветки — кнопка серая, по тапу «Ночью сундук закрыт — ветки оставь в рюкзаке»
+  if (nearChest) return s.phase === 'night' && !RES.some(k => k !== 'stick' && p.inv[k] > 0) ? { kind: 'deposit', closed: true, x: CFG.CHEST.x, z: CFG.CHEST.z } : { kind: 'deposit', x: CFG.CHEST.x, z: CFG.CHEST.z };
   for (const n of s.nodes) { if (!n.alive || n.k === 'rock' || (n.k === 'bush' && !n.berry) || (n.k === 'stump' && !n.loot)) continue;
     const d = dist(p, n) - (n.r || 0) * (n.s || 1); if (d < 1.4 && d < bd) { bd = d; best = { kind: n.k, id: n.id, x: n.x, z: n.z }; } }
   if (best) return best;
@@ -241,8 +242,9 @@ function act(s, p) {
   if (p.cd > 0) return; const c = context(s, p.id); if (!c) return;
   const G = PETS[p.pet].gather || 1, gk = c.kind === 'tree' || c.kind === 'branch' || c.kind === 'stone' || c.kind === 'bush' || c.kind === 'stump';
   p.cd = gk ? .32 / G : .32; p.swing = 1; p.face = Math.atan2(c.x - p.x, c.z - p.z);   // §11.4: енот собирает ×1,2 быстрее
-  // §15 п.5 (v0.8.6): сбор — замах GATHER_T, у енота в 1,2 раза короче; так ×1,2 работает и на одиночный тап, а не только на удержание
-  if (gk) { p.pend = { id: c.id, t: CFG.GATHER_T / G }; return; }
+  // §18.4 (v0.8.9): замах больше не задерживает сбор — удар засчитывается сразу, замах (p.swing) только анимация внутри перезарядки 0,32 с (енот 0,32 / 1,2):
+  //   дерево удержанием (3 удара) ≈ 0,66 с, у енота ≈ 0,55 с — как в v0.8.5; замах §15 п.5 (GATHER_T, +0,25 с на любой сбор) убран
+  if (gk) { gather(s, p, s.nodes.find(n => n.id === c.id)); return; }
   switch (c.kind) {
     case 'ignite': case 'fuel': { if (c.full) { p.cd = .5; return ev(s, { t: 'msg', pid: p.id, text: 'Костёр полный — положи ветки в сундук', full: 1 }); }   // §15.1
       if (c.closed) { p.cd = .5; return ev(s, { t: 'msg', pid: p.id, text: 'Ночью сундук закрыт — собирай ветки в рюкзак', full: 1 }); }   // §17
@@ -251,8 +253,9 @@ function act(s, p) {
       const fromChest = pay(s, p, { stick: n }).stick || 0;
       s.fire.fuel = Math.min(fireMax(s), first ? Math.round(fireMax(s) * CFG.FIRST_LIGHT) : s.fire.fuel + CFG.FUEL_STICK * n);
       if (was <= 0) s.firstLight = false; ev(s, { t: 'fuel', pid: p.id, n: Math.round(s.fire.fuel - was), relit: was <= 0, sticks: n, fromChest }); break; }
-    case 'deposit': { const moved = {}; let left = 0;
-      for (const k of RES) if (p.inv[k] > 0) { const m = Math.min(p.inv[k], chestFree(s, k)); if (m > 0) { s.chest[k] += m; moved[k] = m; p.inv[k] -= m; } left += p.inv[k]; }
+    case 'deposit': { const moved = {}; let left = 0, night = s.phase === 'night';
+      if (c.closed || (night && !RES.some(k => k !== 'stick' && p.inv[k] > 0))) { p.cd = .5; return ev(s, { t: 'msg', pid: p.id, text: 'Ночью сундук закрыт — ветки оставь в рюкзаке', full: 1 }); }   // QA5-06
+      for (const k of RES) if (p.inv[k] > 0 && !(night && k === 'stick')) { const m = Math.min(p.inv[k], chestFree(s, k)); if (m > 0) { s.chest[k] += m; moved[k] = m; p.inv[k] -= m; } left += p.inv[k]; }
       if (!Object.keys(moved).length) return ev(s, { t: 'msg', pid: p.id, text: 'Сундук полон (' + CFG.CHEST_SLOTS + ' слота) — потрать запасы', warn: true });
       ev(s, { t: 'deposit', pid: p.id, moved, full: left > 0 }); break; }
     case 'push': { if (p.str < 2) return; p.cd = PETS[p.pet].pushCd; p.str = Math.max(0, p.str - 3);
@@ -293,6 +296,10 @@ function craft(s, p, id) {
   ev(s, { t: 'craft', pid: p.id, id, name: r.name, fromChest });
 }
 export const nearFood = p => dist(p, CFG.CHEST) < 2.5 || hyp(p.x, p.z) < 3.4;
+export function eatPick(s, p) {   // QA5-04 (v0.8.9): что съест «Съесть» → 'pie' | 'berry' | null — одна логика для eat() и значка кнопки
+  if (p.inv.pie > 0 && p.hunger < 60) return 'pie';
+  if (p.inv.berry > 0 || (s.chest.berry > 0 && nearFood(p))) return 'berry';
+  return p.inv.pie > 0 ? 'pie' : null; }
 function eat(s, p) {
   if (p.sleep > 0 || p.rest > 0) return;
   const pie = () => { p.inv.pie--; p.hunger = Math.min(100, p.hunger + 70); p.str = Math.min(100, p.str + 15); ev(s, { t: 'eat', pid: p.id, k: 'pie' }); };
@@ -322,7 +329,7 @@ export function step(s, dt, cmds = []) {
   for (const b of s.builds) if (b.k === 'trap' && b.cd > 0) b.cd -= dt;
 }
 function stepPlayer(s, p, dt, g, LR, OR, night) {
-  const P = PETS[p.pet]; p.cd -= dt; if (p.pend && (p.pend.t -= dt) <= 0) { const q = p.pend; p.pend = null; if (p.sleep <= 0 && p.rest <= 0) gather(s, p, s.nodes.find(n => n.id === q.id)); } p.swing = Math.max(0, p.swing - dt * 4); p.scareCd -= dt;
+  const P = PETS[p.pet]; p.cd -= dt; p.swing = Math.max(0, p.swing - dt * 4); p.scareCd -= dt;
   const df = hyp(p.x, p.z), inLight = df < LR;
   const moving = hyp(p.vx, p.vz) > .5; p.hunger = Math.max(0, p.hunger - g * (100 / 180) * (moving ? 1.25 : 1) * (night ? 1.1 : 1));
   if (p.rest > 0) { p.rest -= g; p.vx = p.vz = 0; if (p.rest <= 0) { p.rest = 0; p.str = 50; ev(s, { t: 'wake', pid: p.id }); } return; }
