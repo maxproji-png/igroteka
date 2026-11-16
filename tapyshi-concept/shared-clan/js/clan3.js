@@ -1,5 +1,5 @@
 /* Клан · раунд 3 — общие данные и списки (участники / топ кланов / чат) и вкладки.
-   Награды и вклад — заглушки макета; награды недели топ-3 = 3 000 / 2 000 / 1 000 монет; приглашение друга в концепте — +5000 пригласившему за первый вход по ссылке. */
+   Награды и вклад — заглушки макета; награды недели топ-3 = 3 000 / 2 000 / 1 000 монет; приглашение друга в концепте — +2500 пригласившему и +2500 новичку за первый вход по ссылке, без лимита. */
 (function(){
 var C = T.c3 = {};
 C.goal = { now: 1240560, goal: 1500000, left: '2 д 14 ч', place: 3,
@@ -56,7 +56,7 @@ C.head = H;
 function escAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 C.pct = function(){ return Math.round(C.goal.now / C.goal.goal * 100); };
 C.ava = function(p, cls, lvl){ var src=(window.TAP_petThumb?TAP_petThumb(p,lvl):H(p)); return '<span class="ava '+p+' '+(cls||'')+'"><img src="'+src+'" alt=""></span>'; };
-C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +5000 '+(T.coin?T.coin('',16):'')+' за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
+C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +2500 '+(T.coin?T.coin('',16):'')+' за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
 C.members_ = function(o){ o=o||{}; var list=(o.all?C.allMembers():C.members).slice(); if(o.all) list.sort(function(a,b){return b.t-a.t;}); var max=list[0].t;
   return '<div class="list">'+list.map(function(m,i){
     var bar = o.bars ? '<span class="cbar"><i style="width:'+(m.t/max*100).toFixed(1)+'%;background:'+(i<5?C.colors[i]:C.rest)+'"></i></span>' : '';

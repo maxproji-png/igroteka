@@ -16,12 +16,11 @@
           '<span class="b-pslot">'+SK.SLOT[p.slot]+'</span>'+
           '<span class="b-pp">'+(hv?'<em>есть</em>':SK.coin(14)+'<b class="cx-num">'+SK.fmt(p.price)+'</b>')+'</span></button>'; }).join('')+'</div>'+
       '<div class="b-foot">'+(n===4?(SK.S.worn===s.id?'<span class="b-worn">'+SK.I.check+'Надето на питомце</span>':'<span class="b-worn off">В коллекции</span>')+'<button type="button" class="b-btn ghost" data-open-set="'+s.id+'">Примерить</button>'
-        :'<span class="b-ftx"><small>'+(n?'Докупить '+sp.n+' '+(sp.n===1?'часть':'части'):'Весь набор сразу')+' · <s class="cx-num">'+SK.fmt(sp.full)+'</s></small></span>'+
+        :'<span class="b-ftx"><small>'+(n?'Докупить '+sp.n+' '+(sp.n===1?'часть':'части'):'Весь набор сразу')+'</small></span>'+
          '<button type="button" class="b-btn'+((window.SHOP&&SHOP.bal()<sp.price)?' off':'')+'" data-open-set="'+s.id+'">'+SK.coin(18)+'<b class="cx-num">'+SK.fmt(sp.price)+'</b></button>')+'</div>'+
     '</section>'; }
   function paint(){
-    host.innerHTML='<div class="b-head"><b>Наборы скинов</b><span class="b-sub">Собирай по частям или сразу целиком · подходят всем питомцам</span>'+
-      '<span class="b-legend">'+SK.stub()+'<span>все цены пока не утверждены</span></span></div>'+
+    host.innerHTML='<div class="b-head"><b>Наборы скинов</b><span class="b-sub">Собирай по частям или сразу целиком · подходят всем питомцам</span></div>'+
       ORDER.map(function(id){ return card(SK.setById(id)); }).join('');
   }
   host.addEventListener('click',function(e){ var b;

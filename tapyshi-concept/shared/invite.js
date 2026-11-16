@@ -1,9 +1,9 @@
 /* Приглашение друга через MAX: shareMaxContent / :share, иначе navigator.share, иначе шторка с копированием ссылки.
-   Награда +5000 начисляется пригласившему, когда друг впервые открывает игру по ссылке — не за сам факт отправки. */
+   Награда +2500 пригласившему и +2500 новичку, когда друг впервые открывает игру по ссылке — без лимита, без защиты от фарма. */
 (function (w) {
   var BOT = 'se13358463_bot';
   var REF = '101';
-  var REWARD = 5000;
+  var REWARD = 2500;
   var KEY = 'tapyshi.invite.joined';
 
   var GAME_LINE = {
@@ -121,7 +121,7 @@
     sh.innerHTML =
       '<i class="grab"></i>' +
       '<h3>Позвать друга</h3>' +
-      '<p class="ex">Награда <b>+' + REWARD.toLocaleString('ru-RU') + ' монет</b> придёт, когда друг <b>впервые откроет игру</b> по твоей ссылке. За саму отправку монеты не даём.</p>' +
+      '<p class="ex">Награда <b>+' + REWARD.toLocaleString('ru-RU') + ' тебе</b> и <b>+' + REWARD.toLocaleString('ru-RU') + ' другу</b>, когда он <b>впервые откроет игру</b> по твоей ссылке. Лимита нет. За саму отправку монеты не даём.</p>' +
       '<div class="inv-preview">' + esc(p.text) + '<span class="lnk">' + esc(p.link) + '</span></div>' +
       '<div class="row">' +
       '<button type="button" class="btn btn--primary btn--l" data-inv="copy">Скопировать ссылку</button>' +
@@ -156,7 +156,8 @@
   function demoFriendJoined() {
     injectCss();
     try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
-    toast('Друг зашёл — +' + REWARD.toLocaleString('ru-RU') + ' ' + (window.TAP_COIN || T && T.coin && T.coin() || ''));
+    if (w.TapyshiBal) w.TapyshiBal.add(REWARD);
+    toast('Друг зашёл — +' + REWARD.toLocaleString('ru-RU') + ' ' + (window.TAP_COIN || (w.T && T.coin && T.coin()) || ''));
   }
 
   function share(opts) {

@@ -9,6 +9,53 @@ var ME={name:'Ты',petName:'Булочка',pet:'raccoon',lvl:12};
 var OPP={random:{name:'Кира',pet:'goose',lvl:12,tag:'игрок MAX'},bot:{name:'Бот',pet:'capybara',lvl:8,tag:'тренировка'},friend:{name:'Саша',pet:'dragon',lvl:22,tag:'друг из MAX'}};
 var STAKES=[300,500], DEF=300;
 function bal(){ try{ if(window.TapyshiBal) return window.TapyshiBal.get(); }catch(e){} return 12000; }
+
+var BOT_PAY=75, BOT_LIM=15, BOT_WIN=12*3600*1000, SOLO_LIM=5, SOLO_WIN=12*3600*1000, SOLO_CAP=150, SOLO_REC=100;
+function winKey(k){return 'tapyshi.play.'+k;}
+function winState(k,lim,ms){
+  var now=Date.now(), arr=[];
+  try{arr=JSON.parse(localStorage.getItem(winKey(k))||'[]')||[];}catch(e){arr=[];}
+  arr=arr.filter(function(t){return now-t<ms;});
+  return {used:arr.length, left:Math.max(0,lim-arr.length),
+    nextMs:arr.length>=lim?Math.max(0,ms-(now-Math.min.apply(null,arr))):0,
+    push:function(){arr.push(Date.now());try{localStorage.setItem(winKey(k),JSON.stringify(arr));}catch(e){}}};
+}
+function hoursLeft(ms){return Math.max(1,Math.ceil(ms/3600000));}
+function pay(n){n=Math.floor(n||0); if(n>0&&window.TapyshiBal) window.TapyshiBal.add(n); return n;}
+function soloDemo(g){
+  g=g||{};
+  if(g.id==='slozhi-bloki') return {score:1240, pts:1240*4, prev:1100, moves:42, sec:372};
+  if(g.id==='secret-word') return {score:8, letters:8, pts:8*30+Math.max(0,300-112)*2, prev:6, moves:12, sec:112};
+  return {score:3840, pts:3840, prev:3560, moves:128, sec:372, tile:256};
+}
+function soloKey(id){return 'tapyshi.solo.'+(id||'2048');}
+function soloDay(id){
+  var d=new Date(), key=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+  var o={};
+  try{o=JSON.parse(localStorage.getItem(soloKey(id))||'{}')||{};}catch(e){o={};}
+  if(o.day!==key) o={day:key, games:0, rec:0};
+  return o;
+}
+function soloPay(g, isRec){
+  var d=soloDemo(g), coins=Math.min(SOLO_CAP, Math.floor(d.pts/20)), rec=0, st=winState('solo',SOLO_LIM,SOLO_WIN);
+  var day=soloDay(g&&g.id);
+  var recOk=!!isRec && day.games>=1 && !day.rec;
+  var limited=st.left<=0;
+  if(!limited){
+    st.push();
+    if(recOk) rec=SOLO_REC;
+    pay(coins+rec);
+    day.games=(day.games||0)+1; if(recOk) day.rec=1;
+    try{localStorage.setItem(soloKey(g&&g.id),JSON.stringify(day));}catch(e){}
+  }
+  return {coins:limited?0:coins, rec:limited?0:rec, limited:limited, nextH:hoursLeft(st.nextMs), demo:d};
+}
+function botPay(finished){
+  var st=winState('bot',BOT_LIM,BOT_WIN), n=0, limited=st.left<=0;
+  if(finished && !limited){ st.push(); n=pay(BOT_PAY); }
+  return {coins:n, limited:limited && finished, nextH:hoursLeft(st.nextMs), finished:!!finished};
+}
+
 function pet(k,pose){return BASE+'pets/'+k+'_'+(pose||'neutral')+'.webp';}
 function petAva(k,pose,lvl){ if(k && window.TAP_petThumb) return TAP_petThumb(k, lvl); return pet(k,pose||'happy'); }
 function friendsPill(){
@@ -66,7 +113,7 @@ function sheet(o){
   '<button class="ibtn ibtn--round xbtn" data-act="close" aria-label="Закрыть">'+IC.x+'</button>'+
   '<div class="sh-head"><div class="sh-icon">'+P[g.prop]+'</div><div><h2>'+g.title+'</h2><p class="sh-sub">'+modeChip(g)+'<span class="rec">'+I.cup+'<span>Рекорд <b>'+g.rec+'</b></span></span></p></div></div>'+
   '<h4 class="sh-h">С кем играем</h4><div class="opts">'+modes.map(function(x){return '<button class="opt selectable spring'+(x[0]===m?' on':'')+'" data-mode="'+x[0]+'"><span class="oi oi-'+x[0]+'">'+IC[x[1]]+'</span><span class="ot"><b>'+x[2]+'</b><small>'+x[3]+'</small></span><span class="radio"></span></button>';}).join('')+'</div>'+
-  '<div class="sh-var">'+(m==='bot'?'<div class="botnote"><span class="oi oi-bot">'+IC.bot+'</span><span><b>Без ставки</b><small>С ботом играем на интерес — монеты не списываются</small></span></div>':
+  '<div class="sh-var">'+(m==='bot'?'<div class="botnote"><span class="oi oi-bot">'+IC.bot+'</span><span><b>Без ставки</b><small>За доигранную партию +'+fmt(BOT_PAY)+' монет, не больше '+BOT_LIM+' партий за 12 часов. За сдачу — 0</small></span></div>':
   '<div class="stakebox"><div class="sk-h"><h4 class="sh-h">Ставка</h4><span class="bal">'+COIN('',16)+'на счету <b>'+fmt(bal())+'</b></span></div>'+
   '<div class="stakes">'+STAKES.map(function(s){return '<button class="stk spring'+(s===st?' on':'')+'" data-stake="'+s+'"><span class="stack">'+COIN('',30)+COIN('',30)+(s>300?COIN('',30):'')+'</span><span class="sv"><b>'+fmt(s)+'</b><small>банк '+fmt(s*2)+'</small></span><span class="radio"></span></button>';}).join('')+'</div></div>')+'</div>'+
   '<button class="btn btn--primary btn--l" data-act="start">'+cta+(m==='bot'?'':'<span class="btn-tag">'+COIN('',16)+fmt(st)+'</span>')+'</button></section>';
@@ -139,25 +186,40 @@ function demo(k){
 function confetti(){var c=['var(--sun)','var(--pink)','var(--violet)','var(--blue)','var(--green)','var(--game-2048)'],s='';
   for(var i=0;i<26;i++){var l=(i*37)%100,d=(i*0.13)%1.6,r=(i*47)%360,w=6+(i%3)*2;s+='<i style="left:'+l+'%;background:'+c[i%6]+';animation-delay:-'+d.toFixed(2)+'s;transform:rotate('+r+'deg);width:'+w+'px;height:'+(w*1.6)+'px;top:'+((i*29)%60-10)+'%"></i>';}
   return '<div class="confetti" aria-hidden="true">'+s+'</div>';}
+function botPrize(pay,surrender){
+  if(surrender) return '<div class="prize draw nost"><span class="oi oi-bot">'+IC.bot+'</span><small>Сдача — без монет</small></div>';
+  if(pay.limited) return '<div class="prize draw nost"><span class="oi oi-bot">'+IC.bot+'</span><small>Монеты за бота снова через '+pay.nextH+' ч</small></div>';
+  return '<div class="prize">'+COIN('',30)+'<b>+'+fmt(pay.coins)+'</b><small>награда за партию с ботом</small></div>';
+}
 function result(o){
   var g=game(o.game||'checkers'),st=o.stake||DEF,op=OPP[o.mode||'random'],k=o.outcome||'win',bot=o.mode==='bot';
-  var under=(k==='record')?shellSolo({game:o.game||'2048'}):shellDuo(o);
-  var noStake='<div class="prize draw nost"><span class="oi oi-bot">'+IC.bot+'</span><small>Тренировка с ботом — без ставки</small></div>';
+  var surrender=k==='surrender';
+  if(surrender) k='lose';
+  var under=(o.outcome==='record')?shellSolo({game:o.game||'2048'}):shellDuo(o);
+  var bpay=bot?botPay(!surrender):null;
   var h='';
   if(k==='win') h=confetti()+'<div class="rcard win"><div class="rpet"><i class="rays"></i><img src="'+pet(ME.pet,'happy')+'" alt=""></div><span class="chip chip--m chip--solid-green rbadge">Победа!</span>'+
     '<h2>Победа за тобой!</h2><p>Соперник: '+op.name+' · счёт 2:1</p>'+
-    (bot?noStake:'<div class="prize">'+COIN('',30)+'<b>+'+fmt(st*2)+'</b><small>весь банк твой: '+fmt(st)+' + '+fmt(st)+'</small></div>')+
-    '<div class="rstats"><span><b>5</b>побед в «'+g.title+'»</span><span><b>2:1</b>счёт</span></div>'+btns('Ещё раз')+'</div>';
-  if(k==='lose') h='<div class="rcard lose"><div class="rpet"><img src="'+pet(ME.pet,'neutral')+'" alt=""><span class="bubble">Ещё разок?</span></div><span class="chip chip--m chip--violet rbadge">Почти получилось</span>'+
-    '<h2>В этот раз — '+op.name+'</h2><p>Счёт 1:2 — совсем рядом! '+ME.petName+' уже рвётся в реванш.</p>'+
-    (bot?noStake:'<div class="prize lose">'+COIN('',26)+'<b>−'+fmt(st)+'</b><small>твоя ставка ушла в банк соперника</small></div>')+
-    (g.id==='checkers'?'<div class="tip"><span class="tbulb"><svg viewBox="0 0 20 20"><path d="M10 2.5a5.5 5.5 0 0 0-3.2 10c.5.4.7.9.7 1.5h5c0-.6.2-1.1.7-1.5A5.5 5.5 0 0 0 10 2.5z" class="ico-sun"/><rect x="7.5" y="15" width="5" height="2.6" rx="1.3" class="ico-sun-edge"/></svg></span>Совет: в шашках бить обязательно — ищи размены в свою пользу</div>':'')+btns('Реванш')+'</div>';
+    (bot?botPrize(bpay,false):'<div class="prize">'+COIN('',30)+'<b>+'+fmt(st*2)+'</b><small>весь банк твой: '+fmt(st)+' + '+fmt(st)+'</small></div>')+
+    (bot?'':'<div class="rstats"><span><b>5</b>побед в «'+g.title+'»</span><span><b>2:1</b>счёт</span></div>')+btns('Ещё раз')+'</div>';
+  if(k==='lose') h='<div class="rcard lose"><div class="rpet"><img src="'+pet(ME.pet,'neutral')+'" alt=""><span class="bubble">Ещё разок?</span></div><span class="chip chip--m chip--violet rbadge">'+(surrender?'Сдался':'Почти получилось')+'</span>'+
+    '<h2>'+(surrender?'Ты сдался':'В этот раз — '+op.name)+'</h2><p>'+(surrender?'Партия не доиграна — монет за бота нет.':('Счёт 1:2 — совсем рядом! '+ME.petName+' уже рвётся в реванш.'))+'</p>'+
+    (bot?botPrize(bpay,surrender):'<div class="prize lose">'+COIN('',26)+'<b>−'+fmt(st)+'</b><small>твоя ставка ушла в банк соперника</small></div>')+
+    (!surrender&&g.id==='checkers'?'<div class="tip"><span class="tbulb"><svg viewBox="0 0 20 20"><path d="M10 2.5a5.5 5.5 0 0 0-3.2 10c.5.4.7.9.7 1.5h5c0-.6.2-1.1.7-1.5A5.5 5.5 0 0 0 10 2.5z" class="ico-sun"/><rect x="7.5" y="15" width="5" height="2.6" rx="1.3" class="ico-sun-edge"/></svg></span>Совет: в шашках бить обязательно — ищи размены в свою пользу</div>':'')+btns('Реванш')+'</div>';
   if(k==='draw') h='<div class="rcard draw"><div class="rpet two"><img class="l" src="'+pet(ME.pet,'happy')+'" alt=""><img class="r" src="'+pet(op.pet,'happy')+'" alt=""></div><span class="chip chip--m chip--blue rbadge">Ничья</span>'+
     '<h2>Силы равны!</h2><p>Ты и '+op.name+' сыграли вничью</p>'+
-    (bot?noStake:'<div class="prize draw">'+COIN('',26)+'<b>'+fmt(st)+'</b><small>ставка вернулась к тебе</small></div>')+btns('Ещё раз')+'</div>';
-  if(k==='record') h=confetti()+'<div class="rcard record"><div class="rpet"><i class="rays"></i><img src="'+pet(ME.pet,'happy')+'" alt=""></div><span class="chip chip--m chip--solid-sun rbadge">'+I.cup+'Новый рекорд!</span>'+
-    '<div class="bigscore">3 840</div><p>Прошлый рекорд — 3 560. Плюс 280!</p>'+
-    '<div class="rstats"><span><b>128</b>ходов</span>'+((o.game||'2048')==='2048'?'<span><b>256</b>лучшая плитка</span>':'')+'<span><b>6:12</b>время</span></div>'+btns('Ещё раз')+'</div>';
+    (bot?botPrize(bpay,false):'<div class="prize draw">'+COIN('',26)+'<b>'+fmt(st)+'</b><small>ставка вернулась к тебе</small></div>')+btns('Ещё раз')+'</div>';
+  if(o.outcome==='record'){
+    var sp=soloPay(g,true), d=sp.demo, mm=Math.floor(d.sec/60), ss=('0'+(d.sec%60)).slice(-2);
+    var prize;
+    if(sp.limited) prize='<div class="prize draw nost"><small>Монеты за соло снова через '+sp.nextH+' ч</small></div>';
+    else prize='<div class="prize">'+COIN('',30)+'<b>+'+fmt(sp.coins+(sp.rec||0))+'</b><small>'+fmt(sp.coins)+' за очки'+(sp.rec?' + '+fmt(sp.rec)+' за рекорд':' (рекорд не начислен)')+'</small></div>';
+    var scoreLab=g.id==='secret-word'?(d.letters+' слов'):fmt(d.score);
+    h=confetti()+'<div class="rcard record"><div class="rpet"><i class="rays"></i><img src="'+pet(ME.pet,'happy')+'" alt=""></div><span class="chip chip--m chip--solid-sun rbadge">'+I.cup+(sp.rec?'Новый рекорд!':'Партия окончена')+'</span>'+
+      '<div class="bigscore">'+scoreLab+'</div>'+(sp.rec?'<p>Прошлый результат — '+fmt(d.prev)+'</p>':'<p>Первая партия в день рекордом не считается</p>')+
+      prize+
+      '<div class="rstats"><span><b>'+d.moves+'</b>ходов</span>'+(g.id==='2048'?'<span><b>'+d.tile+'</b>лучшая плитка</span>':'')+'<span><b>'+mm+':'+ss+'</b>время</span></div>'+btns('Ещё раз')+'</div>';
+  }
   return under+'<div class="rscrim"></div><div class="rwrap">'+h+'</div>';
 }
 function btns(again){return '<div class="rbtns"><button class="btn btn--primary btn--l" data-act="again">'+IC.redo+again+'</button><button class="btn btn--secondary btn--m btn--wide" data-act="menu">'+IC.home+'В меню</button></div>';}

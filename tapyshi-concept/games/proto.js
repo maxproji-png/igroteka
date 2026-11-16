@@ -85,7 +85,7 @@ document.addEventListener('click',function(e){
     else if(S.mode==='friend')go({screen:'wait'});
     else startGame();
   }
-  else if(a==='surrender'){go({screen:'result',outcome:'lose'});}
+  else if(a==='surrender'){go({screen:'result',outcome:'surrender'});}
 });
 var q=location.search||'';
 var evM=q.match(/[?&]ev=([ab])(?:&|$)/); if(evM) S.ev=evM[1];

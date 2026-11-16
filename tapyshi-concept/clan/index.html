@@ -160,14 +160,14 @@ button.row.more{display:flex;align-items:center;width:100%;border:0;background:n
 <script src="../shared/coin.js?v=tc11150155"></script>
 <script src="../shared/pet-thumb.js?v=tc11150030"></script>
 <script>window.T=window.T||{};T.ROOT='../shared-clan/';</script>
-<script src="../shared/wallet.js?v=tc11161830"></script>
-<script src="../shared-clan/js/data.js?v=tc11161830"></script>
+<script src="../shared/wallet.js?v=tc11162148"></script>
+<script src="../shared-clan/js/data.js?v=tc11162148"></script>
 <script src="../shared-clan/js/app.js?v=tc11150155"></script>
 <script src="../shared-clan/js/v2.js?v=tc11150030"></script>
 <script src="../shared-clan/js/nav3.js?v=tc11132410"></script>
 <script src="../shared-clan/js/chest-art.js?v=tc11152130"></script>
 <script src="../clan-create/shared.js?v=tc11151736"></script>
-<script src="../shared-clan/js/clan3.js?v=tc11151750"></script>
+<script src="../shared-clan/js/clan3.js?v=tc11162148"></script>
 <script>
 var C=T.c3;
 document.getElementById('left').innerHTML=T.IC.clock+'2 д 14 ч';
@@ -181,12 +181,12 @@ C.members.slice(0,5).forEach(function(m,i){rest-=m.t;st.insertAdjacentHTML('befo
 st.insertAdjacentHTML('beforeend','<i style="width:'+(rest/g*100)+'%;background:'+C.rest+';animation-delay:.4s"></i>');
 C.paintMilestones();
 T.c3.tabs(document.getElementById('tabs'),{members:function(){
-  return '<button class="inv tap" data-invite><span class="max-ic">'+T.IC.max+'</span><span class="tx"><b>Позвать друга</b><small>+5000 '+(T.coin?T.coin('',16):'')+' за первый вход</small></span><span class="btn btn--max btn--s">Через MAX</span></button>'+
+  return '<button class="inv tap" data-invite><span class="max-ic">'+T.IC.max+'</span><span class="tx"><b>Позвать друга</b><small>+2500 '+(T.coin?T.coin('',16):'')+' за первый вход</small></span><span class="btn btn--max btn--s">Через MAX</span></button>'+
     '<div class="sec"><span>Вклад за неделю</span><span>'+(C.members.length+(C.restN||0))+' '+pplWord(C.members.length+(C.restN||0))+'</span></div>'+C.members_({bars:1});}});
 function pplWord(n){var m=n%100,d=n%10;return (m>10&&m<20)||!d||d>4?'участников':d===1?'участник':'участника';}
 </script>
-<script src="../shared/invite.js?v=tc11150030"></script>
-<script src="../shared/nav.js?v=tc11162034"></script>
+<script src="../shared/invite.js?v=tc11162148"></script>
+<script src="../shared/nav.js?v=tc11162148"></script>
 <script src="../shared/clan-header.js?v=tc11151820"></script>
 <script src="header-b.js?v=tc11151820"></script>
 <script>CXC.init();</script>

@@ -1,11 +1,13 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
 import { petStage, posterUrl, emptyStage } from './stage.js';
-import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js';
+import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11162148';
 import { getPlayerNick } from '../shared/nick.js';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
+export const LEVEL_COST = [150, 300, 650, 1400, 3100, 4800, 6700, 9000, 12500, 17500, 24500, 34000, 45000, 56000, 68000, 80000, 93000, 107000, 122000, 138000, 155000, 172000, 185000, 195000];
+export function levelCost(lv) { return (lv >= 1 && lv < LEVEL_COST.length + 1) ? LEVEL_COST[lv - 1] : 0; }
+export const S = { coins: 12000, energy: 200, max: 200, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
 export function readStart() {
   if (typeof window !== 'undefined' && typeof window.__resolvePetStart === 'function') {
     return window.__resolvePetStart();
@@ -18,11 +20,35 @@ function persistHome(pet, level) {
   if (!pet || !PETS[pet]) return;
   try { localStorage.setItem('tapyshi.home', JSON.stringify({ pet, level: level | 0 })); } catch (e) {}
 }
-if (START.fresh) { S.coins = 0; S.energy = 300; S.max = 300; }
+if (START.fresh) { S.coins = 0; S.energy = 200; S.max = 200; }
+function applyBoosts() {
+  if (typeof window === 'undefined' || !window.TapyshiBoosts) return;
+  S.power = window.TapyshiBoosts.power();
+  const max = window.TapyshiBoosts.energyMax();
+  if (S.energy > max) S.energy = max;
+  S.max = max;
+}
+function grantNewcomer() {
+  if (typeof window === 'undefined' || !window.TapyshiBal) return;
+  try { if (localStorage.getItem('tapyshi.invite.newcomer')) return; } catch (e) { return; }
+  let invited = false;
+  try { invited = sessionStorage.getItem('tapyshi.invitee') === '1'; } catch (e) {}
+  try {
+    const q = new URLSearchParams(location.search);
+    const sp = q.get('startapp') || q.get('start_param') || '';
+    if (q.get('inviter') || q.get('ref') || /ref_|game_/.test(sp)) invited = true;
+  } catch (e) {}
+  if (!invited || !START.fresh) return;
+  window.TapyshiBal.add(2500);
+  try { localStorage.setItem('tapyshi.invite.newcomer', '1'); } catch (e) {}
+}
 if (typeof window !== 'undefined' && window.TapyshiBal) {
   if (START.fresh) window.TapyshiBal.set(S.coins);
   else S.coins = window.TapyshiBal.get();
+  grantNewcomer();
+  S.coins = window.TapyshiBal.get();
 }
+applyBoosts();
 export const COMBO_MS = 1000;
 export const fmt = n => String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009');
 export const fmtGain = g => '+' + String(g).replace('.', ',');
@@ -126,7 +152,7 @@ const HUD = `
     </div>
     <div class="bottom">
       <div class="lvl card pe" id="lvlPlate"><span class="st"><svg><use href="#i-star"/></svg><b id="lvlN">7</b></span><span class="lvl-txt"><span id="playerNick" class="pnick" hidden></span><span class="species"><span id="lvlName">Иней</span> <small id="lvlLab">ур. 7</small></span></span></div>
-      <button class="up pe" id="btnUp" type="button"><svg class="ic"><use href="#i-up"/></svg>Улучшить</button>
+      <button class="up pe" id="btnUp" type="button"><svg class="ic"><use href="#i-up"/></svg><span class="up-txt"><span class="up-lab">Улучшить</span><span class="up-price" id="upPrice"></span></span></button>
     </div>
   </div>
   <div class="evo-flash" id="evoFlash"></div>
@@ -373,7 +399,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
       standin.hidden = true;
     }
   }
-  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: wrapEl, flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad'), standin, sil: $('petSil') };
+  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: wrapEl, flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), upPrice: $('upPrice'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad'), standin, sil: $('petSil') };
   const ico = new Image(); ico.alt = ''; ico.src = coinSrc(24); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
   if (window.TapyshiBal) window.TapyshiBal.on(function (n) {
@@ -624,10 +650,17 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
 
   /* --- энергия: текст не чаще 10 раз/с, полоска — transform --- */
   let enT = 0, enShown = -1;
-  function energyWrite() { enT = 0; if (S.energy === enShown) return; enShown = S.energy; el.enNum.textContent = fmt(S.energy); el.enBar.style.transform = 'scaleX(' + (S.energy / S.max).toFixed(3) + ')'; }
+  function energyWrite() { enT = 0; const shown = Math.floor(S.energy); if (shown === enShown) return; enShown = shown; el.enNum.textContent = fmt(shown); el.enBar.style.transform = 'scaleX(' + (S.max ? S.energy / S.max : 0).toFixed(3) + ')'; }
   const energyDirty = () => { if (!enT) enT = setTimeout(energyWrite, 100); };
   energyWrite();
-  setInterval(() => { if (S.energy < S.max && performance.now() - S.last > 600) { S.energy = Math.min(S.max, S.energy + 1); energyDirty(); } }, 1000);
+  setInterval(() => {
+    applyBoosts();
+    const regen = (window.TapyshiBoosts && window.TapyshiBoosts.regenSec()) || 600;
+    if (S.energy < S.max && performance.now() - S.last > 600) {
+      S.energy = Math.min(S.max, S.energy + S.max / regen);
+      energyDirty();
+    }
+  }, 1000);
 
   /* --- хаптика --- */
   let hapT = 0;
@@ -696,39 +729,64 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     sh.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
     sh.querySelectorAll('[data-claim]').forEach(b => b.addEventListener('click', () => {
       const name = b.getAttribute('data-claim') || 'Награда';
+      const coins = Math.floor(+b.getAttribute('data-coins') || 0);
+      const id = b.getAttribute('data-id') || '';
       b.disabled = true; b.textContent = 'Получено';
       const row = b.closest('.trow, .day');
       if (row) row.classList.add('done');
-      toast(name + ' получена');
+      if (coins > 0 && window.TapyshiBal) { window.TapyshiBal.add(coins); S.coins = window.TapyshiBal.get(); }
+      if (id) {
+        try {
+          const raw = JSON.parse(localStorage.getItem('tapyshi.claims') || '{}') || {};
+          raw[id] = 1; localStorage.setItem('tapyshi.claims', JSON.stringify(raw));
+        } catch (e) {}
+      }
+      toast(coins ? (name + ' · +' + fmt(coins)) : (name + ' получена'));
       if (el.btnReward) { const d = el.btnReward.querySelector('.dot'); if (d && !d.classList.contains('n')) d.remove(); }
-      if (el.btnTasks && name.indexOf('монет') !== -1) {
+      if (el.btnTasks && coins) {
         const badge = el.btnTasks.querySelector('.dot.n');
         if (badge) { const n = Math.max(0, (+badge.textContent || 1) - 1); badge.textContent = n; if (!n) badge.remove(); }
       }
     }));
   }
-  const TASKS_HTML = `
-    <p class="sheet-sub">Выполняй и забирай монеты</p>
-    <div class="trow ready" data-task="games">
-      <div class="tinfo"><b>Зайди в игры</b><span>Открой вкладку «Игры»</span></div>
-      <button type="button" class="btn btn--success btn--s" data-claim="Награда 50 монет">+50</button>
-    </div>
-    <div class="trow">
-      <div class="tinfo"><b>Сделай 20 тапов</b><span>12 из 20</span></div>
-      <div class="tbar"><i style="width:60%"></i></div>
-    </div>`;
-  const REWARD_HTML = `
-    <p class="sheet-sub">Заходи каждый день — награда растёт</p>
-    <div class="days">
-      ${[1,2,3,4,5,6,7].map(d => {
-        const st = d < 3 ? 'done' : d === 3 ? 'ready' : '';
-        const lab = d === 7 ? '×2' : '+' + (d * 20);
-        const btn = d === 3 ? '<button type="button" class="btn btn--success btn--s" data-claim="Ежедневная награда">Забрать</button>' : '';
+  const DAILY_REWARD = [20, 40, 60, 80, 100, 120, 240];
+  function claimed(id) {
+    try { return !!(JSON.parse(localStorage.getItem('tapyshi.claims') || '{}') || {})[id]; } catch (e) { return false; }
+  }
+  function tasksHtml() {
+    const taps = Math.min(300, S.taps | 0);
+    const rows = [
+      { id: 'd-taps', title: 'Сделай 300 тапов', sub: taps + ' из 300', coins: 200, kind: 'daily', ready: taps >= 300 },
+      { id: 'd-duo', title: 'Сыграй 1 партию на двоих', sub: 'С ботом тоже засчитывается', coins: 200, kind: 'daily', ready: true },
+      { id: 'd-solo', title: 'Сыграй 1 соло-игру', sub: 'Любая из трёх соло-игр', coins: 200, kind: 'daily', ready: true },
+      { id: 'd-clan', title: 'Внеси 200 тапов в цель клана', sub: 'Тапы в клановой цели', coins: 200, kind: 'daily', ready: false, prog: 80 },
+      { id: 'o-clan', title: 'Вступи в клан', sub: 'Разовое задание', coins: 500, kind: 'once', ready: true },
+      { id: 'o-chat', title: 'Напиши в чат клана', sub: 'Разовое задание', coins: 500, kind: 'once', ready: true },
+      { id: 'o-games', title: 'Попробуй все 8 игр', sub: 'Разовое задание', coins: 1000, kind: 'once', ready: true }
+    ];
+    function row(q) {
+      if (claimed(q.id)) return '<div class="trow done" data-task="'+q.id+'"><div class="tinfo"><b>'+q.title+'</b><span>Получено +'+fmt(q.coins)+'</span></div></div>';
+      if (q.ready) return '<div class="trow ready" data-task="'+q.id+'"><div class="tinfo"><b>'+q.title+'</b><span>'+q.sub+'</span></div><button type="button" class="btn btn--success btn--s" data-claim="'+q.title+'" data-coins="'+q.coins+'" data-id="'+q.id+'">+'+fmt(q.coins)+'</button></div>';
+      const w = q.prog != null ? q.prog : 0;
+      return '<div class="trow" data-task="'+q.id+'"><div class="tinfo"><b>'+q.title+'</b><span>'+q.sub+'</span></div><div class="tbar"><i style="width:'+w+'%"></i></div></div>';
+    }
+    const daily = rows.filter(q => q.kind === 'daily').map(row).join('');
+    const once = rows.filter(q => q.kind === 'once').map(row).join('');
+    return '<p class="sheet-sub">Ежедневно 800 монет · разовые 2 000</p><p class="tsec">Сегодня</p>'+daily+'<p class="tsec">Разовые</p>'+once;
+  }
+  function rewardHtml() {
+    return '<p class="sheet-sub">Заходи каждый день — награда растёт. За неделю 660 монет</p><div class="days">' +
+      [1,2,3,4,5,6,7].map(d => {
+        const amt = DAILY_REWARD[d-1];
+        const id = 'daily-'+d;
+        const st = claimed(id) || d < 3 ? 'done' : d === 3 ? 'ready' : '';
+        const lab = '+' + fmt(amt);
+        const btn = (st === 'ready' && !claimed(id)) ? '<button type="button" class="btn btn--success btn--s" data-claim="Ежедневная награда" data-coins="'+amt+'" data-id="'+id+'">Забрать</button>' : '';
         return '<div class="day ' + st + '"><span class="dn">день ' + d + '</span><b>' + lab + '</b>' + btn + '</div>';
-      }).join('')}
-    </div>`;
-  if (el.btnTasks) el.btnTasks.addEventListener('click', () => openSheet('Задания', TASKS_HTML));
-  if (el.btnReward) el.btnReward.addEventListener('click', () => openSheet('Награда', REWARD_HTML));
+      }).join('') + '</div>';
+  }
+  if (el.btnTasks) el.btnTasks.addEventListener('click', () => openSheet('Задания', tasksHtml()));
+  if (el.btnReward) el.btnReward.addEventListener('click', () => openSheet('Награда', rewardHtml()));
 
   /* --- эволюции: уровень, стадия, демо-переключатель --- */
   const E = { pet: START.known ? START.pet : null, level: START.known ? START.level : 1 };
@@ -754,6 +812,19 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     el.lvlPlate.classList.toggle('has-nick', START.fresh);
     el.stgLab.textContent = 'стадия ' + stg + '/6';
     el.demoPets.querySelectorAll('[data-pet]').forEach(b => b.classList.toggle('on', b.dataset.pet === E.pet));
+    paintUp();
+  }
+  function paintUp() {
+    if (!el.btnUp || START.fresh) return;
+    const maxed = E.level >= LEVEL_MAX;
+    const cost = maxed ? 0 : levelCost(E.level);
+    const can = !maxed && S.coins >= cost;
+    el.btnUp.classList.toggle('is-max', maxed);
+    el.btnUp.classList.toggle('is-lack', !maxed && !can);
+    if (el.upPrice) {
+      if (maxed) el.upPrice.textContent = 'Максимум';
+      else el.upPrice.innerHTML = '<img src="' + coinSrc(16) + '" width="16" height="16" alt="">' + fmt(cost);
+    }
   }
   function playEvolve() {
     if (RM) return;
@@ -833,11 +904,14 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     });
     el.btnUp.addEventListener('click', () => {
       if (E.level >= LEVEL_MAX) { toast('Уже максимальный уровень'); return; }
+      const cost = levelCost(E.level);
+      if (!window.TapyshiBal || !window.TapyshiBal.spend(cost)) { toast('Не хватает монет'); paintUp(); return; }
+      S.coins = window.TapyshiBal.get();
       const next = E.level + 1;
       applyEvo({ level: next, evolve: stageOf(next) > stageOf(E.level) });
-      toast('Уровень ' + next);
+      toast('Уровень ' + next + ' · −' + fmt(cost));
     });
-    // Плашка уровня тоже листает уровень в демо (по кругу с 30 на 1 — без вспышки эволюции).
+    // Плашка уровня в демо листает уровень по кругу (с 25 на 1 — без вспышки эволюции и без списания монет).
     el.lvlPlate.style.cursor = 'pointer';
     el.lvlPlate.title = 'Демо: следующий уровень';
     el.lvlPlate.addEventListener('click', () => {
@@ -846,6 +920,31 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     });
   }
   paintPlate();
+  const offN = (function claimOffline() {
+    if (!window.TapyshiBoosts) return 0;
+    const now = Date.now();
+    let last = 0;
+    try { last = parseInt(localStorage.getItem('tapyshi.offline.at') || '0', 10) || 0; } catch (e) {}
+    try { localStorage.setItem('tapyshi.offline.at', String(now)); } catch (e) {}
+    if (!last || now - last < 5000) return 0;
+    const n = Math.min(window.TapyshiBoosts.offlineCap(), Math.floor(window.TapyshiBoosts.offlineRate() * ((now - last) / 1000)));
+    if (n > 0 && window.TapyshiBal) { window.TapyshiBal.add(n); S.coins = window.TapyshiBal.get(); }
+    return n;
+  })();
+  if (offN > 0) toast('Пока тебя не было · +' + fmt(offN));
+  document.addEventListener('visibilitychange', () => {
+    try { localStorage.setItem('tapyshi.offline.at', String(Date.now())); } catch (e) {}
+  });
+  addEventListener('pagehide', () => { try { localStorage.setItem('tapyshi.offline.at', String(Date.now())); } catch (e) {} });
+  if (window.TapyshiBal) window.TapyshiBal.on(() => { S.coins = window.TapyshiBal.get(); paintUp(); });
+  window.addEventListener('message', ev => {
+    if (!ev || ev.origin !== location.origin || !ev.data || ev.data.type !== 'tapyshi-tab' || ev.data.ev !== 'boosts') return;
+    const prev = S.max;
+    applyBoosts();
+    if (S.max > prev) S.energy = Math.min(S.max, S.energy + (S.max - prev));
+    energyDirty();
+    paintUp();
+  });
   window.__evo = {
     get pet() { return E.pet; }, get level() { return E.level; }, get stage() { return stageOf(E.level); },
     set: opts => applyEvo(opts)

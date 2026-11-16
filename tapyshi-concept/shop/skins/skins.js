@@ -1,6 +1,6 @@
 /* Магазин · вкладка «Скины» (выбран концепт Б «Список наборов»). Окно части и окно набора.
    Данные — /workspace/pet-skins/skins.json (копия в assets/), арт — рендеры из shop/skins/assets (пересборка: python3 tools/skins-assets.py).
-   ЦЕНЫ — ЗАГЛУШКИ (экономика не утверждена), см. README. Монета — PNG варианта A (assets/coin). */
+   Цены частей и наборов — финальная экономика (набор = сумма оставшихся частей, без скидки). Монета — PNG варианта A. */
 (function(w){
   var T = w.T = w.T || {};
   var A = 'skins/assets/', MF = w.SK_MANIFEST, V = '?v=' + MF.v;
@@ -10,25 +10,27 @@
   var PET = { raccoon:'Енот', capybara:'Капибара', dragon:'Дракон', goose:'Гусь' };
   var PET_ORDER = ['raccoon','capybara','dragon','goose'];
   var PET_IN = { raccoon:'на еноте', capybara:'на капибаре', dragon:'на драконе', goose:'на гусе' };
-  /* ЦЕНЫ-ЗАГЛУШКИ: часть = PART[r]; полный набор = 85% от суммы частей (округление до 100) */
-  var PART = { common:1500, epic:4000, legendary:9000 };
+  var PART = {
+    ice_hood:1800, ice_parka:2000, ice_pack:2000, ice_mittens:1700,
+    mage_hat:2400, mage_robe:2700, mage_cloak:2700, mage_staff:2200,
+    storm_crown:7000, storm_body:8000, storm_wings:8000, storm_tail:7000
+  };
   var META = { common:{tone:'ice',theme:'Стихия · лёд'}, epic:{tone:'epic',theme:'Профессия · маг'}, legendary:{tone:'leg',theme:'Превращение · гроза'} };
   /* короткие описания для окна части (3 строки); остальные — из skins.json */
   var SHORT = { mage_staff:'Рукава-колокола с золотыми манжетами и посох с золотым полумесяцем и светящимся розовым кристаллом; звёздный чехол на хвост.',
     storm_tail:'Фиолетовые рукава с кольцами-разрядами и светлыми коготками; вместо родного хвоста — светящийся хвост-молния на облачке.' };
   var SETS = ['common','epic','legendary'].map(function(id){ var m = MF.sets[id];
     var s = { id:id, r:m.r, name:m.name, tone:META[id].tone, theme:META[id].theme, pets:m.pets };
-    s.parts = m.parts.map(function(p){ return { id:p.id, slot:p.slot, name:p.name, desc:SHORT[p.id]||p.desc, set:s, img:A+p.img+'.webp'+V, price:PART[id] }; });
+    s.parts = m.parts.map(function(p){ return { id:p.id, slot:p.slot, name:p.name, desc:SHORT[p.id]||p.desc, set:s, img:A+p.img+'.webp'+V, price:PART[p.id] }; });
     return s; });
   /* демо: Мороз собран и надет (4/4), Чародей 2/4, Гроза 0/4; баланс — общий с «Бустами» (SHOP.bal) */
   var DEMO = { bal:0, own:{ ice_hood:1, ice_parka:1, ice_pack:1, ice_mittens:1, mage_hat:1, mage_robe:1 }, worn:'common' };
   var S = JSON.parse(JSON.stringify(DEMO));
-  function r100(n){ return Math.round(n/100)*100; }
   function setById(id){ for (var i=0;i<SETS.length;i++) if (SETS[i].id===id) return SETS[i]; }
   function partById(id){ for (var i=0;i<SETS.length;i++) for (var j=0;j<4;j++) if (SETS[i].parts[j].id===id) return SETS[i].parts[j]; }
   function owned(s){ return s.parts.filter(function(p){ return S.own[p.id]; }).length; }
   function rest(s){ return s.parts.filter(function(p){ return !S.own[p.id]; }); }
-  function setPrice(s){ var r = rest(s), sum = r.reduce(function(a,p){ return a+p.price; },0); return { price: r100(sum*0.85), full: sum, n: r.length }; }
+  function setPrice(s){ var r = rest(s), sum = r.reduce(function(a,p){ return a+p.price; },0); return { price: sum, full: sum, n: r.length }; }
   function fmt(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'\u00A0'); }
   function render(name){ return A+name+'.webp'+V; }
   /* питомец в полном наборе (или сзади); null — рендера нет */
@@ -43,7 +45,7 @@
   /* картинка части на текущем питомце (тот же ракурс, что у сцены); нет — крупный план части */
   function tileOf(p, pet){ var e = p.set.pets[petOf(p.set, pet)]; return e && e.tile && e.tile[p.id] ? render(e.tile[p.id]) : p.img; }
   function partOnPet(p, pet){ var e = p.set.pets[petOf(p.set, pet)]; return e && e.combo[p.id] ? render(e.combo[p.id]) : null; }
-  function stub(){ return '<span class="sk-stub" title="Цена не утверждена экономикой">цена-заглушка</span>'; }
+  function stub(){ return ''; }
   function pips(s, cur){ return '<span class="sk-pips">'+s.parts.map(function(p){ return '<i class="'+(S.own[p.id]?'on':'')+(cur&&cur===p.id?' cur':'')+'"></i>'; }).join('')+'</span>'; }
   function rchip(s){ return '<span class="sk-r sk-r--'+s.tone+'">'+s.r+'</span>'; }
   var I = {
@@ -160,8 +162,8 @@
     var act = done ? (S.worn===s.id ? '<button class="sk-btn sk-btn--ghost" disabled>'+I.check+'Надето</button>' : '<button class="sk-btn sk-btn--soft" data-wear="'+s.id+'">Надеть набор</button>')
       : '<button class="sk-btn '+(can?'sk-btn--buy':'sk-btn--off')+'" '+(can?'data-buysel="'+si.ids.join(',')+'"':'disabled')+'>'+coin(22)+'<span class="cx-num">'+fmt(si.price)+'</span></button>';
     var lbl = done ? '<span class="sk-have">'+I.check+'Набор собран</span>' :
-      '<span class="sk-pr"><small>'+(si.all ? (n?'Докупить '+si.n+' '+chast(si.n):'Весь набор')+' · <s class="cx-num">'+fmt(si.full)+'</s> <em>−15%</em>'
-        : 'Выбрано '+si.k+' '+chast(si.k)+' · без скидки')+'</small>'+stub()+'</span>';
+      '<span class="sk-pr"><small>'+(si.all ? (n?'Докупить '+si.n+' '+chast(si.n):'Весь набор')
+        : 'Выбрано '+si.k+' '+chast(si.k))+'</small></span>';
     var D3 = use3d(), M3 = D3 && !!w.SK3D;   /* M3 — модуль уже загружен */
     var note = D3 ? (cm.n===4 ? 'Весь набор' : cm.n ? 'Примерка · '+cm.n+' из 4' : 'Без костюма')
       : trying ? (cm.exact ? 'Примерка · '+cm.n+' из 4' : 'Нет рендера · показан весь набор') : (back ? 'Вид сзади' : 'Весь набор');

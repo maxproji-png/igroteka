@@ -1,9 +1,9 @@
 // Тапыши · первый вход: общий код выбора персонажа (варианты A/B/C).
 import { petStage } from '../pet/stage.js?v=tc11151810';
-import { PETS, PET_ORDER, preloadEvo } from '../pet/evo.js?v=tc11151810';
+import { PETS, PET_ORDER, preloadEvo } from '../pet/evo.js?v=tc11162148';
 import { getPlayerNick } from '../shared/nick.js?v=tc11151810';
 
-export const V = 'tc11151810';
+export const V = 'tc11162148';
 
 export const PICKS = PET_ORDER.map(id => {
   const p = PETS[id];
@@ -36,12 +36,19 @@ export function inviteCopy() {
   return '';
 }
 
+export function isInvited() {
+  const q = new URLSearchParams(location.search);
+  if (inviteCopy()) return true;
+  const sp = q.get('startapp') || q.get('start_param') || '';
+  return !!(q.get('inviter') || q.get('ref') || /ref_|game_|clan_/.test(sp));
+}
+
 export function paintInvite(root) {
   const el = root.querySelector('.invite');
   if (!el) return;
   const t = inviteCopy();
   if (!t) { el.classList.remove('on'); el.hidden = true; el.textContent = ''; document.body.classList.remove('has-invite'); return; }
-  el.innerHTML = '<span class="dot"></span><span>' + t + '</span>';
+  el.innerHTML = '<span class="dot"></span><span>' + t + ' · тебе начислят 2 500 монет</span>';
   el.hidden = false;
   el.classList.add('on');
   document.body.classList.add('has-invite');
@@ -54,6 +61,10 @@ export function elChip(elId, label) {
 export function goHome(pet) {
   getPlayerNick(pet);
   const data = { fresh: true, pet: pet };
+  if (isInvited()) {
+    data.invited = true;
+    try { sessionStorage.setItem('tapyshi.invitee', '1'); } catch (e) {}
+  }
   try { sessionStorage.setItem('tapyshi.start', JSON.stringify(data)); } catch (e) {}
   const q = new URLSearchParams();
   q.set('fresh', '1');

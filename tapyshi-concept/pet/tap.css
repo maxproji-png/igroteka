@@ -45,10 +45,18 @@ canvas.scene{position:absolute;inset:0;z-index:2;width:100%;height:100%;display:
 .lvl .st svg{position:absolute;inset:0;width:38px;height:38px}
 .lvl .st b{position:relative;font-size:14px;color:var(--sun-edge);margin-top:3px}
 .lvl small{font-size:13px;color:var(--ink-2);font-weight:900}
-.up{position:relative;overflow:hidden;height:54px;padding:0 20px 0 14px;border-radius:27px;display:flex;align-items:center;gap:7px;font-size:18px;color:var(--white);font-weight:1000;
+.up{position:relative;overflow:hidden;height:54px;padding:0 16px 0 12px;border-radius:27px;display:flex;align-items:center;gap:7px;font-size:18px;color:var(--white);font-weight:1000;
   background:linear-gradient(180deg,color-mix(in srgb,var(--green) 82%,var(--white)),var(--green));
   box-shadow:0 5px 0 var(--green-edge),0 14px 24px -10px color-mix(in srgb,var(--green) 70%,transparent),inset 0 2px 0 rgb(var(--white-rgb) / .45)}
-.up .ic{width:22px;height:22px;color:var(--white)}
+.up .ic{width:22px;height:22px;color:var(--white);flex:none}
+.up-txt{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.05;min-width:0}
+.up-lab{font-size:16px;font-weight:1000}
+.up-price{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:1000;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.95}
+.up-price img{width:16px;height:16px;display:block;flex:none}
+.up.is-lack{filter:saturate(.7);opacity:.78}
+.up.is-max{background:linear-gradient(180deg,color-mix(in srgb,var(--fill) 40%,var(--green)),var(--green))}
+.tsec{margin:12px 2px 6px;font-size:13px;font-weight:1000;color:var(--ink-2)}
+.tsec:first-of-type{margin-top:2px}
 .tap-hint{position:absolute;left:58%;top:46%;z-index:6;pointer-events:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 8px;border-radius:19px;background:var(--white);color:var(--violet-edge);font-size:15px;font-weight:1000;white-space:nowrap;
   box-shadow:0 10px 24px -10px rgb(var(--shade) / .55);transform:translate(-50%,0);opacity:0;visibility:hidden;transition:opacity .3s,transform .3s var(--spring),visibility .3s}
 .tap-hint .ic{width:28px;height:28px;color:var(--violet)}
@@ -92,7 +100,7 @@ canvas.scene{position:absolute;inset:0;z-index:2;width:100%;height:100%;display:
   background:rgb(var(--white-rgb) / .92);color:var(--ink-2);font-size:12px;font-weight:900;white-space:nowrap;pointer-events:none}
 .vtag b{color:var(--violet);margin-right:5px}
 
-@media (max-height:760px){.bottom{bottom:calc(var(--tabbar-space) + 10px)}.side{top:calc(72px + env(safe-area-inset-top, 0px))}.lvl{font-size:16px}.up{height:48px;font-size:16px}}
+@media (max-height:760px){.bottom{bottom:calc(var(--tabbar-space) + 10px)}.side{top:calc(72px + env(safe-area-inset-top, 0px))}.lvl{font-size:16px}.up{height:48px;font-size:16px;padding:0 14px 0 10px}.up-lab{font-size:15px}.up-price{font-size:12px}}
 /* «+1» битмапом (130×70, рисуется один раз на canvas) */
 .plus-img{position:absolute;left:0;top:0;z-index:41;width:130px;height:70px;margin:-35px 0 0 -65px;pointer-events:none;opacity:0;will-change:transform,opacity;display:block}
 /* зона тапа (вариант A): вся игровая середина; кнопки HUD (.pe, z-index выше) остаются кликабельными */

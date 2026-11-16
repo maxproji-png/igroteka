@@ -15,7 +15,7 @@ export const PET_ORDER = ['raccoon', 'capybara', 'dragon', 'goose'];
 
 // Стадия по уровню питомца: 1–4, 5–9, 10–14, 15–19, 20–24, 25+.
 export const STAGE_AT = [1, 5, 10, 15, 20, 25];
-export const LEVEL_MIN = 1, LEVEL_MAX = 30;
+export const LEVEL_MIN = 1, LEVEL_MAX = 25;
 
 export function stageOf(level) {
   const lv = Math.max(LEVEL_MIN, Math.floor(level) || 1);

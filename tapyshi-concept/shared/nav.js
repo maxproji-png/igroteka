@@ -149,7 +149,7 @@
   css.textContent =
     'html.is-tab-host{background:#F8F7FF}' +
     'html.is-tab-away,html.is-tab-away body{height:100%;height:100dvh;overflow:hidden}' +
-    'html.is-tab-host body>:not(.tabbar):not(.tab-host-layers){position:relative;z-index:1}' +
+    'html.is-tab-host body>:not(.tabbar):not(.tab-host-layers):not(.sheet):not(.sheet-bg){position:relative;z-index:1}' +
     'html.is-tab-host .tab-host-layers{position:fixed;inset:0;z-index:2;pointer-events:none;background:transparent}' +
     'html.is-cover-tabs .tab-host-layers,html.is-tab-away .tab-host-layers{' +
       'z-index:80;-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}' +

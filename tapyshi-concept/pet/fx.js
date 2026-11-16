@@ -1,7 +1,7 @@
 // Вариант A · «Плавный досчёт»
 // +1 у пальца (WAAPI), баланс досчитывается твином в rAF (текст ≤ 20 раз/с) с мягким пульсом иконки,
 // одна красивая монета летит к балансу раз в 10 тапов; при посадке — блик по плашке.
-import { startApp, addTicker, RM, S, fmt, coinSrc, glintCanvas, spriteURL } from './core.js';
+import { startApp, addTicker, RM, S, fmt, coinSrc, glintCanvas, spriteURL } from './core.js?v=tc11162148';
 import { pool, play, arc, img } from './fxkit.js';
 import { plusFx } from './plus.js';
 
