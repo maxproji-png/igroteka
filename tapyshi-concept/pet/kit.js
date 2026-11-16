@@ -6,16 +6,39 @@ export { THREE };
 
 export const C = (hex) => new THREE.Color(hex);
 
+// Проверка WebGL до создания THREE.WebGLRenderer — иначе three.js пишет
+// Error creating WebGL context и бросает исключение (питомец на главной пропадает).
+let _webgl = undefined;
+export function webglOK() {
+  if (_webgl !== undefined) return _webgl;
+  try {
+    const c = document.createElement('canvas');
+    const g = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl');
+    if (!g) { _webgl = false; return _webgl; }
+    const l = g.getExtension('WEBGL_lose_context');
+    if (l) l.loseContext();
+    _webgl = true;
+  } catch (e) { _webgl = false; }
+  return _webgl;
+}
+
 // ---------- рендер ----------
 export function makeRenderer(canvas, { exposure = 1.0, shadows = true, alpha = false } = {}) {
-  const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha, powerPreference: 'high-performance' });
-  r.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
-  r.outputColorSpace = THREE.SRGBColorSpace;
-  r.toneMapping = THREE.ACESFilmicToneMapping;
-  r.toneMappingExposure = exposure;
-  r.shadowMap.enabled = shadows;
-  r.shadowMap.type = THREE.PCFSoftShadowMap;
-  return r;
+  if (!webglOK()) return null;
+  try {
+    const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha, powerPreference: 'high-performance' });
+    const gl = typeof r.getContext === 'function' ? r.getContext() : null;
+    if (!gl) { try { r.dispose(); } catch (e) {} return null; }
+    r.setPixelRatio(Math.min(1.5, window.devicePixelRatio || 1));
+    r.outputColorSpace = THREE.SRGBColorSpace;
+    r.toneMapping = THREE.ACESFilmicToneMapping;
+    r.toneMappingExposure = exposure;
+    r.shadowMap.enabled = shadows;
+    r.shadowMap.type = THREE.PCFSoftShadowMap;
+    return r;
+  } catch (e) {
+    return null;
+  }
 }
 export function fit(renderer, camera, el) {
   const w = el.clientWidth, h = el.clientHeight;

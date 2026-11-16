@@ -1,8 +1,8 @@
 // Тапыши · tap-feel · общее ядро: состояние, комбо (вариант A), пружины, спрайты монет, один rAF-цикл.
 // Цикл крутится только пока есть что анимировать; в покое — 0 кадров работы.
-import { petStage } from './stage.js?v=tc11151755';
-import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js?v=tc11151755';
-import { getPlayerNick } from '../shared/nick.js?v=tc11151810';
+import { petStage } from './stage.js';
+import { PETS, PET_ORDER, stageOf, firstLevelOf, stageName, LEVEL_MAX } from './evo.js';
+import { getPlayerNick } from '../shared/nick.js';
 
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const S = { coins: 12000, energy: 330, max: 330, power: 1, combo: 0, mult: 1, last: 0, taps: 0 };
@@ -108,8 +108,8 @@ const HUD = `
       <div class="enw"><div class="pill card"><svg class="ic"><use href="#i-bolt"/></svg><span class="num" id="enNum"></span><span class="bar"><i id="enBar"></i></span></div></div>
     </div>
     <div class="side">
-      <button class="rb card pe" aria-label="Задания"><svg class="ic"><use href="#i-tasks"/></svg><span class="dot n">2</span></button>
-      <button class="rb card pe" aria-label="Награда"><svg class="ic"><use href="#i-gift"/></svg><span class="dot"></span></button>
+      <button class="rb card pe" type="button" id="btnTasks" aria-label="Задания"><svg class="ic"><use href="#i-tasks"/></svg><span class="dot n">2</span></button>
+      <button class="rb card pe" type="button" id="btnReward" aria-label="Награда"><svg class="ic"><use href="#i-gift"/></svg><span class="dot"></span></button>
     </div>
     <div class="combo" id="combo"><div class="lab">комбо</div><div class="row"><svg class="flame"><use href="#i-flame"/></svg><span class="n" id="cn">0</span><span class="mult" id="cm">×1,5</span></div><div class="timer"><i id="ct"></i></div></div>
     <div class="tap-hint" id="hint"><svg class="ic"><use href="#i-tap"/></svg>Тапай!</div>
@@ -129,7 +129,8 @@ const HUD = `
   </div>
   <div class="evo-flash" id="evoFlash"></div>
   <div class="flash" id="flash"><div class="glow"></div><div class="big">×1,5!</div><div class="sub">Монеты ×1,5</div></div>
-  <div class="flash x2" id="flash2"><div class="glow"></div><div class="big">×2!</div><div class="sub">Двойные монеты</div></div>`;
+  <div class="flash x2" id="flash2"><div class="glow"></div><div class="big">×2!</div><div class="sub">Двойные монеты</div></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 
 /* ---------------- запуск ---------------- */
 export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' }) {
@@ -137,7 +138,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   app.insertAdjacentHTML('afterbegin', HUD);
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
   const $ = id => document.getElementById(id);
-  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick') };
+  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast') };
   const ico = new Image(); ico.alt = ''; ico.src = coinSrc(24); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
 
@@ -149,7 +150,13 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   let appRect = app.getBoundingClientRect();
   const canvas = app.querySelector('canvas.scene');
   if (START.fresh) document.body.classList.add('is-fresh');
-  const st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.fresh ? 1 : stageOf(7) });
+  let st;
+  try {
+    st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.fresh ? 1 : stageOf(7) });
+  } catch (e) {
+    console.warn('Сцена питомца не поднялась', e);
+    throw e;
+  }
   if (input === 'zone') bindZone();
 
   // Мультитач: зона тапа на всю игровую середину (между верхними плашками и нижней панелью).
@@ -258,7 +265,13 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     const h = st.headTop(); head = { x: h.x - appRect.left, y: Math.max(h.y - 6, 205) - appRect.top };
     const f = st.toScreen(0, 0, 0); feet = { x: f.x - appRect.left, y: f.y - appRect.top };
     el.wrap.style.transformOrigin = feet.x + 'px ' + feet.y + 'px';
-    const hp = st.toScreen(.62, .55, .2); el.hint.style.left = Math.max(70, Math.min(appRect.width - 66, hp.x - appRect.left)) + 'px'; el.hint.style.top = (hp.y - appRect.top) + 'px';
+    const hp = st.toScreen(.62, .55, .2);
+    const hw = Math.max(el.hint.offsetWidth || 0, 118);
+    const hx = hp.x - appRect.left, hy = hp.y - appRect.top;
+    const bot = el.btnUp || el.lvlPlate || app.querySelector('.bottom');
+    const botTop = bot ? bot.getBoundingClientRect().top - appRect.top : (appRect.height || 844) - 160;
+    el.hint.style.left = Math.max(hw / 2 + 10, Math.min(appRect.width - hw / 2 - 10, hx)) + 'px';
+    el.hint.style.top = Math.max(72, Math.min(botTop - 48, hy)) + 'px';
     const r = el.balIco.getBoundingClientRect(); balXY = { x: r.left + r.width / 2 - appRect.left, y: r.top + r.height / 2 - appRect.top };
     placeCombo();
   }
@@ -344,6 +357,75 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   }
 
 
+  /* --- тост и шторки заданий / ежедневной награды --- */
+  let toastA = null;
+  function toast(text) {
+    if (!el.toast) return;
+    el.toast.textContent = text;
+    if (toastA) toastA.cancel();
+    toastA = el.toast.animate(
+      [{ opacity: 0, transform: 'translate(-50%,20px)' }, { opacity: 1, transform: 'translate(-50%,0)', offset: .12 }, { opacity: 1, transform: 'translate(-50%,0)', offset: .85 }, { opacity: 0, transform: 'translate(-50%,8px)' }],
+      { duration: 1900, easing: 'ease-out' }
+    );
+  }
+  function closeSheet() {
+    document.body.classList.remove('has-sheet', 'is-sheet');
+    document.querySelectorAll('.home-sheet, .home-sheet-bg').forEach(n => {
+      n.classList.remove('on');
+      setTimeout(() => n.remove(), 420);
+    });
+  }
+  function openSheet(title, bodyHtml) {
+    closeSheet();
+    const bg = document.createElement('div');
+    bg.className = 'sheet-bg home-sheet-bg';
+    bg.addEventListener('click', closeSheet);
+    const sh = document.createElement('div');
+    sh.className = 'sheet home-sheet';
+    sh.setAttribute('role', 'dialog');
+    sh.setAttribute('aria-label', title);
+    sh.innerHTML = '<div class="grab"></div><button type="button" class="home-x" data-close aria-label="Закрыть">×</button><h2>' + title + '</h2>' + bodyHtml;
+    document.body.appendChild(bg);
+    document.body.appendChild(sh);
+    document.body.classList.add('has-sheet');
+    requestAnimationFrame(() => { bg.classList.add('on'); sh.classList.add('on'); });
+    sh.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
+    sh.querySelectorAll('[data-claim]').forEach(b => b.addEventListener('click', () => {
+      const name = b.getAttribute('data-claim') || 'Награда';
+      b.disabled = true; b.textContent = 'Получено';
+      const row = b.closest('.trow, .day');
+      if (row) row.classList.add('done');
+      toast(name + ' получена');
+      if (el.btnReward) { const d = el.btnReward.querySelector('.dot'); if (d && !d.classList.contains('n')) d.remove(); }
+      if (el.btnTasks && name.indexOf('монет') !== -1) {
+        const badge = el.btnTasks.querySelector('.dot.n');
+        if (badge) { const n = Math.max(0, (+badge.textContent || 1) - 1); badge.textContent = n; if (!n) badge.remove(); }
+      }
+    }));
+  }
+  const TASKS_HTML = `
+    <p class="sheet-sub">Выполняй и забирай монеты</p>
+    <div class="trow ready" data-task="games">
+      <div class="tinfo"><b>Зайди в игры</b><span>Открой вкладку «Игры»</span></div>
+      <button type="button" class="btn btn--success btn--s" data-claim="Награда 50 монет">+50</button>
+    </div>
+    <div class="trow">
+      <div class="tinfo"><b>Сделай 20 тапов</b><span>12 из 20</span></div>
+      <div class="tbar"><i style="width:60%"></i></div>
+    </div>`;
+  const REWARD_HTML = `
+    <p class="sheet-sub">Заходи каждый день — награда растёт</p>
+    <div class="days">
+      ${[1,2,3,4,5,6,7].map(d => {
+        const st = d < 3 ? 'done' : d === 3 ? 'ready' : '';
+        const lab = d === 7 ? '×2' : '+' + (d * 20);
+        const btn = d === 3 ? '<button type="button" class="btn btn--success btn--s" data-claim="Ежедневная награда">Забрать</button>' : '';
+        return '<div class="day ' + st + '"><span class="dn">день ' + d + '</span><b>' + lab + '</b>' + btn + '</div>';
+      }).join('')}
+    </div>`;
+  if (el.btnTasks) el.btnTasks.addEventListener('click', () => openSheet('Задания', TASKS_HTML));
+  if (el.btnReward) el.btnReward.addEventListener('click', () => openSheet('Награда', REWARD_HTML));
+
   /* --- эволюции: уровень, стадия, демо-переключатель --- */
   const E = { pet: START.pet, level: START.fresh ? 1 : 7 };
   const SPECIES = { raccoon: 'Енот', capybara: 'Капибара', dragon: 'Дракончик', goose: 'Гусь' };
@@ -411,8 +493,10 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
       applyEvo({ level: firstLevelOf(s), evolve: s > stageOf(E.level) });
     });
     el.btnUp.addEventListener('click', () => {
-      if (E.level >= LEVEL_MAX) return;
-      applyEvo({ level: E.level + 1, evolve: stageOf(E.level + 1) > stageOf(E.level) });
+      if (E.level >= LEVEL_MAX) { toast('Уже максимальный уровень'); return; }
+      const next = E.level + 1;
+      applyEvo({ level: next, evolve: stageOf(next) > stageOf(E.level) });
+      toast('Уровень ' + next);
     });
     // Плашка уровня тоже листает уровень в демо (по кругу с 30 на 1 — без вспышки эволюции).
     el.lvlPlate.style.cursor = 'pointer';

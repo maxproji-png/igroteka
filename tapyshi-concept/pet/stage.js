@@ -1,11 +1,96 @@
 // Тапыши · сцена с эволюциями. 3D рендерится только по запросу: на тап WebGL не перерисовываем.
 // Сжатие на тап — CSS/WAAPI на обёртке. Смена модели — единственный повод для нового кадра.
-import { THREE, makeRenderer, blob } from './kit.js?v=tc11132310';
-import { loadEvo, preloadEvo, PETS } from './evo.js?v=tc11141700';
+import { THREE, makeRenderer, blob, webglOK } from './kit.js';
+import { loadEvo, preloadEvo, nearbyEvoStages, PETS } from './evo.js';
 export { THREE };
 
-export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2, fit = 'app', padTop = 8, padBottom = 10 } = {}) {
-  const R = makeRenderer(canvas, { exposure: 1.0, alpha: true }); R.setClearColor(0, 0);
+function posterUrl(pet, stage) {
+  const root = (document.documentElement.dataset.root || './').replace(/\/?$/, '/');
+  return `${root}shared/pets/stage/${pet}_${stage}.png`;
+}
+
+function scheduleNearbyPreload(pet, stage) {
+  const stages = nearbyEvoStages(stage);
+  const run = () => preloadEvo(pet, stages);
+  const kick = () => {
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 2500 });
+    else setTimeout(run, 200);
+  };
+  if (document.readyState === 'complete') kick();
+  else addEventListener('load', kick, { once: true });
+}
+
+// 2D-заглушка: тот же API, что у 3D-сцены, чтобы startApp не падал без WebGL.
+function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', stage = 2 } = {}) {
+  const host = canvas.parentElement || canvas;
+  canvas.style.display = 'none';
+  canvas.style.pointerEvents = 'none';
+  host.classList.add('is-fallback');
+  let img = host.querySelector('img.pet-poster');
+  if (!img) {
+    img = document.createElement('img');
+    img.className = 'pet-poster';
+    img.alt = 'Питомец';
+    img.draggable = false;
+    host.appendChild(img);
+  }
+  let current = { pet, stage, object: null };
+  let yaw = 0, onSpinSettle = null;
+
+  function box() { return img.getBoundingClientRect(); }
+  function toScreen(x, y) {
+    const r = box();
+    return { x: r.left + r.width / 2 + (x || 0) * r.width * .45, y: r.bottom - (y || 0) * r.height };
+  }
+  function headTop() {
+    const r = box();
+    return { x: r.left + r.width / 2, y: r.top + r.height * .08 };
+  }
+  function hit() {
+    const r = box();
+    return { x: r.left + r.width / 2, y: r.top + r.height * .48, rx: Math.max(48, r.width * .42), ry: Math.max(64, r.height * .48) };
+  }
+  async function show(petId, stg) {
+    const id = PETS[petId] ? petId : 'raccoon';
+    const n = Math.max(1, Math.min(6, stg | 0));
+    current = { pet: id, stage: n, object: null };
+    img.src = posterUrl(id, n);
+    try { if (img.decode) await img.decode(); } catch (e) {}
+    return current;
+  }
+  function spinEnd(_v, onSettle) { onSettle && onSettle(); onSpinSettle && onSpinSettle(); }
+
+  if (petInput) {
+    img.addEventListener('pointerdown', e => { if (onTap) onTap(e); }, { passive: true });
+  }
+  show(pet, stage);
+
+  return {
+    cam: null, toScreen, headTop, requestDraw() {}, setHappy() {}, hit, show,
+    measure() { return { pet: current.pet, stage: current.stage, fallback: true }; },
+    relayout() {}, spinBy() {}, spinEnd,
+    get yaw() { return yaw; },
+    set onSpinSettle(fn) { onSpinSettle = fn; },
+    get current() { return current; },
+    preload() { return Promise.resolve(); },
+    fallback: true
+  };
+}
+
+export async function petStage(opts = {}) {
+  try {
+    if (!webglOK()) return fallbackStage(opts);
+    return await create3dStage(opts);
+  } catch (e) {
+    console.warn('3D сцена недоступна, показываю 2D-заглушку', e);
+    try { return fallbackStage(opts); } catch (err) { throw e; }
+  }
+}
+
+async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2, fit = 'app', padTop = 8, padBottom = 10 } = {}) {
+  const R = makeRenderer(canvas, { exposure: 1.0, alpha: true });
+  if (!R) return fallbackStage({ canvas, onTap, petInput, pet, stage });
+  R.setClearColor(0, 0);
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(28, 1, .05, 50);
   scene.add(new THREE.HemisphereLight('#EAF4FF', '#FFF2E6', 1.35));
@@ -347,7 +432,13 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     return current;
   }
 
-  await show(pet, stage);
+  try {
+    await show(pet, stage);
+  } catch (e) {
+    try { R.dispose(); } catch (err) {}
+    console.warn('Не удалось загрузить 3D-модель, показываю 2D-заглушку', e);
+    return fallbackStage({ canvas, onTap, petInput, pet, stage });
+  }
   R.shadowMap.autoUpdate = false;
   addEventListener('resize', () => { place(); rect = host.getBoundingClientRect(); calcHit(); R.shadowMap.needsUpdate = true; requestDraw(); });
   function setHappy(_on) {}
@@ -358,8 +449,8 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
   }, { passive: true });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-  // Фон: остальные стадии текущего питомца, чтобы листание демо было мгновенным.
-  setTimeout(() => preloadEvo(current.pet), 500);
+  // Фон: только текущая (уже в кэше) и следующая стадия — после load / в idle, не все 6 сразу.
+  scheduleNearbyPreload(current.pet, current.stage);
 
   function measure() {
     const b = worldBox();
@@ -404,6 +495,10 @@ export async function petStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, 
     get yaw() { return userYaw; },
     set onSpinSettle(fn) { onSpinSettle = fn; },
     get current() { return current; },
-    preload(petId) { return preloadEvo(petId); }
+    preload(petId) {
+      const id = PETS[petId] ? petId : current.pet;
+      const stg = id === current.pet ? current.stage : 1;
+      return preloadEvo(id, nearbyEvoStages(id === current.pet ? current.stage : stg));
+    }
   };
 }

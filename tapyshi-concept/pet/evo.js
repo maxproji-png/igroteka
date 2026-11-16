@@ -71,6 +71,13 @@ export function loadEvo(pet, stage) {
   return p;
 }
 
-export function preloadEvo(pet, stages = [1, 2, 3, 4, 5, 6]) {
+// Стадии нужно передавать явно: без списка ничего не качаем (раньше по умолчанию
+// уходили все 6 стадий ~1 МиБ). На главной — только текущая и следующая.
+export function nearbyEvoStages(stage) {
+  const n = Math.max(1, Math.min(6, stage | 0));
+  return n < 6 ? [n, n + 1] : [n];
+}
+export function preloadEvo(pet, stages) {
+  if (!Array.isArray(stages) || !stages.length) return Promise.resolve([]);
   return Promise.all(stages.map(s => loadEvo(pet, s).catch(() => null)));
 }

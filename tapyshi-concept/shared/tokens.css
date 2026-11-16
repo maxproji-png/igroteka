@@ -3,7 +3,7 @@
    Подключение: <link rel="stylesheet" href=".../shared/tokens.css">
    затем components.css. Путь к шрифту — относительно этого файла.
    ============================================================ */
-@font-face{font-family:'Nunito';src:url(fonts/Nunito.woff2) format('woff2');font-weight:200 1000;font-display:block}
+@font-face{font-family:'Nunito';src:url(fonts/Nunito.woff2?v=tc11132310) format('woff2');font-weight:200 1000;font-display:block}
 :root{
   /* --- нейтральные --- */
   --white:#FFFFFF;          /* поверхности: карточки, кнопки secondary, шторка */
