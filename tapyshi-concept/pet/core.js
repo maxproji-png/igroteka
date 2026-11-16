@@ -132,9 +132,9 @@ const HUD = `
 
 
 /* ---------------- загрузка питомца (стиль магазина: «Загружаем», %, полоска только растёт) ----------------
-   Лоадер — только пока качается сеть. 250 мс задержки: только если постер уже виден.
-   Если постера нет — сразу (уже с первого кадра в index.html). Если байты GLB уже пришли
-   и постер виден — лоадер не показывать, ждать parse/первый кадр под постером. */
+   Надпись «Загружаем» — только при реальной сетевой загрузке (transferSize тела, не HTTP-кэш
+   и не парсинг уже лежащего GLB). Тёплый кэш: постер/силуэт, без текста, даже если ready > 300 мс.
+   Холодная сеть: после ~300 мс, и держим не меньше LOAD_MIN, чтобы не было вспышек. */
 const LOAD_DELAY = 250, LOAD_MIN = 400, LOAD_FADE = 280, LOAD_BOOT = 300, CANVAS_FADE = 280;
 function posterIsVisible(el) {
   const s = el && el.standin;
@@ -143,6 +143,9 @@ function posterIsVisible(el) {
 function bootElapsed() {
   const t0 = typeof window.__petBootAt === 'number' ? window.__petBootAt : 0;
   return performance.now() - t0;
+}
+function netLoading() {
+  return typeof window.__petNetLoading === 'function' && !!window.__petNetLoading();
 }
 function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const box = el.petLoad, hint = el.hint, wrap = el.wrap;
@@ -157,6 +160,7 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const armLoader = () => {
     if (done || !box) return;
     if (downloadDone && posterIsVisible(el)) return;
+    if (!netLoading()) return;
     box.classList.remove('out');
     box.classList.add('on');
     if (wrap) wrap.classList.add('has-loader');
@@ -166,10 +170,11 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const scheduleLoader = () => {
     if (done || shownAt) return;
     if (downloadDone && posterIsVisible(el)) return;
+    if (!netLoading()) return;
     clearTimeout(showTimer);
     showTimer = 0;
     const waitBoot = Math.max(0, LOAD_BOOT - bootElapsed());
-    /* «Загружаем» не раньше ~300 мс с навигации — иначе на тёплом кэше вспышка с первого кадра */
+    /* не раньше ~300 мс с навигации; если постер уже виден — только пока сеть ещё качается */
     if (posterIsVisible(el)) {
       showTimer = setTimeout(armLoader, Math.max(LOAD_DELAY, waitBoot));
     } else if (waitBoot > 0) {
@@ -178,48 +183,93 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
       armLoader();
     }
   };
+  function hideLoaderNow(reason) {
+    if (box) { box.classList.add('out'); box.classList.remove('on', 'has-pc'); }
+    if (wrap) wrap.classList.remove('has-loader');
+    if (shownAt) stamp(reason || 'loader-skip');
+    shownAt = 0;
+  }
   function hideLoaderEarly() {
     clearTimeout(showTimer);
     showTimer = 0;
     if (done) return;
-    if (box) { box.classList.add('out'); box.classList.remove('on', 'has-pc'); }
-    if (wrap) wrap.classList.remove('has-loader');
-    if (shownAt) stamp('loader-skip');
-    shownAt = 0;
+    if (shownAt) {
+      const left = LOAD_MIN - (performance.now() - shownAt);
+      if (left > 0) { showTimer = setTimeout(() => { if (!done) hideLoaderNow('loader-min'); }, left); return; }
+    }
+    hideLoaderNow('loader-skip');
   }
   function markDownloaded() {
     downloadDone = true;
-    clearTimeout(showTimer);
-    showTimer = 0;
     stamp('download-done');
     if (posterIsVisible(el)) hideLoaderEarly();
+    else { clearTimeout(showTimer); showTimer = 0; }
+  }
+  function applyPc(pc) {
+    if (!box) return;
+    pc = Math.max(0, Math.min(100, pc | 0));
+    if (pc < lastPc) return;
+    lastPc = pc;
+    if (!(shownAt || (box.classList.contains('on') && !box.classList.contains('out')))) return;
+    box.classList.add('has-pc');
+    box.style.setProperty('--pc', pc + '%');
+    const lab = box.querySelector('.pet-load-pc');
+    if (lab) lab.textContent = pc + '%';
+    box.dataset.pc = String(pc);
   }
   const progress = p => {
     const frac = +p || 0;
     const pc = Math.max(0, Math.min(100, Math.floor(frac * 100)));
-    if (pc < lastPc) return;
-    lastPc = pc;
+    if (pc < lastPc && frac < 0.9) return;
+    /* сначала цифра, потом hide — иначе первый колбэк 0.9 гасит лоадер без «N%» */
+    applyPc(pc);
+    stamp('progress');
     if (frac >= 0.9) markDownloaded();
     else if (!done) {
       downloadDone = false;
-      if (!shownAt) scheduleLoader();
+      if (!shownAt && netLoading()) scheduleLoader();
     }
-    if (!box) return;
-    box.classList.add('has-pc');
-    box.style.setProperty('--pc', pc + '%');
-    const t = box.querySelector('.pet-load-pc');
-    if (t) t.textContent = pc + '%';
-    box.dataset.pc = String(pc);
-    stamp('progress');
   };
+  /* Пока onProgress от GLB ещё нет (качается three.js), берём % из Resource Timing. */
+  function tickNetPc() {
+    if (done || downloadDone || !shownAt) return;
+    try {
+      let got = 0, tot = 0, hasGlb = false;
+      const list = performance.getEntriesByType('resource');
+      for (let i = 0; i < list.length; i++) {
+        const e = list[i], n = String(e.name || '');
+        if (!/\.(js|mjs|glb|wasm)(\?|$)/i.test(n)) continue;
+        if (!/three|GLTFLoader|stage3d|addons|evo|\.glb/i.test(n)) continue;
+        const enc = e.encodedBodySize || e.decodedBodySize || 0;
+        if (e.responseEnd) {
+          const sz = enc || e.transferSize || 0;
+          got += sz; tot += sz;
+        } else {
+          got += e.transferSize || 0;
+          tot += Math.max(enc, e.transferSize || 0, /three\.module/i.test(n) ? 655000 : /GLTFLoader/i.test(n) ? 30000 : 0);
+        }
+        if (/\.glb/i.test(n)) hasGlb = true;
+      }
+      if (tot > 0) applyPc(Math.min(hasGlb ? 89 : 55, Math.floor(100 * got / tot)));
+    } catch (e) {}
+  }
+  const netPcTimer = setInterval(tickNetPc, 200);
   if (window.__petBootLoaderTimer) { /* таймер инлайн-скрипта: модули его не отменяют */ }
   if (box && box.classList.contains('on') && !box.classList.contains('out')) {
-    if (wrap) wrap.classList.add('has-loader');
-    shownAt = performance.now() || 1;
-    stamp('loader-boot');
+    if (!netLoading()) {
+      hideLoaderNow('loader-boot-cancel');
+    } else {
+      if (wrap) wrap.classList.add('has-loader');
+      shownAt = performance.now() || 1;
+      stamp('loader-boot');
+    }
   } else {
     scheduleLoader();
   }
+  try {
+    const po = new PerformanceObserver(() => { if (!done && !shownAt) scheduleLoader(); });
+    po.observe({ type: 'resource', buffered: true });
+  } catch (e) {}
   stamp('init');
   window.__onPetPosterReady = () => {
     if (window.__petBootLoaderTimer) { clearTimeout(window.__petBootLoaderTimer); window.__petBootLoaderTimer = 0; }
@@ -255,6 +305,7 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   async function finish() {
     clearTimeout(showTimer);
     showTimer = 0;
+    clearInterval(netPcTimer);
     done = true;
     progress(1);
     await paint();

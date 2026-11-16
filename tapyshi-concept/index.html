@@ -49,12 +49,12 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
 <link rel="stylesheet" href="shared/tokens.css?v=tc11161045" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="shared/components.css?v=tc11150155" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="shared/coin.css?v=tc11150155" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="pet/tap.css?v=tc11161638" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="pet/tap.css?v=tc11161718" media="print" onload="this.media='all'">
 <noscript>
 <link rel="stylesheet" href="shared/tokens.css?v=tc11161045">
 <link rel="stylesheet" href="shared/components.css?v=tc11150155">
 <link rel="stylesheet" href="shared/coin.css?v=tc11150155">
-<link rel="stylesheet" href="pet/tap.css?v=tc11161638">
+<link rel="stylesheet" href="pet/tap.css?v=tc11161718">
 </noscript>
 <script type="importmap">{"imports":{"three":"./lib/three.module.min.js?v=tc11132310"}}</script>
 <script>
@@ -134,6 +134,29 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
      decode() с таймаутом; при ошибке/зависании, если байты есть, всё равно показываем. */
   w.__petBootAt = performance.now();
   var POSTER_DECODE_MS = 2000;
+  /* Реальная сеть (не HTTP-кэш): transferSize тела > 0, либо долго нет первого байта. */
+  w.__petNetLoading = function () {
+    try {
+      var now = performance.now();
+      var list = performance.getEntriesByType('resource');
+      for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        var name = String(e.name || '');
+        if (!/\.(glb|js|mjs|wasm)(\?|$)/i.test(name)) continue;
+        var body = e.decodedBodySize || e.encodedBodySize || 0;
+        /* тело пришло по сети, не 304/кэш (у 304 transferSize ≈ заголовки) */
+        if (e.transferSize > 0 && (body === 0 || e.transferSize >= Math.max(400, body * 0.4))) return true;
+        if (!e.responseEnd) {
+          var started = e.startTime || 0;
+          var rs = e.responseStart || 0;
+          var ttfb = rs ? (rs - (e.requestStart || started)) : 0;
+          if (!rs && now - started > 150) return true;
+          if (rs && ttfb >= 80) return true;
+        }
+      }
+    } catch (err) {}
+    return false;
+  };
   function coverSil(on) {
     var sil = d.getElementById('petSil');
     if (sil) sil.classList.toggle('is-covered', !!on);
@@ -227,13 +250,21 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
     var boot = document.getElementById('petBoot');
     var p = window.__pet;
     var BOOT_LOADER_MS = 300;
+    function posterHasBytes() {
+      return !!(el && el.complete && el.naturalWidth);
+    }
     function showLoader() {
-      if (window.__petPosterReady) return;
       if (document.documentElement.dataset.pet === 'ready') return;
+      var net = typeof window.__petNetLoading === 'function' && window.__petNetLoading();
+      /* Надпись только при реальной сети. Тёплый кэш (постер/модули из кэша, парсинг 3D) — не показываем. */
+      if (!net) return;
+      if (window.__petPosterReady || posterHasBytes()) {
+        /* постер уже есть — лоадер не срочен; всё равно можно, если GLB/JS ещё качаются по сети */
+      }
       if (load) load.classList.add('on');
       if (boot) boot.classList.add('has-loader');
     }
-    /* С первого кадра только силуэт. «Загружаем» — если через 300 мс постера всё ещё нет. */
+    /* С первого кадра только силуэт. «Загружаем» — через 300 мс, и только если идёт сеть. */
     window.__petBootLoaderTimer = setTimeout(showLoader, BOOT_LOADER_MS);
     if (window.__revealPetPoster && el && p && p.known && p.src) {
       window.__revealPetPoster(el, p.src);
@@ -245,5 +276,5 @@ body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-s
 </div>
 <script src="pet/icons.js?v=tc11150155" defer></script>
 <script src="shared/nav.js?v=tc11132310" defer></script>
-<script type="module" src="pet/fx.js?v=tc11161638"></script>
+<script type="module" src="pet/fx.js?v=tc11161718"></script>
 </body></html>
