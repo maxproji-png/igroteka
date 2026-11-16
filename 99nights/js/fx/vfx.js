@@ -12,7 +12,7 @@
  */
 import * as THREE from 'three';
 
-export const VERSION = '0.6.3-concept';
+export const VERSION = '0.6.4-concept';
 
 /**
  * Уровни костра из GDD v0.5, разделы 6–7 (те же радиусы, что в v0.2; уровней по-прежнему три).
@@ -658,7 +658,7 @@ function disposeFog(state) {
 }
 
 
-let _rainTex = null, _rainStreakTex = null, _leafTex = null, _mothTex = null, _pingTex = null;
+let _rainTex = null, _rainStreakTex = null, _rainSplashTex = null, _leafTex = null, _mothTex = null, _pingTex = null;
 function texRain() {
   return _rainTex || (_rainTex = makeDot(16, [
     [0, 'rgba(200,220,255,.7)'], [0.5, 'rgba(180,200,230,.25)'], [1, 'rgba(160,180,210,0)']
@@ -667,18 +667,40 @@ function texRain() {
 function texRainStreak() {
   if (_rainStreakTex) return _rainStreakTex;
   const cv = document.createElement('canvas');
-  cv.width = 16; cv.height = 64;
+  cv.width = 32; cv.height = 64;
   const x = cv.getContext('2d');
-  const g = x.createLinearGradient(8, 0, 8, 64);
-  g.addColorStop(0, 'rgba(230,242,255,0)');
-  g.addColorStop(0.18, 'rgba(210,230,255,.3)');
-  g.addColorStop(0.5, 'rgba(220,238,255,.9)');
-  g.addColorStop(1, 'rgba(255,255,255,1)');
-  x.fillStyle = g;
-  x.fillRect(5, 0, 6, 64);
+  // тёмный контур + сине-белый стержень: читается и на светлой земле у костра
+  for (let y = 0; y < 64; y++) {
+    const v = y / 63;
+    const fade = v < 0.12 ? v / 0.12 : v > 0.92 ? (1 - v) / 0.08 : 1;
+    const edge = Math.round(36 * fade), mid = Math.round(140 * fade), coreA = Math.round(255 * fade);
+    x.fillStyle = `rgba(28, 48, 78, ${edge / 255})`;
+    x.fillRect(4, y, 24, 1);
+    x.fillStyle = `rgba(70, 110, 160, ${mid / 255})`;
+    x.fillRect(8, y, 16, 1);
+    x.fillStyle = `rgba(232, 246, 255, ${coreA / 255})`;
+    x.fillRect(12, y, 8, 1);
+  }
   const tex = new THREE.CanvasTexture(cv);
   tex.needsUpdate = true;
   _rainStreakTex = tex;
+  return tex;
+}
+function texRainSplash() {
+  if (_rainSplashTex) return _rainSplashTex;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 64;
+  const x = cv.getContext('2d');
+  x.translate(32, 32);
+  x.strokeStyle = 'rgba(40, 70, 110, .7)';
+  x.lineWidth = 4;
+  x.beginPath(); x.arc(0, 0, 22, 0, Math.PI * 2); x.stroke();
+  x.strokeStyle = 'rgba(210, 230, 255, .85)';
+  x.lineWidth = 2;
+  x.beginPath(); x.arc(0, 0, 20, 0, Math.PI * 2); x.stroke();
+  const tex = new THREE.CanvasTexture(cv);
+  tex.needsUpdate = true;
+  _rainSplashTex = tex;
   return tex;
 }
 function texLeaf() {
@@ -712,42 +734,69 @@ function maxLeaves() { return PARTICLE_BUDGET.high.leaves; }
 function maxMoths() { return PARTICLE_BUDGET.high.moths; }
 
 /**
- * Лёгкий дождь: штрихи (InstancedMesh, 1 draw call) в объёме вокруг камеры/цели, не по всей карте.
- * setActive(false) прячет слой. setCamera / setFollow задают центр объёма.
+ * Лёгкий дождь: штрихи (InstancedMesh, 1 draw call) в цилиндре вокруг точки взгляда
+ * (луч камеры на высоте ~1 м) или follow, а не вокруг позиции камеры.
+ * setActive(false) прячет слой. setCamera / setFollow задают камеру и цель.
+ * opts / setRainDensity / setRainOpacity — плотность и непрозрачность (1 = норма).
  */
 export function createRain(scene, opts = {}) {
   const quality = opts.quality === 'low' ? 'low' : 'high';
   const cap = maxRain();
-  const radius = opts.area ?? opts.radius ?? 7.5;
-  const height = opts.height ?? 9;
+  const radius = opts.area ?? opts.radius ?? 8;
+  const height = opts.height ?? 6.2;
   const list = [];
   for (let i = 0; i < cap; i++) {
     list.push({ x: 0, y: 0, z: 0, v: 10, len: 0.5, wx: 0, wz: 0 });
   }
 
-  const geo = new THREE.PlaneGeometry(0.04, 1);
+  const geo = new THREE.PlaneGeometry(0.09, 1);
   const mat = new THREE.MeshBasicMaterial({
     map: texRainStreak(),
-    color: 0xe8f3ff,
+    color: 0xffffff,
     transparent: true,
-    opacity: 0.82,
+    opacity: 0.92,
     depthWrite: false,
+    depthTest: true,
     fog: false,
     side: THREE.DoubleSide,
-    toneMapped: false
+    toneMapped: false,
+    blending: THREE.NormalBlending
   });
   const mesh = new THREE.InstancedMesh(geo, mat, cap);
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   mesh.frustumCulled = false;
   mesh.visible = false;
   mesh.count = 0;
+  mesh.name = 'fxRain';
   scene.add(mesh);
+
+  const splashCap = 16;
+  const splashMesh = new THREE.InstancedMesh(
+    new THREE.CircleGeometry(0.28, 12).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({
+      map: texRainSplash(), color: 0xffffff, transparent: true, opacity: 0.8,
+      depthWrite: false, fog: false, toneMapped: false
+    }),
+    splashCap
+  );
+  splashMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  splashMesh.frustumCulled = false;
+  splashMesh.visible = false;
+  splashMesh.count = 0;
+  splashMesh.name = 'fxRainSplash';
+  scene.add(splashMesh);
+  const splashes = [];
+  for (let i = 0; i < splashCap; i++) splashes.push({ on: false, x: 0, z: 0, t: 0, life: 0.35 });
+  let splashI = 0;
 
   const dummy = new THREE.Object3D();
   const fall = new THREE.Vector3();
   const toCam = new THREE.Vector3();
   const side = new THREE.Vector3();
   const front = new THREE.Vector3();
+  const dir = new THREE.Vector3();
+  const focus = { x: 0, y: 1, z: 0 };
+  const eye = { x: 0, y: 4, z: 0 };
 
   const puddles = [];
   if (PARTICLE_BUDGET.high.puddles) {
@@ -755,7 +804,7 @@ export function createRain(scene, opts = {}) {
     for (let i = 0; i < PARTICLE_BUDGET.high.puddles; i++) {
       const m = new THREE.Mesh(
         new THREE.CircleGeometry(R(0.35, 0.7), 10).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ map: ptex, transparent: true, opacity: 0, depthWrite: false })
+        new THREE.MeshBasicMaterial({ map: ptex, transparent: true, opacity: 0, depthWrite: false, fog: false })
       );
       m.position.set(R(-6, 6), 0.02, R(-6, 6));
       m.visible = false;
@@ -765,31 +814,54 @@ export function createRain(scene, opts = {}) {
   }
 
   const state = {
-    scene, mesh, list, puddles, quality,
+    scene, mesh, list, puddles, splashMesh, splashes, quality,
     active: 0, target: 0, disposed: false,
     radius, height, camera: opts.camera || null, follow: opts.follow || null,
-    windX: 0.35, windZ: 0.15, dummy, fall, toCam, side, front
+    windX: 0.35, windZ: 0.15, dummy, fall, toCam, side, front, dir, focus, eye,
+    density: opts.rainDensity == null ? 1 : Math.max(0, +opts.rainDensity),
+    opacity: opts.rainOpacity == null ? 1 : Math.max(0, +opts.rainOpacity)
   };
 
-  function origin() {
+  function eyePos() {
     const c = state.camera;
-    if (c && c.position) return c.position;
-    const f = state.follow;
-    if (f && f.position) return f.position;
-    if (f && f.x != null) return f;
+    if (c && c.position) { state.eye.x = c.position.x; state.eye.y = c.position.y; state.eye.z = c.position.z; return state.eye; }
     return null;
+  }
+
+  function origin() {
+    const f = state.follow;
+    if (f && f.position) {
+      state.focus.x = f.position.x; state.focus.y = 1; state.focus.z = f.position.z; return state.focus;
+    }
+    if (f && f.x != null) {
+      state.focus.x = f.x; state.focus.y = 1; state.focus.z = f.z; return state.focus;
+    }
+    const c = state.camera;
+    if (c && c.position) {
+      c.getWorldDirection(state.dir);
+      const cy = c.position.y, dy = state.dir.y;
+      let t = Math.abs(dy) > 0.04 ? (1 - cy) / dy : 7;
+      if (!isFinite(t)) t = 7;
+      t = clamp(t, 2.5, 12);
+      state.focus.x = c.position.x + state.dir.x * t;
+      state.focus.y = 1;
+      state.focus.z = c.position.z + state.dir.z * t;
+      return state.focus;
+    }
+    state.focus.x = 0; state.focus.y = 1; state.focus.z = 0;
+    return state.focus;
   }
 
   function respawn(e, atTop) {
     const o = origin();
-    const ox = o ? o.x : 0, oz = o ? o.z : 0, oy = o ? o.y : 3.5;
     const a = Math.random() * Math.PI * 2;
     const r = Math.sqrt(Math.random()) * state.radius;
-    e.x = ox + Math.cos(a) * r;
-    e.z = oz + Math.sin(a) * r;
-    e.y = atTop ? oy + R(1.2, state.height) : oy + R(-1.5, state.height);
-    e.v = R(10, 16);
-    e.len = R(0.45, 0.85);
+    e.x = o.x + Math.cos(a) * r;
+    e.z = o.z + Math.sin(a) * r;
+    const top = state.height;
+    e.y = atTop ? top + R(0, 0.8) : R(0.25, top);
+    e.v = R(9, 15);
+    e.len = R(0.75, 1.2);
     e.wx = state.windX + R(-0.5, 0.5);
     e.wz = state.windZ + R(-0.4, 0.4);
   }
@@ -808,8 +880,8 @@ export function createRain(scene, opts = {}) {
       return;
     }
     state.fall.set(e.wx, -e.v, e.wz).normalize();
-    const o = origin();
-    if (o) state.toCam.set(o.x - e.x, o.y - e.y, o.z - e.z);
+    const eye = eyePos();
+    if (eye) state.toCam.set(eye.x - e.x, eye.y - e.y, eye.z - e.z);
     else state.toCam.set(0.3, 0.2, 1);
     if (state.toCam.lengthSq() < 1e-5) state.toCam.set(0, 0, 1);
     state.side.crossVectors(state.toCam, state.fall);
@@ -817,13 +889,17 @@ export function createRain(scene, opts = {}) {
     else state.side.normalize();
     state.front.crossVectors(state.fall, state.side).normalize();
     d.matrix.makeBasis(state.side, state.fall, state.front);
-    const w = state.quality === 'low' ? 1.25 : 1;
+    const w = (state.quality === 'low' ? 1.45 : 1.2);
     const el = d.matrix.elements;
-    // масштабируем базис: X *= w, Y *= len (штрих), Z = 1
     el[0] *= w; el[1] *= w; el[2] *= w;
     el[4] *= e.len; el[5] *= e.len; el[6] *= e.len;
     d.matrix.setPosition(e.x, e.y, e.z);
     state.mesh.setMatrixAt(i, d.matrix);
+  }
+
+  function kickSplash(x, z) {
+    const rec = state.splashes[splashI++ % splashCap];
+    rec.on = true; rec.x = x; rec.z = z; rec.t = 0; rec.life = R(0.28, 0.42);
   }
 
   return {
@@ -832,15 +908,18 @@ export function createRain(scene, opts = {}) {
     setCamera(cam) { state.camera = cam || null; },
     setFollow(obj) { state.follow = obj || null; },
     setWind(x, z) { if (x != null) state.windX = +x; if (z != null) state.windZ = +z; },
+    setRainDensity(d) { state.density = Math.max(0, +d); },
+    setRainOpacity(o) { state.opacity = Math.max(0, +o); },
     update(dt) {
       if (state.disposed) return;
       const d = Math.min(0.05, dt || 0.016);
       state.active += (state.target - state.active) * Math.min(1, d * 2);
-      const n = state.active > 0.02 ? (state.quality === 'low' ? PARTICLE_BUDGET.low.rain : PARTICLE_BUDGET.high.rain) : 0;
+      const bud = state.quality === 'low' ? PARTICLE_BUDGET.low.rain : PARTICLE_BUDGET.high.rain;
+      const n = state.active > 0.02 ? Math.min(cap, Math.max(0, Math.round(bud * (state.density || 1)))) : 0;
       state.mesh.visible = n > 0 && state.active > 0.02;
-      state.mesh.material.opacity = 0.78 * state.active;
+      state.mesh.material.opacity = 0.94 * state.active * (state.opacity || 1);
       const o = origin();
-      const ox = o ? o.x : 0, oz = o ? o.z : 0;
+      const ox = o.x, oz = o.z;
       const rad2 = (state.radius + 1.6) * (state.radius + 1.6);
       for (let i = 0; i < state.list.length; i++) {
         if (i >= n) { place(i, true); continue; }
@@ -849,17 +928,53 @@ export function createRain(scene, opts = {}) {
         e.x += e.wx * d;
         e.z += e.wz * d;
         const dx = e.x - ox, dz = e.z - oz;
-        if (e.y < 0.04 || dx * dx + dz * dz > rad2) respawn(e, true);
+        if (e.y < 0.05) {
+          if (dx * dx + dz * dz < rad2 && Math.random() < (state.quality === 'low' ? 0.35 : 0.5)) kickSplash(e.x, e.z);
+          respawn(e, true);
+        } else if (dx * dx + dz * dz > rad2) {
+          respawn(e, true);
+        }
         place(i, false);
       }
       state.mesh.count = n;
       state.mesh.instanceMatrix.needsUpdate = true;
+
+      const splashN = state.quality === 'low' ? 8 : splashCap;
+      let live = 0;
+      const sd = state.dummy;
+      for (let i = 0; i < splashCap; i++) {
+        const s = state.splashes[i];
+        if (!s.on || i >= splashN || state.active < 0.2) {
+          sd.position.set(0, -10, 0); sd.scale.set(0.001, 0.001, 0.001); sd.rotation.set(0, 0, 0);
+          sd.updateMatrix(); state.splashMesh.setMatrixAt(i, sd.matrix);
+          continue;
+        }
+        s.t += d;
+        const u = s.t / s.life;
+        if (u >= 1) { s.on = false; sd.position.set(0, -10, 0); sd.scale.set(0.001, 0.001, 0.001); sd.rotation.set(0, 0, 0); sd.updateMatrix(); state.splashMesh.setMatrixAt(i, sd.matrix); continue; }
+        const sc = 0.35 + u * 1.6;
+        sd.position.set(s.x, 0.03, s.z);
+        sd.scale.set(sc, 1, sc);
+        sd.rotation.set(0, 0, 0);
+        sd.updateMatrix();
+        // fade encoded via scale already; material is shared — keep visible
+        state.splashMesh.setMatrixAt(i, sd.matrix);
+        live++;
+      }
+      state.splashMesh.count = splashCap;
+      state.splashMesh.visible = live > 0 && state.active > 0.2;
+      state.splashMesh.material.opacity = 0.75 * state.active;
+      state.splashMesh.instanceMatrix.needsUpdate = true;
+
       const puddleN = state.quality === 'low' ? 0 : PARTICLE_BUDGET.high.puddles;
       state.puddles.forEach((m, i) => {
         m.visible = i < puddleN && state.active > 0.2;
         m.material.opacity = 0.28 * state.active;
-        if (m.visible && o && i === 0) {
-          // лёгкие лужи держатся у ног/камеры, не по всей карте
+        if (m.visible) {
+          const a = i / Math.max(1, puddleN) * 6.283 + i * 1.7;
+          const rr = 1.6 + (i % 3) * 1.8;
+          m.position.x = ox + Math.cos(a) * rr;
+          m.position.z = oz + Math.sin(a) * rr;
         }
       });
     },
@@ -869,6 +984,9 @@ export function createRain(scene, opts = {}) {
       if (state.mesh.parent) state.mesh.parent.remove(state.mesh);
       state.mesh.geometry.dispose();
       state.mesh.material.dispose();
+      if (state.splashMesh.parent) state.splashMesh.parent.remove(state.splashMesh);
+      state.splashMesh.geometry.dispose();
+      state.splashMesh.material.dispose();
       state.puddles.forEach((m) => {
         if (m.parent) m.parent.remove(m);
         m.geometry.dispose();
@@ -1512,6 +1630,7 @@ export function createFeedback(scene, opts = {}) {
 
 /**
  * Фасад для движка: один объект, createCampfire / createNightFog / setLevel / update / setQuality / dispose.
+ * Новое в v0.6.4: дождь вокруг точки взгляда, контур штриха, setRainDensity/setRainOpacity/setFollow, всплески.
  * Новое в v0.6.3: пухлое пламя (flameWidth/Height/Mul, setFlameScale/setFlameHeight), тёплое ядро без белого конуса.
  * Новое в v0.6.2: applyCampfireHalo / CAMPFIRE_HALO / setGlowScale (ореол у пламени, depthTest).
  * Новое в v0.6.1: createCampfire({stones,logs,light}), дождь-штрихи вокруг камеры, искры без столба.
@@ -1529,6 +1648,7 @@ export class GameVFX {
     this.markers = [];
     this._scene = null;
     this._camera = opts.camera || null;
+    this._follow = opts.follow || null;
     this._fb = null;
     this._nightIndex = 0;
     this._weather = { rain: false, wind: false, fog: 'off', moths: false };
@@ -1548,6 +1668,12 @@ export class GameVFX {
     if (this._fb) this._fb.setCamera(this._camera);
     if (this.rain && this.rain.setCamera) this.rain.setCamera(this._camera);
   }
+  setFollow(obj) {
+    this._follow = obj || null;
+    if (this.rain && this.rain.setFollow) this.rain.setFollow(this._follow);
+  }
+  setRainDensity(d) { if (this.rain && this.rain.setRainDensity) this.rain.setRainDensity(d); }
+  setRainOpacity(o) { if (this.rain && this.rain.setRainOpacity) this.rain.setRainOpacity(o); }
 
   hit(pos, opts = {}) { const fb = this._ensureFb(opts.scene); if (fb) fb.hit(pos, opts); }
   collect(from, to, opts = {}) { const fb = this._ensureFb(opts.scene); if (fb) fb.collect(from, to, opts); }
@@ -1580,8 +1706,9 @@ export class GameVFX {
   createRain(scene, opts = {}) {
     if (this.rain) this.rain.dispose();
     this._scene = scene || this._scene;
-    this.rain = createRain(this._scene, Object.assign({ quality: this.quality, camera: this._camera }, opts));
+    this.rain = createRain(this._scene, Object.assign({ quality: this.quality, camera: this._camera, follow: this._follow }, opts));
     if (this._camera && this.rain.setCamera) this.rain.setCamera(this._camera);
+    if (this._follow && this.rain.setFollow) this.rain.setFollow(this._follow);
     return this.rain;
   }
 
@@ -1637,6 +1764,7 @@ export class GameVFX {
     if (this.rain) {
       this.rain.setActive(cur.rain);
       if (this.rain.setCamera && this._camera) this.rain.setCamera(this._camera);
+      if (this._follow && this.rain.setFollow) this.rain.setFollow(this._follow);
       if (this.rain.setWind) this.rain.setWind(cur.wind ? 1.2 : 0.35, cur.wind ? 0.4 : 0.15);
     }
     if (this.leaves) this.leaves.setActive(cur.wind);

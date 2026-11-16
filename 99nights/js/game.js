@@ -1,10 +1,10 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.8.1';
-import * as SIM from './sim.js?v=0.8.1';
-import { GameSfx } from './sfx.js?v=0.8.1';
-import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.1';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.8.2';
+import * as SIM from './sim.js?v=0.8.2';
+import { GameSfx } from './sfx.js?v=0.8.2';
+import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.2';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
@@ -361,7 +361,7 @@ let ZZ_TEX = null, BEAM = null;
 // SlotAccent (узелок) не трогаем; геометрия запекается с цветами вершин один раз на цвет, материал — общий питомцев (ночная обводка). +1 draw call на питомца.
 const SCARF_AT = { raccoon: [.47, 1], capybara: [.47, 1.05], dragon: [.48, 1], goose: [.50, .95] }; let scarfP = null; const scarfGeo = {};
 // v0.8: модели художника обновляются под тем же именем — версия в URL, чтобы кэш браузера/Pages не отдавал старые .glb
-function vu(u) { return u + '?v=0.8.1'; }
+function vu(u) { return u + '?v=0.8.2'; }
 function loadScarf() { return scarfP || (scarfP = getLoader().then(L => L.loadAsync(vu('models/art/slot_scarf.glb'))).then(g => { const root = g.scene; root.updateMatrixWorld(true); const ms = []; root.traverse(o => { if (o.isMesh) ms.push(o); }); return { root, ms }; })); }
 function scarfMesh(sc, petK, color) { let g = scarfGeo[color];
   if (!g) { for (const o of sc.ms) if (o.material.name === 'SlotColor') o.material.color = new THREE.Color(color); g = scarfGeo[color] = bakePetMeshes(sc.ms, new THREE.Matrix4().copy(sc.root.matrixWorld).invert()).geometry; }
@@ -780,10 +780,14 @@ function updOcclusion(dt, px, pz, cx, cy, cz) {
 function updCamera(dt, moveAmt) {
   // автодоворот за спину — только когда идём «вперёд» (джойстик вверх); при ходьбе вбок камера больше не закручивается кругами
   const p = me(), fwd = Math.max(0, -readInput.iy); if (moveAmt > .2 && fwd > .3 && performance.now() - dragT > 1500) { let d = (p.face + Math.PI) - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); cam.yaw += d * Math.min(1, dt * 1.5 * fwd); }
+  if (vfx.setFollow) vfx.setFollow(p);   // пак 0.6.4 (QA1-08): объём дождя следует за питомцем
   let tgt = Math.min(cam.dist, OCC.pull);
   // v0.8 (QA1-07): камера не уходит за стену тумана открытой зоны — подъезжает так, чтобы её точка была внутри (R − 0,7 м)
   { const OR = SIM.openR(S); if (OR < CFG.MAP) { const cpz = Math.cos(cam.pitch), ux = Math.sin(cam.yaw), uz = Math.cos(cam.yaw), Rm = OR - .7, b = p.x * ux + p.z * uz, c = p.x * p.x + p.z * p.z - Rm * Rm, D = b * b - c;
-      if (D > 0) { const dmax = (-b + Math.sqrt(D)) / cpz; if (dmax < tgt) tgt = Math.max(3.2, dmax); } } }
+      { const dmax = D > 0 ? (-b + Math.sqrt(D)) / cpz : -1; if (dmax < tgt) tgt = Math.max(3.2, dmax);   // D ≤ 0: питомец за R − 0,7 и луч назад мимо зоны (в 0.8 этот случай пропускался — QA1-07)
+        // v0.8.2 (QA1-07): у самого края места «за спиной» внутри зоны нет — плавно доворачиваем камеру внутрь (±60° от направления к центру), а не прижимаем к питомцу
+        if (dmax < 6 && performance.now() - dragT > 1500) { const yc = Math.atan2(-p.x, -p.z), A = d => Math.atan2(Math.sin(d), Math.cos(d)), d1 = A(yc + 1.05 - cam.yaw), d2 = A(yc - 1.05 - cam.yaw), d = Math.abs(d1) < Math.abs(d2) ? d1 : d2;
+          cam.yaw += d * Math.min(1, dt * 2.5 * (1 - Math.max(0, dmax) / 6)); } } } }
   cam.eff += (tgt - cam.eff) * (1 - Math.exp(-(tgt < cam.eff ? 6 : 2) * dt));   // подъезд быстрее, отъезд мягче
   const cp = Math.cos(cam.pitch);
   updOcclusion(dt, p.x, p.z, p.x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, p.z + Math.cos(cam.yaw) * cp * cam.dist);   // до _v: hideI портит общий _v
@@ -977,7 +981,7 @@ const API = { get S() { return S; }, setS: v => { S = v; }, get PID() { return P
   initWorld, startPlay, only, toast, hint, showMenu, handleEvents, syncNodes, syncBuilds, account, stageName, PV, scene, camera, THREE, sfx, IC, me, input, setPause };
 (async () => {
   showMenu(); loop();
-  if (NET) import('./coop.js?v=0.8.1').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
+  if (NET) import('./coop.js?v=0.8.2').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
   try { await Promise.race([loadPet(pet), new Promise(r => setTimeout(r, 6000))]); } catch (e) { console.warn('pet', e.message); }
   await Promise.race([assetsP, new Promise(r => setTimeout(r, 8000))]); $('loading').classList.add('hide'); window.__g.ready = true;
   if (QA_NIGHT && !NET) startQaNight(QA_NIGHT);

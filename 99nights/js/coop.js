@@ -1,7 +1,9 @@
 // «99 ночей» — кооп-клиент (Colyseus). Грузится ТОЛЬКО с флагом ?server=ws://…; без него игра — соло, как раньше.
 // Сервер авторитарен (тот же sim.js). Клиент шлёт команды; свой питомец — предсказание (SIM.moveP) с мягкой коррекцией,
 // чужие питомцы и враги — интерполяция по буферу снимков (~120 мс назад). Мир (узлы, сундук, постройки, рюкзаки) — сообщением 'world'.
-import * as SIM from './sim.js?v=0.8.1';
+// v0.8.2: компактный дельта-протокол (js/netproto.js): snap/world несут только изменения; полное состояние — 'start'/'resync'.
+import * as SIM from './sim.js?v=0.8.2';
+import * as NP from './netproto.js?v=0.8.2';
 const { PETS, STAGES } = SIM;
 const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -15,7 +17,7 @@ function loadLib() {
 }
 
 export function initCoop(G, url) {
-  const st = { client: null, room: null, lobby: null, active: false, snaps: [], enemies: new Map(), nodeMap: null, chat: [], muted: new Set(), unread: 0,
+  const st = { client: null, room: null, lobby: null, active: false, snaps: [], enemies: new Map(), nodeMap: null, cur: null, wait: false, chat: [], muted: new Set(), unread: 0,
     chatOff: localStorage.getItem(CHAT_OFF) === '1', lastSend: 0, pendMove: null, tags: new Map(), bubbles: [], pings: [], kind: 'friend', err: '' };
   const Q = new URLSearchParams(location.search);
   const myName = () => (Q.get('name') || localStorage.getItem(NAME_KEY) || PETS[G.pet].name).slice(0, 16);
@@ -54,9 +56,9 @@ export function initCoop(G, url) {
     room.onMessage('lobby', m => { st.lobby = m; if (!st.active) renderLobby(); });
     room.onMessage('note', m => setNote(m));
     room.onMessage('start', m => begin(m.snap));
-    room.onMessage('resync', m => { begin(m.snap); st.chat = []; $('chatFeed').innerHTML = ''; for (const c of m.chat || []) addChat(c, true); });
-    room.onMessage('snap', m => onSnap(m));
-    room.onMessage('world', m => onWorld(m));
+    room.onMessage('resync', m => { st.wait = false; begin(m.snap); st.chat = []; $('chatFeed').innerHTML = ''; for (const c of m.chat || []) addChat(c, true); });
+    room.onMessage('snap', m => !st.wait && onSnap(m));
+    room.onMessage('world', m => !st.wait && onWorld(m));
     room.onMessage('ev', evs => { if (!st.active || !G.S) return; for (const e of evs) { if (e.t === 'ping') onPing(e); } G.S.ev.push(...evs); });
     room.onMessage('chat', m => addChat(m));
     room.onMessage('chatErr', m => G.hint(m, 1.6, true));
@@ -65,7 +67,7 @@ export function initCoop(G, url) {
   }
   async function reconnect(tok, tries = 6) {
     if (!tok) return; G.hint('Связь пропала — переподключаемся…', 3, true);
-    for (let i = 0; i < tries; i++) { try { const c = await client(); const r = await c.reconnect(tok); attach(r); r.send('resync'); G.hint('Снова в игре', 1.5); return true; } catch (e) { await new Promise(r => setTimeout(r, 800 + i * 700)); } }
+    for (let i = 0; i < tries; i++) { try { const c = await client(); const r = await c.reconnect(tok); st.wait = true; attach(r); r.send('resync'); G.hint('Снова в игре', 1.5); return true; } catch (e) { await new Promise(r => setTimeout(r, 800 + i * 700)); } }
     sessionStorage.removeItem(RT_KEY); st.active = false; hud(false); G.toast('Связь потеряна', 'Комната закрыта или окно возврата истекло'); G.showMenu(); return false;
   }
 
@@ -91,38 +93,37 @@ export function initCoop(G, url) {
 
   // ---------- старт / снимки ----------
   function begin(snap) {
-    const s = SIM.deserialize(snap); G.setPID(st.room.sessionId); G.initWorld(s); s.timeScale = 1; st.snaps = []; st.enemies.clear(); st.nodeMap = new Map(s.nodes.map(n => [n.id, n]));
+    const s = SIM.deserialize(snap); G.setPID(st.room.sessionId); G.initWorld(s); s.timeScale = 1; st.snaps = []; st.enemies.clear(); st.nodeMap = new Map(s.nodes.map(n => [n.id, n])); st.cur = NP.makeCur(s);
     for (const e of s.enemies) st.enemies.set(e.id, e);
     st.active = true; G.startPlay(); hud(true); for (const [, t] of st.tags) t.parent && t.parent.remove(t); st.tags.clear();
     G.toast('Командный забег', 'Этап ' + stageName(s.stage) + ' · ' + Object.keys(s.players).length + ' игрока');
   }
   function onSnap(m) {
-    const S = G.S; if (!st.active || !S) return; st.snaps.push({ at: performance.now(), m }); if (st.snaps.length > 30) st.snaps.shift();
-    S.t = m.t; S.phase = m.ph; S.night = m.n; S.fire.fuel = m.fire[0]; S.fire.lv = m.fire[1]; S.wx = m.wx; if (m.res) S.result = m.res;
-    for (const a of m.p) { const p = S.players[a[0]]; if (!p) continue;
-      p.str = a[4]; p.hunger = a[5]; p.sleep = a[6]; p.flash.on = !!a[7]; p.away = !!a[8]; p.rest = a[11]; p.swing = a[12]; p.cd = a[13];
-      if (a[0] === G.PID) { const dx = a[1] - p.x, dz = a[2] - p.z, err = Math.hypot(dx, dz), moving = Math.hypot(p.in.x, p.in.z) > .1;
-        if (err > 2.5 || p.sleep > 0 || p.rest > 0) { p.x = a[1]; p.z = a[2]; } else { const k = moving ? .06 : .3; p.x += dx * k; p.z += dz * k; } } }
-    // состав врагов — по последнему снимку (позиции интерполируются в frame)
-    const ids = new Set(); for (const a of m.e) { ids.add(a[0]); let e = st.enemies.get(a[0]); if (!e) { e = { id: a[0], k: a[1], x: a[2], z: a[3], y: a[4], ry: a[5], hp: 1, st: a[6], dead: 0, leave: false, tt: 0, cd: 0, lit: 0, held: 0 }; st.enemies.set(a[0], e); }
-      e.st = a[6]; e.dead = a[7]; e.leave = !!a[8]; }
-    for (const id of [...st.enemies.keys()]) if (!ids.has(id)) st.enemies.delete(id);
+    const S = G.S; if (!st.active || !S || !st.cur) return; const fr = NP.applySnap(st.cur, m); st.snaps.push({ at: performance.now(), p: fr.p, e: fr.e }); if (st.snaps.length > 30) st.snaps.shift();
+    S.t = m.t / 100; S.phase = NP.PH[m.ph]; S.fire.fuel = m.f / 10; if (m.n != null) S.night = m.n; if (m.lv != null) S.fire.lv = m.lv; if (m.wx) S.wx = m.wx; if (m.res) S.result = m.res;
+    for (const [i, r] of st.cur.s) { const p = S.players[st.cur.slots[i]]; if (!p) continue; const o = NP.slowOf(r); p.str = o.str; p.hunger = o.hunger; p.sleep = o.sleep; p.flash.on = o.flash; p.away = o.away; p.rest = o.rest; }
+    for (const [id, a] of fr.p) { const p = S.players[id]; if (!p) continue; p.swing = a[5]; p.cd = a[6];
+      if (id === G.PID) { const dx = a[0] - p.x, dz = a[1] - p.z, err = Math.hypot(dx, dz), moving = Math.hypot(p.in.x, p.in.z) > .1;   // мягкая коррекция предсказания — по «текущей» строке каждый снимок
+        if (err > 2.5 || p.sleep > 0 || p.rest > 0) { p.x = a[0]; p.z = a[1]; } else { const k = moving ? .06 : .3; p.x += dx * k; p.z += dz * k; } } }
+    // состав врагов — по «текущим» строкам (позиции интерполируются в frame)
+    for (const [id, r] of st.cur.m) { const o = NP.metaOf(r), f = fr.e.get(id); let e = st.enemies.get(id);
+      if (!e) { e = { id, k: o.k, x: f ? f[0] : 0, z: f ? f[1] : 0, y: f ? f[2] : 0, ry: f ? f[3] : 0, hp: 1, st: o.st, dead: 0, leave: false, tt: 0, cd: 0, lit: 0, held: 0 }; st.enemies.set(id, e); }
+      e.st = o.st; e.dead = o.dead; e.leave = o.leave; }
+    for (const id of [...st.enemies.keys()]) if (!st.cur.m.has(id)) st.enemies.delete(id);
     S.enemies = [...st.enemies.values()];
   }
   function onWorld(w) {
-    const S = G.S; if (!st.active || !S) return; for (const [id, alive, berry, loot, hp] of w.nodes) { const n = st.nodeMap.get(id); if (n) { n.alive = !!alive; n.berry = !!berry; n.loot = !!loot; n.hp = hp; } }
-    S.chest = w.chest; S.builds = w.builds; S.bench.lv = w.bench; S.fire.lv = w.lv; S.firstLight = w.firstLight;
-    for (const id in w.inv) { const p = S.players[id]; if (p) { p.inv = w.inv[id][0]; p.has = w.inv[id][1]; p.flash.charge = w.inv[id][2]; } }
+    const S = G.S; if (!st.active || !S || !st.cur) return; NP.applyWorld(S, st.nodeMap, st.cur.slots, w);
     G.syncNodes(S); G.syncBuilds(S);
   }
-  // интерполяция: рендерим мир на INTERP мс в прошлом
+  // интерполяция: рендерим мир на INTERP мс в прошлом (кадры уже полные — дополнены из «текущих» строк)
   function interp() {
     const S = G.S, A = st.snaps; if (A.length < 1) return; const rt = performance.now() - INTERP; let i = A.length - 1; while (i > 0 && A[i - 1].at > rt) i--;
     const b = A[i], a = A[Math.max(0, i - 1)], k = b === a ? 1 : Math.min(1, Math.max(0, (rt - a.at) / (b.at - a.at || 1)));
-    const ia = new Map(a.m.p.map(q => [q[0], q])), ea = new Map(a.m.e.map(q => [q[0], q]));
-    for (const q of b.m.p) { if (q[0] === G.PID) continue; const p = S.players[q[0]]; if (!p) continue; const o = ia.get(q[0]) || q;
-      p.x = o[1] + (q[1] - o[1]) * k; p.z = o[2] + (q[2] - o[2]) * k; let d = q[3] - o[3]; d = Math.atan2(Math.sin(d), Math.cos(d)); p.face = o[3] + d * k; p.vx = q[9]; p.vz = q[10]; }
-    for (const q of b.m.e) { const e = st.enemies.get(q[0]); if (!e) continue; const o = ea.get(q[0]) || q; e.x = o[2] + (q[2] - o[2]) * k; e.z = o[3] + (q[3] - o[3]) * k; e.y = o[4] + (q[4] - o[4]) * k; let d = q[5] - o[5]; d = Math.atan2(Math.sin(d), Math.cos(d)); e.ry = o[5] + d * k; }
+    const ang = (x, y) => { let d = y - x; d = Math.atan2(Math.sin(d), Math.cos(d)); return x + d * k; };
+    for (const [id, q] of b.p) { if (id === G.PID) continue; const p = S.players[id]; if (!p) continue; const o = a.p.get(id) || q;
+      p.x = o[0] + (q[0] - o[0]) * k; p.z = o[1] + (q[1] - o[1]) * k; p.face = ang(o[2], q[2]); p.vx = q[3]; p.vz = q[4]; }
+    for (const [id, q] of b.e) { const e = st.enemies.get(id); if (!e) continue; const o = a.e.get(id) || q; e.x = o[0] + (q[0] - o[0]) * k; e.z = o[1] + (q[1] - o[1]) * k; e.y = o[2] + (q[2] - o[2]) * k; e.ry = ang(o[3], q[3]); }
   }
   function frame(dt) {
     const S = G.S, p = S.players[G.PID]; S.t += dt;   // таймер тикает между снимками

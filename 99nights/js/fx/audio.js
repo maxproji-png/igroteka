@@ -11,7 +11,7 @@
  *   audio.update(dt);
  *   audio.dispose();
  */
-export const VERSION = '0.6.3-concept';
+export const VERSION = '0.6.4-concept';
 
 const VOICES = { low: 8, high: 14 };
 const GROUP_LIMIT = {
