@@ -1,10 +1,10 @@
 // «99 ночей» — клиент прототипа (GDD v0.5): рендер (Three.js r160), ввод, HUD, меню, звук и эффекты.
 // Вся игровая логика — в js/sim.js (чистое сериализуемое состояние + команды), клиент её только рисует.
 import * as THREE from 'three';
-import { ASSETS, PET_MODELS } from './assets.js?v=0.8.11';
-import * as SIM from './sim.js?v=0.8.11';
-import { GameSfx } from './sfx.js?v=0.8.11';
-import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.11';
+import { ASSETS, PET_MODELS } from './assets.js?v=0.8.12';
+import * as SIM from './sim.js?v=0.8.12';
+import { GameSfx } from './sfx.js?v=0.8.12';
+import { GameVFX, applyCampfireHalo } from './fx/vfx.js?v=0.8.12';
 const { CFG, PETS, RECIPES, STAGES } = SIM;
 
 // ---------- параметры ----------
@@ -361,7 +361,7 @@ let ZZ_TEX = null, BEAM = null;
 // SlotAccent (узелок) не трогаем; геометрия запекается с цветами вершин один раз на цвет, материал — общий питомцев (ночная обводка). +1 draw call на питомца.
 const SCARF_AT = { raccoon: [.47, 1], capybara: [.47, 1.05], dragon: [.48, 1], goose: [.50, .95] }; let scarfP = null; const scarfGeo = {};
 // v0.8: модели художника обновляются под тем же именем — версия в URL, чтобы кэш браузера/Pages не отдавал старые .glb
-function vu(u) { return u + '?v=0.8.11'; }
+function vu(u) { return u + '?v=0.8.12'; }
 function loadScarf() { return scarfP || (scarfP = getLoader().then(L => L.loadAsync(vu('models/art/slot_scarf.glb'))).then(g => { const root = g.scene; root.updateMatrixWorld(true); const ms = []; root.traverse(o => { if (o.isMesh) ms.push(o); }); return { root, ms }; })); }
 function scarfMesh(sc, petK, color) { let g = scarfGeo[color];
   if (!g) { for (const o of sc.ms) if (o.material.name === 'SlotColor') o.material.color = new THREE.Color(color); g = scarfGeo[color] = bakePetMeshes(sc.ms, new THREE.Matrix4().copy(sc.root.matrixWorld).invert()).geometry; }
@@ -551,16 +551,21 @@ function updHUD() {
 //   старшая перебивает, а перебитая подсказка про костёр возвращается в очередь — «Костёр слабеет» не теряется и выходит сразу после «Га-га! Лось».
 //   Ответ на собственный тап (msg, prio 3) показывается сразу, перебитая им угроза/костёр возвращается в очередь.
 //   В очереди: сначала старшая, при равных — по порядку; обычные и угрозы старше 5 с выбрасываются, подсказки про костёр — нет; одинаковые не дублируются.
-const HINT_HOLD = 2000, hintQ = []; let hintCur = { prio: 0, at: 0, t: '', dur: 0, warn: false };
-const hintLog = []; let hintT = 0; function hint(t, dur = 2.2, warn = false, prio = 0) { const now = performance.now(), held = hintT > 0 && (hintCur.prio === 1 || hintCur.prio === 2) && now - hintCur.at < HINT_HOLD;
-  if (held && t !== hintCur.t) { if (prio <= hintCur.prio) { if (!hintQ.some(q => q.t === t)) hintQ.push({ t, dur, warn, prio, at: now }); return false; }
+// QA6-03 (v0.8.12): у подсказки из очереди есть проверка ok() — перед показом условие перепроверяется, устаревшая выбрасывается
+//   («Костёр слабеет» — только ночью при 0 < топливо < 25 %, «Подбрось веток… пока день» — только днём, угрозы — только ночью). «Костёр погас!» (prio 2,5: старше угрозы, держится 2 с) показывается сразу и убирает из очереди «Костёр слабеет».
+const HINT_HOLD = 2000, hintQ = []; let hintCur = { prio: 0, at: 0, t: '', dur: 0, warn: false, ok: null };
+const hintLog = []; let hintT = 0; function hint(t, dur = 2.2, warn = false, prio = 0, ok = null) { const now = performance.now(), held = hintT > 0 && hintCur.prio >= 1 && hintCur.prio < 3 && now - hintCur.at < HINT_HOLD;
+  if (held && t !== hintCur.t) { if (prio <= hintCur.prio) { if (!hintQ.some(q => q.t === t)) hintQ.push({ t, dur, warn, prio, ok, at: now }); return false; }
     if ((hintCur.prio === 1 || prio === 3) && !hintQ.some(q => q.t === hintCur.t)) hintQ.push({ ...hintCur, at: now }); }
-  hintLog.push(t); if (hintLog.length > 40) hintLog.shift(); const el = $('hint'); el.textContent = t; el.classList.remove('hide'); el.classList.toggle('warn', warn); hintT = dur; hintCur = { prio, at: now, t, dur, warn }; hintSlot(); return true; }
-function hintPump() { if (!hintQ.length) return; const now = performance.now(); for (let i = hintQ.length - 1; i >= 0; i--) if (hintQ[i].prio !== 1 && now - hintQ[i].at > 5000) hintQ.splice(i, 1);
-  if (!hintQ.length || (hintT > 0 && (hintCur.prio === 1 || hintCur.prio === 2) && now - hintCur.at < HINT_HOLD)) return;
+  hintLog.push(t); if (hintLog.length > 40) hintLog.shift(); const el = $('hint'); el.textContent = t; el.classList.remove('hide'); el.classList.toggle('warn', warn); hintT = dur; hintCur = { prio, at: now, t, dur, warn, ok }; hintSlot(); return true; }
+const hintStale = q => !!(q.ok && !q.ok());
+function hintPump() { if (!hintQ.length) return; const now = performance.now(); for (let i = hintQ.length - 1; i >= 0; i--) if ((hintQ[i].prio !== 1 && now - hintQ[i].at > 5000) || hintStale(hintQ[i])) hintQ.splice(i, 1);
+  if (!hintQ.length || (hintT > 0 && hintCur.prio >= 1 && hintCur.prio < 3 && now - hintCur.at < HINT_HOLD)) return;
   let k = 0; for (let i = 1; i < hintQ.length; i++) if (hintQ[i].prio > hintQ[k].prio) k = i;
   if (hintT > 0 && hintQ[k].prio < hintCur.prio) return;   // младшая ждёт, пока старшая не догорит
-  const q = hintQ.splice(k, 1)[0]; hint(q.t, q.dur, q.warn, q.prio); }
+  const q = hintQ.splice(k, 1)[0]; hint(q.t, q.dur, q.warn, q.prio, q.ok); }
+const okNight = () => S && S.phase === 'night', okWeak = () => S && S.phase === 'night' && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .25, okDayFeed = () => S && S.phase === 'day' && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .4;
+function hintFireOut(t) { for (let i = hintQ.length - 1; i >= 0; i--) if (hintQ[i].t.startsWith('Костёр слабеет')) hintQ.splice(i, 1); hint(t, 3, true, 2.5); }
 // v0.8: у тоста свой слот (ниже подсказки и карточки обучения) и очередь — второй тост ждёт, пока первый дочитают (≥1,4 с)
 const TQ = { q: [], t0: 0, h: 0 };
 function toast(t, sub) { const now = performance.now(), el = $('toast'), html = t + (sub ? `<small>${sub}</small>` : '');
@@ -575,7 +580,8 @@ function updFloats(dt) { updFloats.top = null; updFloats.cards = null; for (cons
     const fx = clamp((_v.x * .5 + .5) * innerWidth, hw, innerWidth - hw); let fy = clamp((-_v.y * .5 + .5) * innerHeight, 70, innerHeight - 40);
     const tr = updFloats.top || (updFloats.top = $('top').getBoundingClientRect()); if (fx - hw < tr.right && fy < tr.bottom + 16) fy = tr.bottom + 16;   // и не ложится на HUD-панель
     if (!updFloats.cards) { updFloats.cards = []; for (const id of ['hint', 'tut']) { const el = $(id); if (!el || el.classList.contains('hide') || el.style.display === 'none' || !el.offsetParent || +getComputedStyle(el).opacity < .05) continue; const r = el.getBoundingClientRect(); if (r.height) updFloats.cards.push(r); } }
-    for (const r of updFloats.cards) if (fx + hw > r.left - 4 && fx - hw < r.right + 4 && fy + 14 > r.top - 4 && fy - 14 < r.bottom + 4) fy = r.top - 18 >= tr.bottom + 16 && fy < (r.top + r.bottom) / 2 ? r.top - 18 : r.bottom + 18;   // QA5-03 (v0.8.9): не ложится на плашку подсказки и карточку обучения — выше или ниже неё
+    { const hit = y => updFloats.cards.some(r => fx + hw > r.left - 4 && fx - hw < r.right + 4 && y + 14 > r.top - 4 && y - 14 < r.bottom + 4);   // QA5-03 (v0.8.9/v0.8.12): не ложится ни на плашку подсказки, ни на карточку обучения —
+      if (hit(fy)) { let best = null; for (const r of updFloats.cards) for (const y of [r.top - 18, r.bottom + 18]) if (y >= tr.bottom + 16 && y <= innerHeight - 40 && !hit(y) && (best == null || Math.abs(y - fy) < Math.abs(best - fy))) best = y; if (best != null) fy = best; } }   //   ближайшая свободная высота над/под любой из них (обе сразу)
     f.el.style.transform = `translate(${fx}px,${fy}px) translate(-50%,-50%) scale(${sc.toFixed(2)})`; f.el.style.opacity = Math.min(1, f.t * 2); } }
 const icoTxt = (k, n) => `+${n} <span style="display:inline-block;width:20px;height:20px;vertical-align:-4px">${IC[k]}</span>`;
 
@@ -627,12 +633,12 @@ function feedHintDue() { const fh = CH.fh, key = S.stage + ':' + S.night; if (fh
   return S.phase === 'day' && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .4 && fh.n < 3 && S.t >= fh.next; }
 function feedHintFed() { if (S && S.phase === 'day') CH.fh.next = Math.max(CH.fh.next, S.t + 20); }
 function ctxHints(dt) { if ((CH.t -= dt) > 0 || !S || mode !== 'play') return; CH.t = 1; const p = me(), now = performance.now(), night = S.phase === 'night';
-  const say = (k, txt, cd, warn, prio = 0) => { if ((CH.cd[k] || 0) > now) return false; CH.cd[k] = now + cd * 1000; hint(txt, 2.6, warn, prio); CH.log.push([k, +S.t.toFixed(1), S.phase, Math.round(S.fire.fuel / SIM.fireMax(S) * 100)]); return true; };
+  const say = (k, txt, cd, warn, prio = 0, ok = null) => { if ((CH.cd[k] || 0) > now) return false; CH.cd[k] = now + cd * 1000; hint(txt, 2.6, warn, prio, ok); CH.log.push([k, +S.t.toFixed(1), S.phase, Math.round(S.fire.fuel / SIM.fireMax(S) * 100)]); return true; };
   const asleep = p.sleep > 0 || p.rest > 0;
   // QA4-02 (v0.8.6): ночное «Костёр слабеет» — критическое: свой ключ и кулдаун, обучение его не глушит, перебивает обычную подсказку
-  if (night && !asleep && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .25 && say('fuelN', (me().inv.stick || 0) > 0 ? 'Костёр слабеет — подбрось веток!' : 'Костёр слабеет — принеси веток!', 12, true, 1)   /* §18.6: текст — по рюкзаку */) return;
+  if (night && !asleep && S.fire.fuel > 0 && S.fire.fuel / SIM.fireMax(S) < .25 && say('fuelN', (me().inv.stick || 0) > 0 ? 'Костёр слабеет — подбрось веток!' : 'Костёр слабеет — принеси веток!', 12, true, 1, okWeak)   /* §18.6: текст — по рюкзаку */) return;
   // §15 п.4: «Подбрось веток» — сразу: перебивает обычную (не тревожную) подсказку; пока висит карточка обучения с тем же текстом (TUT.update) — пузырь не дублируем
-  if (!asleep && !(hintT > 0 && $('hint').classList.contains('warn')) && !(TUT.on && TUT.feedHint) && feedHintDue()) { CH.fh.n++; CH.fh.next = S.t + 20; CH.cd.fuel = 0; if (say('fuel', 'Подбрось веток в костёр, пока день', 0, false, 1)) return; }
+  if (!asleep && !(hintT > 0 && $('hint').classList.contains('warn')) && !(TUT.on && TUT.feedHint) && feedHintDue()) { CH.fh.n++; CH.fh.next = S.t + 20; CH.cd.fuel = 0; if (say('fuel', 'Подбрось веток в костёр, пока день', 0, false, 1, okDayFeed)) return; }
   // §17 (v0.8.8) / §18.2 (v0.8.9, QA5-05): за 10 с до ночи — «Скоро ночь — собери ветки в рюкзак» (заменила прежнее «Скоро ночь — запаси веток у костра»); один раз за день, и при обучении; перебивает обычную подсказку
   if (!night && !asleep && S.t > 5 && SIM.dayLen(S) - S.t <= 10 && !(hintT > 0 && ($('hint').classList.contains('warn') || $('hint').textContent === 'Подбрось веток в костёр, пока день')) && say('dusk' + S.stage + ':' + S.night, 'Скоро ночь — собери ветки в рюкзак', 999)) return;
   if (hintT > 0 || asleep) return;
@@ -692,7 +698,7 @@ function handleEvents() {
       case 'shoo': burst(e.x, 1.5, e.z, '#3d4670', 5, 2); sfx.play('crow', { kind: 'flap' }); break;
       case 'steal': floatText('-1 ' + RN[e.k], CFG.CHEST.x, 2, CFG.CHEST.z, true); if ((handleEvents.stealT || 0) < performance.now()) { hint('Ворон таскает из сундука — прогони его!', 2.2, true, 2); handleEvents.stealT = performance.now() + 7000; }   /* QA5-02: не чаще раза в 7 с */ sfx.play('crow', { kind: 'caw' }); break;
       case 'peck': hint('Ворон клюёт костёр!', 1.6, true); sfx.play('crow', { kind: 'caw' }); break;
-      case 'blow': if ((handleEvents.blowT || 0) < performance.now()) { hint('Клубочек мглы задувает костёр — толкни его!', 2, true, 2); sfx.play('mist', { kind: 'blow' }); handleEvents.blowT = performance.now() + 4000; } break;
+      case 'blow': if ((handleEvents.blowT || 0) < performance.now()) { hint('Клубочек мглы задувает костёр — толкни его!', 2, true, 2, okNight); sfx.play('mist', { kind: 'blow' }); handleEvents.blowT = performance.now() + 4000; } break;
       case 'mothLand': if ((handleEvents.mothT || 0) < performance.now()) { hint('Мотыльки облепили костёр — смахни их толчком или светом', 2.4, true); handleEvents.mothT = performance.now() + 5000; } sfx.play('moth'); break;
       case 'trap': burst(e.x, .3, e.z, '#ffe27a', 8, 2); syncBuilds(S); sfx.play('craft'); break;
       case 'scare': { const p = me(); floatText('-27 сил', p.x, 2.2, p.z, true); $('vig').style.opacity = 1; setTimeout(() => $('vig').style.opacity = 0, 350); shake(.45); hint('Лунный Лось напугал! Свети фонариком или беги к свету', 2.6, true); sfx.play('moose', { kind: 'breath' }); buzzT = 0; buzz(80); break; }
@@ -702,7 +708,7 @@ function handleEvents() {
         else if (e.k === 'mist') sfx.play('mist', { kind: 'puff' }); break;
       // v0.8.1 (§11.4): гусь гогочет за 5 с до того, как угроза дойдёт до костра (событие симуляции), — звук и значок над гусем
       case 'honk': { const gp = Object.values(S.players).find(q => PETS[q.pet].warn); if (!gp) break; const pv = PV.get(gp.id); if (pv) floatText('Га-га!', gp.x, 2.3, gp.z);
-        sfx.play('pet', { kind: 'idle', pet: 'goose' }); if ((handleEvents.gooseT || 0) < performance.now()) { hint('Га-га! К костру ' + ({ mist: 'катится клубочек мглы', moth: 'летит мотылёк', crow: 'летит ворон', moose: 'идёт Лось' }[e.k] || 'идёт угроза'), 2.6, false, 2);   /* §18.5: угроза */ handleEvents.gooseT = performance.now() + 4000; } break; }
+        sfx.play('pet', { kind: 'idle', pet: 'goose' }); if ((handleEvents.gooseT || 0) < performance.now()) { hint('Га-га! К костру ' + ({ mist: 'катится клубочек мглы', moth: 'летит мотылёк', crow: 'летит ворон', moose: 'идёт Лось' }[e.k] || 'идёт угроза'), 2.6, false, 2, okNight);   /* §18.5: угроза */ handleEvents.gooseT = performance.now() + 4000; } break; }
       case 'ember': { const q = S.players[e.pid]; if (q) floatText(e.charge ? 'Огонёк: +50% фонарика' : 'Огонёк!', q.x, 2.2, q.z); sfx.play('lamp', { kind: 'charge' }); break; }
       case 'flash': sfx.play('lamp', { kind: e.on ? 'on' : 'charge' }); if (e.empty) hint('Фонарик разрядился — заряди его у костра', 2.2, true); break;
       case 'sleep': { const pv = PV.get(e.pid || PID); if (pv) { vfx.petTired(pv.g); pv.zzT = 3; } } hint(PETS[me().pet].name + ' устал и уснул…', 2.5, true); sfx.play('pet', { kind: 'sleep', pet: me().pet }); sfx.play('ping', { tired: true }); break;
@@ -711,7 +717,7 @@ function handleEvents() {
       case 'waking': { const q = S.players[e.pid]; if (!q) break; const pc = Math.round(e.p * 100); hint(e.by === PID ? 'Будишь ' + (q.name || PETS[q.pet].name) + '… держи кнопку · ' + pc + '%' : 'Тебя будят… ' + pc + '%', .6); break; }
       case 'tired': if (e.k === 'crow') sfx.play('crow', { kind: 'flap' }); break;
       case 'ping': sfx.play('ping'); break;
-      case 'fireOut': hint('Костёр погас! Подбрось веток до конца ночи', 3, true, 1); sfx.play('fire', { kind: 'extinguish' }); shake(.3); buzzT = 0; buzz(60); break;
+      case 'fireOut': hintFireOut('Костёр погас! Подбрось веток до конца ночи');   /* QA6-03: сразу, «слабеет» из очереди — прочь */ sfx.play('fire', { kind: 'extinguish' }); shake(.3); buzzT = 0; buzz(60); break;
       case 'openBench': openCraft(true); sfx.play('ui', { kind: 'click' }); break;
       case 'night': { const w = e.wx || {}; sfx.play('night'); vfx.nightfall(camera);
         if (w.special) { toast('Ночь густого тумана', 'Особая ночь 10 · держись у костра'); hint('Туман закрыл даль. Лось ходит по краю света, клубочки идут двумя волнами', 4); }
@@ -983,7 +989,7 @@ function loop() {
 window.__g = { scene, input, SIM, get S() { return S; }, get mode() { return mode; }, send, save, loadSave, startStage, continueGame, showMap, showMenu, account, saveAcc, sfx, vfx, fireFx, setMute, renderer, camera, cam, quality: QUALITY, assets: ASSET_STATE, occ: OCC, get coop() { return COOP; }, get PID() { return PID; },
   teleport: (x, z) => { const p = me(); p.x = x; p.z = z; const cp = Math.cos(cam.pitch); camera.position.set(x + Math.sin(cam.yaw) * cp * cam.dist, 1.1 + Math.sin(cam.pitch) * cam.dist, z + Math.cos(cam.yaw) * cp * cam.dist); cam.look.set(x, 1.1, z); },
   look: (yaw, pitch) => { cam.yaw = yaw; if (pitch) cam.pitch = pitch; dragT = performance.now(); },
-  tut: TUT, fb: FB, ch: CH, IC, startQaNight, hintLog, toastTest: (a, b) => toast(a, b), hintTest: t => hint(t, 3), hintP: (t, d, w, pr) => hint(t, d, w, pr), get hintQ() { return hintQ; }, floats, floatText, stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };
+  tut: TUT, fb: FB, ch: CH, IC, startQaNight, hintLog, toastTest: (a, b) => toast(a, b), hintTest: t => hint(t, 3), hintP: (t, d, w, pr, ok) => hint(t, d, w, pr, ok), hintPump, get hintQ() { return hintQ; }, floats, floatText, stats: () => ({ fps: Math.round(fps), calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, px: pixelRatio }), get target() { return target; }, ready: false };
 
 // подмена процедурных заглушек на GLB художника (js/assets.js): запекаем и меняем геометрию у инстансов, мешей лагеря и врагов.
 // Нет url или файл не загрузился — остаётся заглушка. Один GLB может кормить несколько ключей (include/exclude).
@@ -1006,7 +1012,7 @@ const API = { get S() { return S; }, setS: v => { S = v; }, get PID() { return P
   initWorld, startPlay, only, toast, hint, showMenu, handleEvents, syncNodes, syncBuilds, account, stageName, PV, scene, camera, THREE, sfx, IC, me, input, setPause };
 (async () => {
   showMenu(); loop();
-  if (NET) import('./coop.js?v=0.8.11').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
+  if (NET) import('./coop.js?v=0.8.12').then(m => { COOP = m.initCoop(API, NET); window.__g.coopReady = true; }).catch(e => { console.error('coop', e); }); const assetsP = loadStaticAssets().catch(e => console.warn('assets', e.message));
   try { await Promise.race([loadPet(pet), new Promise(r => setTimeout(r, 6000))]); } catch (e) { console.warn('pet', e.message); }
   await Promise.race([assetsP, new Promise(r => setTimeout(r, 8000))]); $('loading').classList.add('hide'); window.__g.ready = true;
   if (QA_NIGHT && !NET) startQaNight(QA_NIGHT);
