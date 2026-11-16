@@ -42,13 +42,24 @@ async function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', 
     const id = PETS[petId] ? petId : 'raccoon';
     const n = Math.max(1, Math.min(6, stg | 0));
     current = { pet: id, stage: n, object: null };
-    img.classList.remove('is-decoded');
-    img.style.visibility = 'hidden';
-    img.src = posterUrl(id, n);
-    try { if (img.decode) await img.decode(); } catch (e) {}
-    img.classList.add('is-decoded');
-    img.classList.remove('is-empty', 'is-spent');
-    img.style.visibility = '';
+    const src = posterUrl(id, n);
+    /* одна идемпотентная функция: не сбрасываем уже показанный тот же постер, decode с таймаутом */
+    const reveal = window.__revealPetPoster;
+    if (typeof reveal === 'function') {
+      try { await reveal(img, src); } catch (e) {}
+    } else {
+      if (img.getAttribute('src') !== src) img.src = src;
+      if (!(img.complete && img.naturalWidth && img.classList.contains('is-decoded'))) {
+        try {
+          if (img.decode) await Promise.race([img.decode(), new Promise(r => setTimeout(r, 2000))]);
+        } catch (e) {}
+      }
+      if (img.complete && img.naturalWidth) {
+        img.classList.add('is-decoded');
+        img.classList.remove('is-empty', 'is-spent');
+        img.style.visibility = '';
+      }
+    }
     if (onProgress) onProgress(1);
     return current;
   }
@@ -88,7 +99,7 @@ export function emptyStage() {
 
 export async function petStage(opts = {}) {
   try {
-    if (!webglOK()) return await fallbackStage(opts);
+    if (opts.forceFallback || !webglOK()) return await fallbackStage(opts);
     const { create3dStage } = await import('./stage3d.js');
     return await create3dStage(opts);
   } catch (e) {

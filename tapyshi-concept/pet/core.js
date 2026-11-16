@@ -135,10 +135,14 @@ const HUD = `
    Лоадер — только пока качается сеть. 250 мс задержки: только если постер уже виден.
    Если постера нет — сразу (уже с первого кадра в index.html). Если байты GLB уже пришли
    и постер виден — лоадер не показывать, ждать parse/первый кадр под постером. */
-const LOAD_DELAY = 250, LOAD_MIN = 400, LOAD_FADE = 280;
+const LOAD_DELAY = 250, LOAD_MIN = 400, LOAD_FADE = 280, LOAD_BOOT = 300, CANVAS_FADE = 280;
 function posterIsVisible(el) {
   const s = el && el.standin;
   return !!(s && s.classList.contains('is-decoded') && !s.classList.contains('is-empty') && s.getAttribute('src'));
+}
+function bootElapsed() {
+  const t0 = typeof window.__petBootAt === 'number' ? window.__petBootAt : 0;
+  return performance.now() - t0;
 }
 function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const box = el.petLoad, hint = el.hint, wrap = el.wrap;
@@ -164,8 +168,15 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
     if (downloadDone && posterIsVisible(el)) return;
     clearTimeout(showTimer);
     showTimer = 0;
-    if (immediate || !posterIsVisible(el)) armLoader();
-    else showTimer = setTimeout(armLoader, LOAD_DELAY);
+    const waitBoot = Math.max(0, LOAD_BOOT - bootElapsed());
+    /* «Загружаем» не раньше ~300 мс с навигации — иначе на тёплом кэше вспышка с первого кадра */
+    if (posterIsVisible(el)) {
+      showTimer = setTimeout(armLoader, Math.max(LOAD_DELAY, waitBoot));
+    } else if (waitBoot > 0) {
+      showTimer = setTimeout(armLoader, waitBoot);
+    } else {
+      armLoader();
+    }
   };
   function hideLoaderEarly() {
     clearTimeout(showTimer);
@@ -201,15 +212,17 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
     box.dataset.pc = String(pc);
     stamp('progress');
   };
+  if (window.__petBootLoaderTimer) { /* таймер инлайн-скрипта: модули его не отменяют */ }
   if (box && box.classList.contains('on') && !box.classList.contains('out')) {
     if (wrap) wrap.classList.add('has-loader');
     shownAt = performance.now() || 1;
     stamp('loader-boot');
-  } else if (immediate) {
-    armLoader();
+  } else {
+    scheduleLoader();
   }
   stamp('init');
   window.__onPetPosterReady = () => {
+    if (window.__petBootLoaderTimer) { clearTimeout(window.__petBootLoaderTimer); window.__petBootLoaderTimer = 0; }
     stamp('poster-ready');
     if (downloadDone) hideLoaderEarly();
   };
@@ -222,13 +235,22 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   async function paint() {
     if (painted) return;
     painted = true;
+    /* холст проявляется поверх постера; постер не прячем, пока кадр не нарисован и CSS-переход не закончился */
+    try { if (typeof el.relayout === 'function') el.relayout(); } catch (e) {}
+    try { if (typeof el.drawNow === 'function') el.drawNow(); } catch (e) {}
     if (wrap) wrap.classList.add('is-painted');
+    try { if (typeof el.drawNow === 'function') el.drawNow(); } catch (e) {}
+    stamp('painted');
+    await frames(2);
+    try { if (typeof el.drawNow === 'function') el.drawNow(); } catch (e) {}
+    const fade = RM ? 0 : CANVAS_FADE;
+    if (fade) await new Promise(r => setTimeout(r, fade));
+    await frames(1);
+    try { if (typeof el.drawNow === 'function') el.drawNow(); } catch (e) {}
     if (el.standin && wrap && !wrap.classList.contains('is-fallback')) {
       el.standin.classList.add('is-spent');
     }
     if (el.sil) el.sil.classList.add('is-covered');
-    stamp('painted');
-    await frames(2);
   }
   async function finish() {
     clearTimeout(showTimer);
@@ -264,6 +286,14 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   if (hint) hint.setAttribute('aria-hidden', 'true');
   window.__petLoad = { pc: 0, shown: !!(shownAt), ready: false, painted: false, log };
   return { progress, paint, finish, markDownloaded, log };
+}
+
+async function fallbackOrEmpty(opts, onProgress) {
+  try {
+    return await petStage(Object.assign({}, opts, { onProgress, forceFallback: true }));
+  } catch (e) {
+    return emptyStage();
+  }
 }
 
 /* ---------------- запуск ---------------- */
@@ -329,16 +359,53 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   if (START.fresh) document.body.classList.add('is-fresh');
   const loadUi = bindPetLoader(el, { immediate: !START.known, showHint: !!START.known });
   let st;
+  function bindDraw() {
+    el.drawNow = () => { try { if (st && st.drawNow) st.drawNow(); else if (st && st.requestDraw) st.requestDraw(); } catch (e) {} };
+    el.relayout = () => { try { if (st && st.relayout) st.relayout(); } catch (e) {} };
+  }
+  function networkBusy() {
+    try {
+      if (document.readyState !== 'complete') return true;
+      const now = performance.now(), res = performance.getEntriesByType('resource');
+      for (let i = Math.max(0, res.length - 50); i < res.length; i++) {
+        const e = res[i], end = e.responseEnd || 0;
+        if (!end) return true; /* ещё качается — это не зависание */
+        if (now - end < 2000) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
   if (!START.known) {
     st = emptyStage();
   } else {
+    const stageOpts = { canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.stage };
+    let lastBeat = performance.now();
+    const onProg = p => { lastBeat = performance.now(); loadUi.progress(p); };
     try {
-      st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.stage, onProgress: p => loadUi.progress(p) });
+      const po = new PerformanceObserver(() => { lastBeat = performance.now(); });
+      try { po.observe({ type: 'resource', buffered: true }); } catch (e) {}
+      const started = performance.now();
+      const work = petStage(Object.assign({}, stageOpts, { onProgress: onProg }));
+      const stall = new Promise(resolve => {
+        const id = setInterval(() => {
+          const now = performance.now();
+          if (now - lastBeat > 8000 && !networkBusy()) { clearInterval(id); resolve('stall'); }
+          else if (now - started > 90000) { clearInterval(id); resolve('hard'); }
+        }, 400);
+        work.then(() => clearInterval(id), () => clearInterval(id));
+      });
+      const raced = await Promise.race([work.then(s => ({ st: s })), stall.then(k => ({ timeout: k }))]);
+      try { po.disconnect(); } catch (e) {}
+      if (raced.st) st = raced.st;
+      else {
+        console.warn('Сцена питомца зависла (' + raced.timeout + '), перехожу на 2D');
+        try { st = await fallbackOrEmpty(stageOpts, onProg); } catch (e) { st = emptyStage(); }
+      }
     } catch (e) {
       console.warn('Сцена питомца не поднялась', e);
-      try { await loadUi.finish(); } catch (err) {}
-      throw e;
+      try { st = await fallbackOrEmpty(stageOpts, onProg); } catch (err) { st = emptyStage(); }
     }
+    bindDraw();
     try { await loadUi.paint(); } catch (err) {}
   }
   if (input === 'zone' && START.known) bindZone();
@@ -682,8 +749,15 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
       }
       await st.show(E.pet, nextSt);
       layout();
+      try { if (st.drawNow) st.drawNow(); } catch (e) {}
       if (el.wrap) el.wrap.classList.add('is-painted', 'is-ready');
-      if (el.standin) el.standin.classList.add('is-spent');
+      try { if (st.drawNow) st.drawNow(); } catch (e) {}
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+        await new Promise(r => setTimeout(r, 280));
+      }
+      try { if (st.drawNow) st.drawNow(); } catch (e) {}
+      if (el.standin && el.wrap && !el.wrap.classList.contains('is-fallback')) el.standin.classList.add('is-spent');
       if (el.sil) el.sil.classList.add('is-covered');
       if (evolve && nextSt > prevSt && !petChanged) playEvolve();
       if (petChanged) st.preload(E.pet);

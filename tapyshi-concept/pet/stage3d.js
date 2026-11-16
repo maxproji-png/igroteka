@@ -271,6 +271,8 @@ export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = 
     for (const c of host.querySelectorAll('canvas.scene')) Object.assign(c.style, { left: crop.x + 'px', top: crop.y + 'px', width: crop.w + 'px', height: crop.h + 'px', right: 'auto', bottom: 'auto' });
     cam.setViewOffset(FW, FH, crop.x, crop.y, crop.w, crop.h); cam.updateProjectionMatrix();
     R.setSize(crop.w, crop.h, false);
+    /* setSize очищает буфер — рисуем сразу в этом же ходе, иначе пустой кадр поверх спрятанного постера */
+    if (current.object) R.render(scene, cam);
   }
 
   const v = new THREE.Vector3();
@@ -293,6 +295,7 @@ export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = 
   function applyYaw() { holder.rotation.y = BASE_YAW + userYaw; }
   const draw = () => { raf = 0; if (spinning) R.shadowMap.needsUpdate = true; R.render(scene, cam); };
   const requestDraw = () => { if (!raf) raf = requestAnimationFrame(draw); };
+  const drawNow = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } draw(); };
   const SPIN_K = .0085; // рад / пиксель: жест «потянул вправо — мордочка ушла вправо»
   function spinBy(dxPx) {
     userYaw += dxPx * SPIN_K;
@@ -417,7 +420,7 @@ export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = 
   }
 
   return {
-    cam, toScreen, headTop, requestDraw, setHappy, hit: () => hitE, show, measure, relayout,
+    cam, toScreen, headTop, requestDraw, drawNow, setHappy, hit: () => hitE, show, measure, relayout,
     spinBy, spinEnd,
     get yaw() { return userYaw; },
     set onSpinSettle(fn) { onSpinSettle = fn; },

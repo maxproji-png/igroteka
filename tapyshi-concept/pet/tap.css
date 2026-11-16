@@ -170,8 +170,7 @@ body.is-fresh .lvl.has-nick #lvlLab{font-size:13px;font-weight:900;color:var(--i
 /* холодная сеть: лоадер поверх приглушённого силуэта, чтобы «Загружаем» читалось */
 .pet-wrap.has-loader:not(.is-painted) .pet-standin.is-decoded{opacity:.42}
 .pet-standin.is-empty,.pet-standin.is-spent,.pet-standin:not([src]){opacity:0!important;visibility:hidden}
-/* 3D готов: постер уходит, холст проявляется поверх (alpha) */
-.pet-wrap.is-painted:not(.is-fallback) .pet-standin{opacity:0}
+/* 3D холст проявляется поверх постера; сам постер прячем только после кадра+перехода (.is-spent) */
 .pet-wrap.is-fallback.is-painted .pet-standin.is-decoded{opacity:1;visibility:visible}
 @media (prefers-reduced-motion:reduce){
   .pet-standin,.pet-poster,.pet-sil,canvas.scene{transition:none}
