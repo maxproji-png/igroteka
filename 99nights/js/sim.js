@@ -14,7 +14,7 @@ export const CFG = {
   // v0.8 (баланс §10, заменяет §9.2; гипотеза, проверка — test/balance-sim.mjs): по группам ночей 1–3 / 4–9 / 10–12
   MIST_DMG: [1.5, 2.5, 3.5], MIST_MAX_BLOW: [8, 0, 20], MOTH_DMG: 1, CROW_STAY: 15, FOG10_BURN: 1.15,
   // §12 (v0.8.3): ветер 11–12, мотыльки 11/12 двумя волнами, урон клубочка 11–12; кооп — горение/мотыльки/клубочки за каждого игрока сверх первого
-  WIND_BURN: 1.35, MOTHS11: 5, MOTHS12: 6, MIST_DMG_WIND: 4, COOP_BURN_EARLY: .1, COOP_BURN: .2, COOP_BURN_LATE: .3, COOP_MOTH: 1, COOP_MIST: 1,   // горение кооп за игрока сверх первого: ночи 1–3 +10% (§13.3), 4–9 +20%, 10–12 +30% (§12.3)
+  WIND_BURN: 1.35, MOTHS11: 5, MOTHS12: 6, MIST_DMG_WIND: 4, COOP_BURN_K: [[1, 1.1, 1.2, 1.2], [1, 1.2, 1.4, 1.6], [1, 1.4, 1.6, 1.8]], COOP_MOTH: 1, COOP_MIST: 1,   // §14: множитель горения ночью по числу игроков (соло, 2, 3, 4) для ночей 1–3 / 4–9 / 10–12
   BAG_BASKET: 12, BAG_BASKET2: 16,   // v0.8.3: с v0.8.0 эта пара случайно оказалась внутри комментария (MIST_MAX_BLOW: 0 — без лимита) → вместимость с корзинкой была NaN
   SPEED: 4.4, PLAYER_R: .38,
   FIRE: { x: 0, z: 0 }, BENCH: { x: 3.6, z: -2.4 }, CHEST: { x: -3.6, z: -2.4 }, BED: { x: 0, z: 2.8 }, LAMP: { x: 0, z: -4.2 },
@@ -97,7 +97,7 @@ export function weatherFor(s, n) {
 // Расход топлива: база уровня × этап × погода × состав (×день)
 export function burnRate(s) {
   const night = s.phase === 'night'; let b = CFG.BURN[s.fire.lv] * (s.stage >= 2 ? 1.1 : 1);
-  if (night) { b *= 1 + (s.night >= 10 ? CFG.COOP_BURN_LATE : s.night <= 3 ? CFG.COOP_BURN_EARLY : CFG.COOP_BURN) * (startN(s) - 1);   /* §13.3: ночи 1–3 +10%, 4–9 +20%, 10–12 +30% за игрока сверх первого */ if (s.wx.rain) b *= 1.3; if (s.wx.wind) b *= CFG.WIND_BURN; if (s.night === 10) b *= CFG.FOG10_BURN; } else b *= .5;   // §11.2: туман ночи 10 — горение ×1,15
+  if (night) { b *= CFG.COOP_BURN_K[nightTier(s.night)][Math.min(4, startN(s)) - 1];   /* §14: таблица по числу игроков */ if (s.wx.rain) b *= 1.3; if (s.wx.wind) b *= CFG.WIND_BURN; if (s.night === 10) b *= CFG.FOG10_BURN; } else b *= .5;   // §11.2: туман ночи 10 — горение ×1,15
   return b;
 }
 
