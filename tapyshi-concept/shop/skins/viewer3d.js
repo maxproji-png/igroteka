@@ -8,6 +8,9 @@ import { applyRules } from './glb/tryon_rules.mjs?v=tc11152225';
 
 const V = '?v=tc11152225';
 const FILES = { common:'skin_common_raccoon_s1', epic:'skin_epic_raccoon_s1', legendary:'skin_legendary_raccoon_s1' };
+/* fix4: известные размеры GLB в байтах (из glb/manifest.json → files[*].bytes). Поток fetch отдаёт уже распакованные байты,
+   а Content-Length при gzip (GitHub Pages) — сжатый размер или его нет, поэтому знаменатель прогресса — этот размер */
+const BYTES = { common:583596, epic:658024, legendary:807016 };
 /* общий кадр: из glb/manifest.json (bbox_all). R — макс. радиус в плоскости XZ (Гроза с крыльями, 1,21 м), H — макс. высота (шляпа мага, 1,58 м) */
 const BOX = { common:{min:[-0.44,-0.008,-0.558],max:[0.482,1.251,0.302]}, epic:{min:[-0.448,-0.002,-0.488],max:[0.593,1.575,0.35]}, legendary:{min:[-1.033,-0.008,-0.625],max:[1.041,1.225,0.302]} };
 let R = 0, H = 0;
@@ -75,11 +78,30 @@ function load(set, idle){
   const c = new AbortController(); c.idle = !!idle; ctrl[set] = c;
   if (!idle) for (const k in ctrl) if (k !== set && ctrl[k].idle){ ctrl[k].abort(); if (!idleQ.includes(k)) idleQ.unshift(k); }
   pending[set] = fetch('skins/glb/' + FILES[set] + '.glb' + V, { signal:c.signal })
-    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
-    .then(buf => new GLTFLoader().parseAsync(buf, 'skins/glb/'))
-    .then(g => { const off = center(g.scene); g.userData = off; cache[set] = g.scene; return g.scene; })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return readAll(r, set); })
+    .then(buf => { setProg(set, 0.92); return new GLTFLoader().parseAsync(buf, 'skins/glb/'); })
+    .then(g => { const off = center(g.scene); g.userData = off; cache[set] = g.scene; setProg(set, 0.95); return g.scene; })
     .finally(() => { delete pending[set]; delete ctrl[set]; setTimeout(pump, 0); });
   return pending[set];
+}
+/* fix4: прогресс загрузки. Скачивание — 0…90 %, разбор — 92–95 %, шейдеры — 97 %, первый кадр отрисован — 100 %
+   (держится один кадр rAF, затем в том же такте показ 3D, поэтому 100 % не «висит»). Значение только растёт (max). Состояние хранится по набору: если GLB уже
+   качается после pointerdown, открытое окно подхватывает текущий процент, второго запроса нет */
+const prog = {};
+let progRaf = 0;
+function setProg(set, v){ if (!(v > (prog[set] || 0))) return; prog[set] = Math.min(1, v); if (!progRaf) progRaf = requestAnimationFrame(() => { progRaf = 0; paintProg(); }); }
+function paintProg(){ if (!host || !want) return; const el = host.querySelector('.sk-load'); if (!el) return;
+  const p = prog[want]; if (p == null) return; const pc = Math.floor(p * 100);
+  el.classList.add('has-pc'); el.style.setProperty('--pc', pc + '%'); const t = el.querySelector('.sk-load-pc'); if (t) t.textContent = pc + '%'; el.dataset.pc = pc; }
+async function readAll(r, set){
+  const enc = (r.headers.get('content-encoding') || '').toLowerCase(), cl = +r.headers.get('content-length') || 0;
+  const total = BYTES[set] || (!enc || enc === 'identity' ? cl : 0);
+  if (!r.body || !r.body.getReader || !total){ const b = await r.arrayBuffer(); setProg(set, 0.9); return b; }
+  const rd = r.body.getReader(), parts = []; let got = 0;
+  setProg(set, 0.01);
+  for (;;){ const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; setProg(set, 0.9 * Math.min(1, got / total)); }
+  const out = new Uint8Array(got); let o = 0; for (const p of parts){ out.set(p, o); o += p.length; }
+  setProg(set, 0.9); return out.buffer;
 }
 function pump(){
   if (Object.keys(pending).length) return;                       // по одному файлу; приоритетная загрузка — первой
@@ -106,6 +128,7 @@ async function attach(stage, set, sel, angle){
     const tok = ++loadTok;
     if (!cache[set]){
       stage.classList.remove('is-3d'); drawn = false;           // ещё не загружен: канвас скрыт, видна заглушка
+      paintProg();                                              // предзагрузка уже идёт — сразу её текущий процент
       try {
         const root = await load(set);
         if (tok !== loadTok || !ren || host !== stage) return false;
@@ -114,7 +137,9 @@ async function attach(stage, set, sel, angle){
         /* шейдеры: асинхронно, если есть KHR_parallel_shader_compile (иначе three пишет предупреждение) — синхронно */
         if (ren.extensions.has('KHR_parallel_shader_compile')) { try { await ren.compileAsync(scene, cam); } catch (e) { ren.compile(scene, cam); } } else ren.compile(scene, cam);
         if (tok !== loadTok || !ren || host !== stage) return false;
+        setProg(set, 0.97);
         renderNow();                                              // первый кадр с моделью в буфере
+        prog[set] = 1; paintProg();                               // 100 % виден ровно один кадр — затем сразу 3D
         await new Promise(r => requestAnimationFrame(r));
         if (tok !== loadTok || !ren || host !== stage) return false;
       } catch (e) { if (tok !== loadTok) return false; console.warn('3D: не загрузилось', set, e);
@@ -122,6 +147,7 @@ async function attach(stage, set, sel, angle){
     } else { const root = cache[set]; if (root.parent !== pivot) pivot.add(root); cur = set; }
   }
   show(cur); applyRules(cache[cur], parts);
+  if (prog[cur] != null && prog[cur] < 1){ prog[cur] = 1; paintProg(); }   // 100 % — в том же такте, что показ 3D
   renderNow(); host.classList.add('is-3d'); host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); return true;
 }
 let drawn = false;   // последний render содержал модель (для проверок: SK3D.frame())

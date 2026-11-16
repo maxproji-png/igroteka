@@ -63,6 +63,7 @@
     document.body.appendChild(scrim); document.body.appendChild(sh); scrim.addEventListener('click', close);
     sh.addEventListener('click', onSheetClick); }
   function open(html, instant){ isOpen = true; ensure(); place(); sh.innerHTML='<div class="sk-grab"></div><button type="button" class="sk-x" data-close aria-label="Закрыть">'+I.x+'</button>'+html;
+    skel(sh);
     if (instant){ sh.classList.add('no-anim'); scrim.classList.add('no-anim'); }
     requestAnimationFrame(function(){ sh.classList.add('on'); scrim.classList.add('on'); }); }
   /* 3D освобождаем после того, как шторка уехала (иначе на выезде мелькает пустая сцена); повторное открытие раньше — отмена */
@@ -108,6 +109,16 @@
     st.classList.add('is-wait'); var done = function(){ st.classList.remove('is-wait'); };
     im.addEventListener('load', done, { once:true }); im.addEventListener('error', done, { once:true }); }
   w.SK3D_FALLBACK = fallbackPoster;
+  /* fix4: скелетон плиток частей (окно набора) и мини-превью (окно части), пока их webp не скачан и не декодирован.
+     Вызывается сразу после innerHTML, до первой отрисовки: картинка из кэша (complete + naturalWidth) — скелетона нет вовсе.
+     Загрузилась → decode() → класс снимается в том же такте, что и картинка становится видимой. Ошибка — скелетон без шиммера. */
+  function skel(root){ [].forEach.call(root.querySelectorAll('.sk-p4-i > img, .sk-mini > img'), function(im){ var b = im.parentNode;
+    if (im.complete && im.naturalWidth) return;
+    b.classList.add('is-sk');
+    if (im.complete && im.getAttribute('src')) { b.classList.add('is-sk-err'); return; }   /* уже упала */
+    im.addEventListener('load', function(){ var fin = function(){ b.classList.remove('is-sk'); };
+      if (im.decode) im.decode().then(fin, fin); else fin(); }, { once:true });
+    im.addEventListener('error', function(){ b.classList.add('is-sk-err'); }, { once:true }); }); }
   var isOpen = false;
   function partSheet(id, instant){
     if (w.SK3D) w.SK3D.detach();
@@ -153,7 +164,7 @@
     if (D3){ back = false; img = cm.n===0 ? (MF.base && MF.base[pk] ? render(MF.base[pk]) : render(e.tq)) : (cm.exact ? cm.src : render(e.tq)); }  /* адрес постера — только для аварийного фолбэка, в разметку не идёт */
     open('<div class="sk-ss sk-tone--'+s.tone+'" data-skset="'+s.id+'">'+
       '<div class="sk-stage big'+(!D3&&trying&&!cm.exact?' is-fallback':'')+(D3?' sk3d':'')+'"'+(D3?' data-poster="'+img+'"':'')+'>'+
-        (D3 ? (has3d ? '' : '<span class="sk-load" aria-label="Загружаем 3D"><i class="sk-load-sh"></i><i class="sk-load-r"></i><b>Загружаем 3D</b></span>') : '<img class="sk-poster" src="'+img+'" alt="">'+LOAD)+
+        (D3 ? (has3d ? '' : '<span class="sk-load" aria-label="Загружаем 3D"><i class="sk-load-sh"></i><i class="sk-load-r"></i><b>Загружаем 3D<span class="sk-load-pc"></span></b><i class="sk-load-bar"><i></i></i></span>') : '<img class="sk-poster" src="'+img+'" alt="">'+LOAD)+
         '<span class="sk-try'+(trying?(D3||cm.exact?' on':' warn'):'')+'">'+note+'</span>'+
         (D3 ? '<span class="sk-spin" aria-hidden="true">'+I.turn+'<span>Крути пальцем</span></span>' : '')+
         (!D3 && !trying && e && e.back ? '<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
