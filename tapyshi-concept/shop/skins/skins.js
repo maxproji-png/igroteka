@@ -73,8 +73,29 @@
   (function watch(){ var t=document.querySelector('.tabbar'); if (!t) return setTimeout(watch, 50); if (w.ResizeObserver) new ResizeObserver(place).observe(t); place(); })();
 
   var view = { pet:'raccoon', back:false, set:null, sel:{}, angle:null };
-  /* модуль 3D грузится позже классических скриптов: если окно набора уже открыто — перерисовать его в 3D */
-  addEventListener('sk3d-ready', function(){ if (isOpen && sh.querySelector('.sk-ss')) setSheet(view.set, true); });
+  /* fix2: WebGL определяем сразу, синхронно, не дожидаясь модуля viewer3d.js. Есть WebGL → окно набора ВСЕГДА в 3D-разметке:
+     пока модель не готова — нейтральная заглушка (лоадер), постер/webp не вставляется вовсе. Webp — только без WebGL
+     или если 3D так и не загрузилось (ошибка/таймаут). */
+  var GL = (function(){ try { var c=document.createElement('canvas'), g=c.getContext('webgl2')||c.getContext('webgl'); if (!g) return false;
+    var l=g.getExtension('WEBGL_lose_context'); if (l) l.loseContext(); return true; } catch(e){ return false; } })();
+  function use3d(){ return GL && !(w.SK3D && !w.SK3D.ok); }
+  /* модуль 3D грузится позже классических скриптов: окно уже открыто с лоадером — просто подключаем 3D к той же сцене, без перерисовки */
+  addEventListener('sk3d-ready', function(){ flushPre();
+    var st = isOpen && sh && sh.querySelector('.sk-ss .sk-stage.sk3d');
+    if (!st) return;
+    if (!w.SK3D.ok){ setSheet(view.set, true); return; }
+    w.SK3D.attach(st, view.set, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; });
+  /* предзагрузка GLB (простой на «Скинах», pointerdown по карточке); до загрузки модуля — в очередь */
+  var preQ = [];
+  function preload(id){ if (!GL) return; if (w.SK3D && w.SK3D.preload) w.SK3D.preload(id); else if (preQ.indexOf(id) < 0) preQ.push(id); }
+  function flushPre(){ if (w.SK3D && w.SK3D.preload) preQ.splice(0).forEach(function(id){ w.SK3D.preload(id); }); }
+  /* страховка: модуль 3D не загрузился вовсе (сеть/ошибка) — через 15 с показываем постер как запасной вариант */
+  var failT = 0;
+  function failLater(){ clearTimeout(failT); failT = setTimeout(function(){ var st = isOpen && sh && sh.querySelector('.sk-ss .sk-stage.sk3d');
+    if (st && !w.SK3D && !st.classList.contains('is-3d')) fallbackPoster(st); }, 15000); }
+  function fallbackPoster(st){ if (st.querySelector('.sk-poster') || !st.dataset.poster) return; st.classList.add('is-3d-fail');
+    var im = document.createElement('img'); im.className = 'sk-poster'; im.alt = ''; im.src = st.dataset.poster; st.insertBefore(im, st.firstChild); }
+  w.SK3D_FALLBACK = fallbackPoster;
   var isOpen = false;
   function partSheet(id, instant){
     if (w.SK3D) w.SK3D.detach();
@@ -111,14 +132,15 @@
     var lbl = done ? '<span class="sk-have">'+I.check+'Набор собран</span>' :
       '<span class="sk-pr"><small>'+(si.all ? (n?'Докупить '+si.n+' '+chast(si.n):'Весь набор')+' · <s class="cx-num">'+fmt(si.full)+'</s> <em>−15%</em>'
         : 'Выбрано '+si.k+' '+chast(si.k)+' · без скидки')+'</small>'+stub()+'</span>';
-    var D3 = !!(w.SK3D && w.SK3D.ok);
+    var D3 = use3d(), M3 = D3 && !!w.SK3D;   /* M3 — модуль уже загружен */
     var note = D3 ? (cm.n===4 ? 'Весь набор' : cm.n ? 'Примерка · '+cm.n+' из 4' : 'Без костюма')
       : trying ? (cm.exact ? 'Примерка · '+cm.n+' из 4' : 'Нет рендера · показан весь набор') : (back ? 'Вид сзади' : 'Весь набор');
-    var keep = D3 && isOpen && sh && sh.querySelector('.sk-ss[data-skset="'+id+'"] .sk-stage.is-3d');   /* тот же набор, 3D готово — сцену не трогаем */
-    var has3d = D3 && w.SK3D.has && w.SK3D.has(s.id);   /* GLB уже разобран в этой сессии — постер не нужен вовсе */
-    if (D3){ back = false; img = cm.n===0 ? (MF.base && MF.base[pk] ? render(MF.base[pk]) : render(e.tq)) : (cm.exact ? cm.src : render(e.tq)); }  /* постер, пока грузится GLB */
+    var keep = D3 && isOpen && sh && sh.querySelector('.sk-ss[data-skset="'+id+'"] .sk-stage.sk3d');   /* тот же набор — сцену (канвас или лоадер) не трогаем */
+    var has3d = M3 && w.SK3D.has && w.SK3D.has(s.id);   /* GLB уже разобран — лоадер не нужен */
+    if (D3){ back = false; img = cm.n===0 ? (MF.base && MF.base[pk] ? render(MF.base[pk]) : render(e.tq)) : (cm.exact ? cm.src : render(e.tq)); }  /* адрес постера — только для аварийного фолбэка, в разметку не идёт */
     open('<div class="sk-ss sk-tone--'+s.tone+'" data-skset="'+s.id+'">'+
-      '<div class="sk-stage big'+(!D3&&trying&&!cm.exact?' is-fallback':'')+(D3?' sk3d':'')+'">'+(has3d?'':'<img class="sk-poster" src="'+img+'" alt="">')+
+      '<div class="sk-stage big'+(!D3&&trying&&!cm.exact?' is-fallback':'')+(D3?' sk3d':'')+'"'+(D3?' data-poster="'+img+'"':'')+'>'+
+        (D3 ? (has3d ? '' : '<span class="sk-load" aria-label="Загружаем 3D"><i class="sk-load-sh"></i><i class="sk-load-r"></i><b>Загружаем 3D</b></span>') : '<img class="sk-poster" src="'+img+'" alt="">')+
         '<span class="sk-try'+(trying?(D3||cm.exact?' on':' warn'):'')+'">'+note+'</span>'+
         (D3 ? '<span class="sk-spin" aria-hidden="true">'+I.turn+'<span>Крути пальцем</span></span>' : '')+
         (!D3 && !trying && e && e.back ? '<button type="button" class="sk-turn" data-turn aria-label="Повернуть">'+I.turn+'<span>'+(view.back?'Спереди':'Сзади')+'</span></button>':'')+
@@ -133,10 +155,11 @@
       '<div class="sk-fill"></div>'+
       '<div class="sk-buyrow">'+lbl+act+'</div>'+
     '</div>', instant);
-    if (keep){ /* тап по части: возвращаем прежнюю сцену с живым канвасом, меняем только плашку; 3D — только applyRules */
+    if (keep){ /* тап по части: возвращаем прежнюю сцену (живой канвас или лоадер), меняем только плашку */
       var ns = sh.querySelector('.sk-stage'); keep.querySelector('.sk-try').replaceWith(ns.querySelector('.sk-try')); ns.replaceWith(keep);
-      w.SK3D.update(Object.keys(view.sel)); }
-    else if (D3){ w.SK3D.attach(sh.querySelector('.sk-stage'), s.id, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; }
+      if (M3){ if (keep.classList.contains('is-3d')) w.SK3D.update(Object.keys(view.sel)); else w.SK3D.attach(keep, s.id, Object.keys(view.sel), null); } }
+    else if (M3){ w.SK3D.attach(sh.querySelector('.sk-stage'), s.id, Object.keys(view.sel), view.angle != null ? view.angle : null); view.angle = null; }
+    else if (D3) failLater();   /* модуль ещё грузится: лоадер, подключимся по sk3d-ready */
   }
   function onSheetClick(e){
     var b;
@@ -157,5 +180,5 @@
   function bal(){ return w.SHOP ? w.SHOP.bal() : 0; }
 
   w.SK = { SETS:SETS, SLOT:SLOT, PET:PET, PET_ORDER:PET_ORDER, S:S, I:I, fmt:fmt, owned:owned, setPrice:setPrice, petImg:petImg, petOf:petOf, comboImg:comboImg, selInfo:selInfo, petThumb:petThumb, stub:stub, pips:pips, rchip:rchip,
-    partSheet:partSheet, tileOf:tileOf, setSheet:setSheet, close:close, view:view, onChange:function(f){ listeners.push(f); }, coin:coin, changed:changed, partById:partById, setById:setById, render:render };
+    partSheet:partSheet, preload:preload, tileOf:tileOf, setSheet:setSheet, close:close, view:view, onChange:function(f){ listeners.push(f); }, coin:coin, changed:changed, partById:partById, setById:setById, render:render };
 })(window);

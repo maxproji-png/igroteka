@@ -65,16 +65,21 @@ function center(root){ const b = new THREE.Box3(); ['base_head','base_body'].for
   if (b.isEmpty()) b.expandByObject(root.getObjectByName('body_base') || root);
   const c = b.getCenter(new THREE.Vector3()); root.position.set(-c.x, -0, -c.z); return { dx:-c.x, dz:-c.z }; }
 
-async function load(set){
-  if (cache[set]) return cache[set];
-  const g = await new GLTFLoader().loadAsync('skins/glb/' + FILES[set] + '.glb' + V);
-  const off = center(g.scene); g.userData = off; cache[set] = g.scene; return g.scene;
+const pending = {};   // fix2: один запрос на набор (предзагрузка + открытие не качают GLB дважды)
+function load(set){
+  if (cache[set]) return Promise.resolve(cache[set]);
+  if (!pending[set]) pending[set] = new GLTFLoader().loadAsync('skins/glb/' + FILES[set] + '.glb' + V)
+    .then(g => { const off = center(g.scene); g.userData = off; cache[set] = g.scene; delete pending[set]; return g.scene; })
+    .catch(e => { delete pending[set]; throw e; });
+  return pending[set];
 }
+/* предзагрузка: разбор GLB без рендерера (простой на «Скинах», pointerdown по карточке) */
+function preload(set){ if (!OK || !FILES[set] || cache[set]) return; load(set).catch(() => {}); }
 function show(set){ for (const k in cache) cache[k].visible = (k === set); }
 
 /* attach: окно набора перерисовалось — переносим канвас в новую сцену, грузим/переключаем модель, применяем правила */
-/* attach: окно набора открыто/перерисовано. Постер (webp) виден ТОЛЬКО пока GLB грузится в первый раз за сессию;
-   как только первый кадр 3D отрисован (синхронно) — .is-3d: постер display:none, канвас visible. Без кроссфейда. */
+/* attach: окно набора открыто/перерисовано. fix2: постера в 3D-режиме нет вовсе — пока GLB грузится, видна нейтральная
+   заглушка .sk-load; как только первый кадр 3D отрисован (синхронно) — .is-3d: заглушка display:none, канвас visible. */
 async function attach(stage, set, sel, angle){
   if (!OK) return false;
   if (!ren) init();
@@ -82,11 +87,11 @@ async function attach(stage, set, sel, angle){
   if (angle != null) { yaw = angle; vel = 0; stop(); }
   parts = new Set(sel); want = set;
   if (cur !== set || !cache[set] || cache[set].parent !== pivot){
-    if (!cache[set]) stage.classList.remove('is-3d');        // ещё не загружен: канвас скрыт, виден постер
+    if (!cache[set]) stage.classList.remove('is-3d');        // ещё не загружен: канвас скрыт, видна заглушка
     const tok = ++loadTok;
     try { const root = cache[set] || await load(set);          // из кэша — синхронно, без await
       if (tok !== loadTok || !ren || host !== stage) return false; if (root.parent !== pivot) pivot.add(root); cur = set; }
-    catch (e) { console.warn('3D: не загрузилось', set, e); stage.classList.add('is-3d-fail'); return false; } }
+    catch (e) { console.warn('3D: не загрузилось', set, e); if (window.SK3D_FALLBACK) window.SK3D_FALLBACK(stage); else stage.classList.add('is-3d-fail'); return false; } }
   show(cur); applyRules(cache[cur], parts);
   renderNow(); host.classList.add('is-3d'); host.dataset.sk3d = cur + ':' + [...parts].sort().join('+'); return true;
 }
@@ -109,5 +114,5 @@ function state(){ return { ok:OK, ready:!!(cur && host && host.classList.contain
   visible: cur ? (() => { const r = []; cache[cur].traverse(o => { if (o.isMesh) { let v = true, p = o; while (p) { if (!p.visible) { v = false; break; } p = p.parent; } if (v) r.push(o.parent.name || o.name); } }); return [...new Set(r)]; })() : [],
   pixelRatio: ren ? ren.getPixelRatio() : 0 }; }
 
-window.SK3D = { ok:OK, TQ, attach, update, detach, dispose, state, has };
+window.SK3D = { ok:OK, TQ, attach, update, detach, dispose, state, has, preload };
 window.dispatchEvent(new Event('sk3d-ready'));

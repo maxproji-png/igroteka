@@ -27,11 +27,17 @@
   host.addEventListener('click',function(e){ var b;
     if((b=e.target.closest('[data-open-set]'))) return SK.setSheet(b.dataset.openSet);
     if((b=e.target.closest('[data-open-part]'))) return SK.partSheet(b.dataset.openPart); });
+  /* fix2: предзагрузка 3D — по pointerdown на карточке набора (раньше click на ~100 мс) и в простое на вкладке «Скины» */
+  host.addEventListener('pointerdown',function(e){ var b=e.target.closest('[data-open-set]'); if(b&&SK.preload) SK.preload(b.dataset.openSet); },{passive:true});
+  var idleDone=false;
+  function idlePre(){ if(idleDone||host.hidden||!SK.preload) return; idleDone=true;
+    var ric=window.requestIdleCallback||function(f){ return setTimeout(f,1200); };
+    ric(function(){ if(!host.hidden) ORDER.forEach(function(id){ SK.preload(id); }); },{timeout:2500}); }
   SK.onChange(paint); paint();
   /* вкладки «Бусты / Скины»: ?tab=skins или #skins / #part-<id> / #set-<id> открывают «Скины» */
   var tabs=document.getElementById('shoptabs');
   function go(t){ [].forEach.call(tabs.querySelectorAll('[data-t]'),function(x){x.classList.toggle('on',x.dataset.t===t)});
-    document.getElementById('tab-boosts').hidden=t!=='boosts'; host.hidden=t!=='skins'; }
+    document.getElementById('tab-boosts').hidden=t!=='boosts'; host.hidden=t!=='skins'; if(t==='skins') idlePre(); }
   tabs.addEventListener('click',function(e){ var x=e.target.closest('[data-t]'); if(x) go(x.dataset.t); });
   if(window.SHOP&&SHOP.onBal) SHOP.onBal(function(){ paint(); });
   var h=location.hash.slice(1), m, pm=location.search.match(/[?&]pet[=-](\w+)/);
