@@ -12,7 +12,10 @@ export const CFG = {
   FIRST_LIGHT: .5, RELIGHT_STICKS: 2,             // v0.8 (§9.1): первый розжиг → 50%; погасший костёр — 2 ветки = +16, без бонуса
   REVIVE_HOLD: 2.5,                               // v0.8 (§9.4): подъём союзника — удержание 2,5 с
   // v0.8 (баланс §10, заменяет §9.2; гипотеза, проверка — test/balance-sim.mjs): по группам ночей 1–3 / 4–9 / 10–12
-  MIST_DMG: [1.5, 2.5, 3.5], MIST_MAX_BLOW: [8, 0, 20], MOTH_DMG: 1, CROW_STAY: 15, FOG10_BURN: 1.15,   // 0 — без лимита (как v0.7.0) BAG_BASKET: 12, BAG_BASKET2: 16,
+  MIST_DMG: [1.5, 2.5, 3.5], MIST_MAX_BLOW: [8, 0, 20], MOTH_DMG: 1, CROW_STAY: 15, FOG10_BURN: 1.15,
+  // §12 (v0.8.3): ветер 11–12, мотыльки 11/12 двумя волнами, урон клубочка 11–12; кооп — горение/мотыльки/клубочки за каждого игрока сверх первого
+  WIND_BURN: 1.35, MOTHS11: 5, MOTHS12: 6, MIST_DMG_WIND: 4, COOP_BURN: .2, COOP_BURN_LATE: .3, COOP_MOTH: 1, COOP_MIST: 1,   // горение кооп: +20% за игрока сверх первого, в ночи 10–12 — +30% (§12.3; ночи 1–9 не трогаем)
+  BAG_BASKET: 12, BAG_BASKET2: 16,   // v0.8.3: с v0.8.0 эта пара случайно оказалась внутри комментария (MIST_MAX_BLOW: 0 — без лимита) → вместимость с корзинкой была NaN
   SPEED: 4.4, PLAYER_R: .38,
   FIRE: { x: 0, z: 0 }, BENCH: { x: 3.6, z: -2.4 }, CHEST: { x: -3.6, z: -2.4 }, BED: { x: 0, z: 2.8 }, LAMP: { x: 0, z: -4.2 },
   FENCE_MAX: 6, TRAP_MAX: 3,
@@ -77,7 +80,7 @@ export const canAdd = (p, k, n) => bagSlots({ ...p.inv, [k]: (p.inv[k] || 0) + n
 export const have = (s, p, k) => (p.inv[k] || 0) + (s.chest[k] || 0);
 export const chestFree = (s, k) => { let n = 0; while (bagSlots({ ...s.chest, [k]: (s.chest[k] || 0) + n + 1 }) <= CFG.CHEST_SLOTS) n++; return n; };
 export const nightTier = n => n <= 3 ? 0 : n <= 9 ? 1 : 2;   // §10: 1–3 облегчены, 4–9 как v0.7.0, 10–12 сильнее
-export const mistDmg = n => CFG.MIST_DMG[nightTier(n)];
+export const mistDmg = n => n >= 11 ? CFG.MIST_DMG_WIND : CFG.MIST_DMG[nightTier(n)];
 export const mistMaxBlow = n => CFG.MIST_MAX_BLOW[nightTier(n)];
 export const costOf = (s, r) => { if (!r.upg) return r.cost; const m = CFG.UPG_MUL[Math.min(4, startN(s))]; const c = {}; for (const [k, v] of Object.entries(r.cost)) c[k] = Math.ceil(v * m); return c; };
 export const canPay = (s, p, cost) => Object.entries(cost).every(([k, v]) => have(s, p, k) >= v);
@@ -88,13 +91,13 @@ export function weatherFor(s, n) {
   const w = { rain: false, fog: 0, wind: false, special: false, moths: 0, title: '' };
   if (n === s.rainNight) { w.rain = true; w.title = 'Лёгкий дождь'; }
   if (n === 10) { w.fog = 1; w.special = true; w.title = 'Ночь густого тумана'; }
-  if (n >= 11 && n <= 12) { w.fog = .6; w.wind = true; w.moths = n === 11 ? 3 : 4;   /* v0.7: было 2 / 3 */ w.title = 'Туман, ветер и лунные мотыльки'; }
+  if (n >= 11 && n <= 12) { w.fog = .6; w.wind = true; w.moths = n === 11 ? CFG.MOTHS11 : CFG.MOTHS12;   /* v0.7: было 2 / 3 */ w.title = 'Туман, ветер и лунные мотыльки'; }
   return w;
 }
 // Расход топлива: база уровня × этап × погода × состав (×день)
 export function burnRate(s) {
   const night = s.phase === 'night'; let b = CFG.BURN[s.fire.lv] * (s.stage >= 2 ? 1.1 : 1);
-  if (night) { b *= 1 + .2 * (startN(s) - 1); if (s.wx.rain) b *= 1.3; if (s.wx.wind) b *= 1.2; if (s.night === 10) b *= CFG.FOG10_BURN; } else b *= .5;   // §11.2: туман ночи 10 — горение ×1,15
+  if (night) { b *= 1 + (s.night >= 10 ? CFG.COOP_BURN_LATE : CFG.COOP_BURN) * (startN(s) - 1); if (s.wx.rain) b *= 1.3; if (s.wx.wind) b *= CFG.WIND_BURN; if (s.night === 10) b *= CFG.FOG10_BURN; } else b *= .5;   // §11.2: туман ночи 10 — горение ×1,15
   return b;
 }
 
@@ -370,9 +373,9 @@ function stepEnemy(s, e, dt, g, LR) {
 // Волна ночи: от номера ночи и стартового состава (без пересчёта, если кто-то вышел). Числа — предложение GDD.
 export function waveFor(s, n) {
   const extra = startN(s) - 1, w = weatherFor(s, n);
-  const mist = 2 + extra + (n >= 8 ? 1 : 0);   // v0.7 (баланс ГД): база 2 в ночи 1–7, 3 в 8–12 (было +1 с 4-й и ещё +1 в 8–10)
+  const mist = 2 + Math.ceil(CFG.COOP_MIST * extra - 1e-9) + (n >= 8 ? 1 : 0);   // v0.7 (баланс ГД): база 2 в ночи 1–7, 3 в 8–12 (было +1 с 4-й и ещё +1 в 8–10)
   const crows = 1 + (extra >= 2 ? 1 : 0);
-  return { mist, crows, moose: n >= 3 ? 1 : 0, moths: w.moths ? w.moths + (extra >= 2 ? 1 : 0) : 0, twoWaves: w.special };
+  return { mist, crows, moose: n >= 3 ? 1 : 0, moths: w.moths ? w.moths + CFG.COOP_MOTH * extra : 0, twoWaves: w.special };
 }
 function startNight(s) {
   s.phase = 'night'; s.t = 0; const n = s.night, L = nightLen(s); s.spawnQ = []; s.wx = weatherFor(s, n);
@@ -382,7 +385,8 @@ function startNight(s) {
   else for (let i = 0; i < w.mist; i++) s.spawnQ.push([3 + i * (L * .6 / w.mist), 'mist']);
   for (let i = 0; i < w.crows; i++) s.spawnQ.push([7 + i * 9, 'crow']);
   if (w.moose) s.spawnQ.push([w.twoWaves ? 1 : 4, 'moose']);
-  for (let i = 0; i < w.moths; i++) s.spawnQ.push([8 + i * (L * .5 / w.moths), 'moth']);
+  // §12.2: мотыльки двумя волнами — с 8-й секунды и с середины ночи
+  { const h = Math.ceil(w.moths / 2), r = w.moths - h; for (let i = 0; i < h; i++) s.spawnQ.push([8 + i * (L * .25 / h), 'moth']); for (let i = 0; i < r; i++) s.spawnQ.push([L * .5 + i * (L * .25 / r), 'moth']); }
   s.spawnQ.sort((a, b) => a[0] - b[0]); ev(s, { t: 'night', n, wx: s.wx });
 }
 // Награды — ориентир Экономиста (GDD v0.5, раздел 11): 15 за ранние ночи этапа, 25 за поздние, +30 ночь 10, +100 победа этапа.
