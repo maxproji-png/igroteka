@@ -150,23 +150,31 @@ body.is-fresh .lvl.has-nick #lvlLab{font-size:13px;font-weight:900;color:var(--i
 .pet-wrap.is-fallback{pointer-events:none}
 .pet-standin,.pet-poster{position:absolute;left:50%;z-index:1;height:auto;object-fit:contain;transform:translateX(-50%);
   pointer-events:none;filter:drop-shadow(0 22px 16px rgb(50 70 130 / .28));user-select:none;-webkit-user-drag:none;
-  opacity:1;transition:opacity .28s ease}
+  opacity:0;visibility:hidden;transition:opacity .28s ease}
+/* постер только после load+decode — иначе прогрессивный PNG рисует куски ушей */
+.pet-standin.is-decoded,.pet-poster.is-decoded{opacity:1;visibility:visible}
 /* под 3D: размер подогнан к модели (дно как у питомца, без прыжка при кроссфейде) */
 .pet-standin{bottom:calc(var(--tabbar-space) + 86px);width:268px;min-height:0;max-height:none}
+/* нейтральный силуэт (инлайн SVG) на месте питомца, пока постер не декодирован */
+.pet-sil{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 86px);width:268px;transform:translateX(-50%);
+  z-index:0;pointer-events:none;opacity:1;transition:none}
+.pet-sil svg{display:block;width:100%;height:auto}
+.pet-sil.is-covered{opacity:0;transition:opacity .28s ease}
+.pet-wrap.is-painted:not(.is-fallback) .pet-sil{opacity:0;transition:none}
 /* 2D-фоллбэк оставляет прежнюю раскладку постера */
 .pet-wrap.is-fallback .pet-standin,.pet-poster{bottom:calc(var(--tabbar-space) + 88px);width:min(78%,340px);min-height:38%;max-height:58%}
 @media (max-height:760px){
-  .pet-standin{bottom:calc(var(--tabbar-space) + 76px)}
+  .pet-standin,.pet-sil{bottom:calc(var(--tabbar-space) + 76px)}
   .pet-wrap.is-fallback .pet-standin,.pet-poster{bottom:calc(var(--tabbar-space) + 78px);max-height:54%}
 }
 /* холодная сеть: лоадер поверх приглушённого силуэта, чтобы «Загружаем» читалось */
-.pet-wrap.has-loader:not(.is-painted) .pet-standin{opacity:.42}
+.pet-wrap.has-loader:not(.is-painted) .pet-standin.is-decoded{opacity:.42}
 .pet-standin.is-empty,.pet-standin.is-spent,.pet-standin:not([src]){opacity:0!important;visibility:hidden}
 /* 3D готов: постер уходит, холст проявляется поверх (alpha) */
 .pet-wrap.is-painted:not(.is-fallback) .pet-standin{opacity:0}
-.pet-wrap.is-fallback.is-painted .pet-standin{opacity:1}
+.pet-wrap.is-fallback.is-painted .pet-standin.is-decoded{opacity:1;visibility:visible}
 @media (prefers-reduced-motion:reduce){
-  .pet-standin,.pet-poster,canvas.scene{transition:none}
+  .pet-standin,.pet-poster,.pet-sil,canvas.scene{transition:none}
 }
 
 /* тост на главной */
@@ -200,13 +208,15 @@ body.is-fresh .lvl.has-nick #lvlLab{font-size:13px;font-weight:900;color:var(--i
 .pet-load.out{opacity:0;transition:opacity .28s ease}
 .pet-load-sh{position:absolute;left:50%;bottom:16%;width:44%;height:9%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgb(40 30 90 / .16),rgb(40 30 90 / 0))}
 .pet-load-r{width:42px;height:42px;border-radius:50%;border:4.5px solid color-mix(in srgb,var(--violet) 22%,var(--white));border-top-color:var(--violet);animation:pet-load-spin .8s linear infinite}
-.pet-load b{font-size:12.5px;font-weight:800;color:var(--ink-2);opacity:.8;font-variant-numeric:tabular-nums}
+.pet-load b{font-size:12.5px;font-weight:800;color:var(--ink-2);opacity:.8;font-variant-numeric:tabular-nums;font-family:ui-rounded,system-ui,sans-serif}
 @keyframes pet-load-spin{to{transform:rotate(360deg)}}
 .pet-load-pc{display:inline-block;min-width:4.4ch;text-align:right;visibility:hidden}
 .pet-load-pc::before{content:" "}
 .pet-load-bar{display:block;width:96px;height:4px;margin-top:-2px;border-radius:2px;overflow:hidden;background:color-mix(in srgb,var(--violet) 18%,var(--white));visibility:hidden}
 .pet-load-bar>i{display:block;height:100%;width:var(--pc,0%);border-radius:2px;background:var(--violet);transition:width .2s linear}
 .pet-load.has-pc .pet-load-pc,.pet-load.has-pc .pet-load-bar{visibility:visible}
+/* visibility:visible у детей иначе пробивает родителя без .on — остаётся «100%» и полоска */
+.pet-load:not(.on) .pet-load-pc,.pet-load:not(.on) .pet-load-bar{visibility:hidden}
 @media (prefers-reduced-motion:reduce){
   .pet-load-r{animation-duration:2.4s}
   .pet-load-bar>i{transition:none}

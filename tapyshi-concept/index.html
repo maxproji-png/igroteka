@@ -7,10 +7,55 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="preload" href="shared/fonts/Nunito.woff2?v=tc11132310" as="font" type="font/woff2" crossorigin="anonymous">
+<style>
+/* Критичный первый кадр: фон, силуэт, лоадер — без внешних css/js/шрифтов. */
+:root{--white:#FFFFFF;--bg:#F8F7FF;--bg-tint:#F4F0FF;--fill:#EDE8FB;--ink:#3A3358;--ink-2:#7E789E;--violet:#7C5CFF;--violet-edge:#5E40DB;--green:#26B880;--green-edge:#1C9B6A;--sun:#FFC233;--sun-edge:#E8A100;--sun-soft:#FFF6DA;--game-word-edge:#C98300;--shade:80 62 160;--ink-3:#B4AECB;--line:#EFEAF8;--tabbar-row:56px;--tabbar-pad-top:8px;--tabbar-space:calc(var(--tabbar-pad-top) + var(--tabbar-row) + env(safe-area-inset-bottom, 0px))}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;height:100dvh;background:var(--bg);overflow:hidden}
+body{display:flex;justify-content:center;font-family:ui-rounded,system-ui,sans-serif;color:var(--ink)}
+.app{position:relative;width:100vw;max-width:430px;height:100%;height:100dvh;overflow:hidden;background:linear-gradient(180deg,var(--bg-tint) 0%,var(--bg) 42%,var(--white) 100%)}
+#petBoot,.pet-wrap{position:absolute;inset:0;z-index:2;pointer-events:none}
+.pet-sil{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 86px);width:268px;transform:translateX(-50%);z-index:0;opacity:1;transition:none;pointer-events:none}
+.pet-sil svg{display:block;width:100%;height:auto}
+.pet-sil.is-covered{opacity:0;transition:opacity .28s ease}
+.pet-standin{position:absolute;left:50%;bottom:calc(var(--tabbar-space) + 86px);width:268px;height:auto;object-fit:contain;transform:translateX(-50%);z-index:1;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .28s ease;filter:drop-shadow(0 22px 16px rgb(50 70 130 / .28))}
+.pet-standin.is-decoded{opacity:1;visibility:visible}
+.pet-wrap.has-loader:not(.is-painted) .pet-standin.is-decoded,#petBoot.has-loader .pet-standin.is-decoded{opacity:.42}
+.pet-standin.is-empty,.pet-standin.is-spent,.pet-standin:not([src]){opacity:0!important;visibility:hidden}
+.pet-load{position:absolute;left:0;right:0;top:80px;bottom:calc(var(--tabbar-space) + 90px);z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none;opacity:0;visibility:hidden;--pc:0%;font-family:ui-rounded,system-ui,sans-serif}
+.pet-load.on{opacity:1;visibility:visible}
+.pet-load.out{opacity:0;transition:opacity .28s ease}
+.pet-load-sh{position:absolute;left:50%;bottom:16%;width:44%;height:9%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgb(40 30 90 / .16),rgb(40 30 90 / 0))}
+.pet-load-r{width:42px;height:42px;border-radius:50%;border:4.5px solid color-mix(in srgb,var(--violet) 22%,var(--white));border-top-color:var(--violet);animation:pet-boot-spin .8s linear infinite}
+.pet-load b{font-size:12.5px;font-weight:800;color:var(--ink-2);opacity:.8;font-variant-numeric:tabular-nums;font-family:ui-rounded,system-ui,sans-serif}
+@keyframes pet-boot-spin{to{transform:rotate(360deg)}}
+.pet-load-pc{display:inline-block;min-width:4.4ch;text-align:right;visibility:hidden}
+.pet-load-pc::before{content:" "}
+.pet-load-bar{display:block;width:96px;height:4px;margin-top:-2px;border-radius:2px;overflow:hidden;background:color-mix(in srgb,var(--violet) 18%,var(--white));visibility:hidden}
+.pet-load-bar>i{display:block;height:100%;width:var(--pc,0%);border-radius:2px;background:var(--violet);transition:width .2s linear}
+.pet-load.has-pc .pet-load-pc,.pet-load.has-pc .pet-load-bar{visibility:visible}
+.pet-load:not(.on) .pet-load-pc,.pet-load:not(.on) .pet-load-bar{visibility:hidden}
+@media (max-height:760px){
+  .pet-sil,.pet-standin{bottom:calc(var(--tabbar-space) + 76px)}
+  .pet-load{top:72px;bottom:calc(var(--tabbar-space) + 78px)}
+}
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:430px;height:auto;min-height:calc(var(--tabbar-row) + var(--tabbar-pad-top));
+  display:flex;padding:var(--tabbar-pad-top) 10px calc(var(--tabbar-pad-top) + env(safe-area-inset-bottom, 0px));gap:4px;border-radius:22px 22px 0 0;
+  background:var(--white);z-index:50;box-sizing:border-box}
+.tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:20px;color:var(--ink-3);font-size:11.5px;font-weight:800;text-decoration:none}
+.tabbar .tab svg{width:24px;height:24px;display:block}
+.tabbar .tab.on{color:var(--white);background:var(--violet)}
+</style>
+<link rel="stylesheet" href="shared/tokens.css?v=tc11161045" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="shared/components.css?v=tc11150155" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="shared/coin.css?v=tc11150155" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="pet/tap.css?v=tc11161602" media="print" onload="this.media='all'">
+<noscript>
 <link rel="stylesheet" href="shared/tokens.css?v=tc11161045">
 <link rel="stylesheet" href="shared/components.css?v=tc11150155">
 <link rel="stylesheet" href="shared/coin.css?v=tc11150155">
-<link rel="stylesheet" href="pet/tap.css?v=tc11161505">
+<link rel="stylesheet" href="pet/tap.css?v=tc11161602">
+</noscript>
 <script type="importmap">{"imports":{"three":"./lib/three.module.min.js?v=tc11132310"}}</script>
 <script>
 /* Выбор питомца/стадии до первой отрисовки. Единственный источник: window.__resolvePetStart / window.__pet.
@@ -84,26 +129,94 @@
     link.href = r.src;
     d.head.appendChild(link);
   }
+  /* Постер — только после load+decode, иначе прогрессивный PNG даёт «кончики ушей».
+     Лоадер сразу, если байт постера ещё нет; из кэша (complete) — не показываем. */
+  function coverSil(on) {
+    var sil = d.getElementById('petSil');
+    if (sil) sil.classList.toggle('is-covered', !!on);
+  }
+  function revealPoster(img, src, onReady, onNeedLoader) {
+    function ready() {
+      if (!img) return;
+      img.classList.add('is-decoded');
+      img.classList.remove('is-empty');
+      img.hidden = false;
+      w.__petPosterReady = true;
+      coverSil(true);
+      if (typeof w.__onPetPosterReady === 'function') w.__onPetPosterReady();
+      if (onReady) onReady(true);
+    }
+    function fail() {
+      if (img) {
+        img.classList.add('is-empty');
+        img.classList.remove('is-decoded');
+        img.removeAttribute('src');
+      }
+      w.__petPosterReady = false;
+      coverSil(false);
+      if (onNeedLoader) onNeedLoader();
+      if (onReady) onReady(false);
+    }
+    function afterLoad() {
+      if (img && typeof img.decode === 'function') img.decode().then(ready).catch(fail);
+      else ready();
+    }
+    if (!img) { if (onNeedLoader) onNeedLoader(); if (onReady) onReady(false); return; }
+    if (!src) { fail(); return; }
+    img.hidden = false;
+    img.classList.remove('is-empty', 'is-spent');
+    if (img.getAttribute('src') !== src) {
+      img.classList.remove('is-decoded');
+      coverSil(false);
+      img.src = src;
+    }
+    if (img.complete && img.naturalWidth) afterLoad();
+    else {
+      if (onNeedLoader) onNeedLoader();
+      img.addEventListener('load', afterLoad, { once: true });
+      img.addEventListener('error', fail, { once: true });
+    }
+  }
+  w.__revealPetPoster = revealPoster;
 })(window, document);
 </script>
 </head>
 <body>
 <span aria-hidden="true" style="position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Тапыши</span>
-<div class="app"><img class="pet-standin is-empty" id="petStandin" alt="" width="256" height="256" draggable="false" decoding="async"><script>
-(function () {
-  var el = document.getElementById('petStandin'), p = window.__pet;
-  if (el && p && p.known && p.src) {
-    el.classList.remove('is-empty');
-    el.removeAttribute('hidden');
-    el.src = p.src;
-  } else if (el) {
-    el.removeAttribute('src');
-    el.classList.add('is-empty');
-    el.hidden = true;
-  }
-})();
-</script></div>
-<script src="pet/icons.js?v=tc11150155"></script>
-<script src="shared/nav.js?v=tc11132310"></script>
-<script type="module" src="pet/fx.js?v=tc11161505"></script>
+<div class="app">
+  <div id="petBoot">
+    <span class="pet-sil" id="petSil" aria-hidden="true">
+      <svg viewBox="0 0 268 300" xmlns="http://www.w3.org/2000/svg" focusable="false">
+        <ellipse cx="134" cy="286" rx="70" ry="12" fill="rgb(80 62 160 / .10)"/>
+        <rect x="64" y="118" width="140" height="150" rx="48" fill="#D8D0F0"/>
+        <rect x="74" y="36" width="120" height="112" rx="44" fill="#E3DCF6"/>
+        <circle cx="114" cy="92" r="7" fill="#C4BCD8"/>
+        <circle cx="154" cy="92" r="7" fill="#C4BCD8"/>
+      </svg>
+    </span>
+    <img class="pet-standin is-empty" id="petStandin" alt="" width="256" height="256" draggable="false" decoding="async">
+    <span class="pet-load" id="petLoad" aria-live="polite" aria-label="Загружаем"><i class="pet-load-sh"></i><i class="pet-load-r"></i><b>Загружаем<span class="pet-load-pc"></span></b><i class="pet-load-bar"><i></i></i></span>
+  </div>
+  <script>
+  (function () {
+    var el = document.getElementById('petStandin');
+    var load = document.getElementById('petLoad');
+    var boot = document.getElementById('petBoot');
+    var p = window.__pet;
+    function showLoader() {
+      if (load) load.classList.add('on');
+      if (boot) boot.classList.add('has-loader');
+    }
+    if (window.__revealPetPoster && el && p && p.known && p.src) {
+      window.__revealPetPoster(el, p.src, null, showLoader);
+    } else {
+      if (el) { el.removeAttribute('src'); el.classList.add('is-empty'); el.hidden = true; }
+      showLoader();
+    }
+  })();
+  </script>
+</div>
+<script src="pet/icons.js?v=tc11150155" defer></script>
+<script src="shared/nav.js?v=tc11132310" defer></script>
+<script type="module" src="pet/fx.js?v=tc11161602"></script>
 </body></html>

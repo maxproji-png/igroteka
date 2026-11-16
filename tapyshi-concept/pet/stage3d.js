@@ -334,8 +334,13 @@ export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = 
   async function show(petId, stg, prog) {
     const id = PETS[petId] ? petId : 'raccoon';
     const n = Math.max(1, Math.min(6, stg | 0));
+    if (current.object) {
+      current.object.visible = false;
+      requestDraw();
+    }
     const obj = await loadEvo(id, n, prog);
     if (current.object && current.object !== obj) holder.remove(current.object);
+    obj.visible = true;
     if (obj.parent !== holder) holder.add(obj);
     current = { pet: id, stage: n, object: obj };
     applyYaw(); // угол, который выкрутили, сохраняется при смене стадии/питомца

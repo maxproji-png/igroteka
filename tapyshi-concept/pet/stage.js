@@ -42,9 +42,12 @@ async function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', 
     const id = PETS[petId] ? petId : 'raccoon';
     const n = Math.max(1, Math.min(6, stg | 0));
     current = { pet: id, stage: n, object: null };
+    img.classList.remove('is-decoded');
     img.style.visibility = 'hidden';
     img.src = posterUrl(id, n);
     try { if (img.decode) await img.decode(); } catch (e) {}
+    img.classList.add('is-decoded');
+    img.classList.remove('is-empty', 'is-spent');
     img.style.visibility = '';
     if (onProgress) onProgress(1);
     return current;

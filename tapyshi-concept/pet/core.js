@@ -99,7 +99,7 @@ export function plusURL(text, tier) { return spriteURL(plusCanvas(text, tier, SD
 
 /* ---------------- разметка HUD ---------------- */
 const HUD = `
-  <div class="pet-wrap" id="petWrap"><img class="pet-standin" id="petStandin" alt="" width="256" height="256" draggable="false" decoding="async"><canvas class="scene"></canvas><span class="pet-load" id="petLoad" aria-live="polite" aria-label="Загружаем"><i class="pet-load-sh"></i><i class="pet-load-r"></i><b>Загружаем<span class="pet-load-pc"></span></b><i class="pet-load-bar"><i></i></i></span></div>
+  <div class="pet-wrap" id="petWrap"><canvas class="scene"></canvas></div>
   <div class="hud">
     <div class="top">
       <div class="pill card bal" id="bal"><span class="cico" id="balIco"></span><span class="num" id="balNum"></span></div>
@@ -131,21 +131,68 @@ const HUD = `
   <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 
 
-/* ---------------- загрузка питомца (стиль магазина: «Загружаем», %, полоска только растёт) ---------------- */
+/* ---------------- загрузка питомца (стиль магазина: «Загружаем», %, полоска только растёт) ----------------
+   Лоадер — только пока качается сеть. 250 мс задержки: только если постер уже виден.
+   Если постера нет — сразу (уже с первого кадра в index.html). Если байты GLB уже пришли
+   и постер виден — лоадер не показывать, ждать parse/первый кадр под постером. */
 const LOAD_DELAY = 250, LOAD_MIN = 400, LOAD_FADE = 280;
+function posterIsVisible(el) {
+  const s = el && el.standin;
+  return !!(s && s.classList.contains('is-decoded') && !s.classList.contains('is-empty') && s.getAttribute('src'));
+}
 function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   const box = el.petLoad, hint = el.hint, wrap = el.wrap;
   let shownAt = 0, done = false, painted = false, lastPc = -1;
+  let downloadDone = false, showTimer = 0;
   const log = [];
   const stamp = (ev, extra) => {
     const rec = Object.assign({ t: Math.round(performance.now()), ev, pc: lastPc, loader: !!(box && box.classList.contains('on') && !box.classList.contains('out')), hint: !!(hint && hint.classList.contains('in') && !hint.classList.contains('gone')), painted: !!(wrap && wrap.classList.contains('is-painted')) }, extra || {});
     log.push(rec);
     window.__petLoad = { pc: Math.max(0, lastPc), shown: rec.loader, ready: ev === 'ready' || (window.__petLoad && window.__petLoad.ready), painted, log };
   };
+  const armLoader = () => {
+    if (done || !box) return;
+    if (downloadDone && posterIsVisible(el)) return;
+    box.classList.remove('out');
+    box.classList.add('on');
+    if (wrap) wrap.classList.add('has-loader');
+    shownAt = performance.now() || 1;
+    stamp('loader-on');
+  };
+  const scheduleLoader = () => {
+    if (done || shownAt) return;
+    if (downloadDone && posterIsVisible(el)) return;
+    clearTimeout(showTimer);
+    showTimer = 0;
+    if (immediate || !posterIsVisible(el)) armLoader();
+    else showTimer = setTimeout(armLoader, LOAD_DELAY);
+  };
+  function hideLoaderEarly() {
+    clearTimeout(showTimer);
+    showTimer = 0;
+    if (done) return;
+    if (box) { box.classList.add('out'); box.classList.remove('on', 'has-pc'); }
+    if (wrap) wrap.classList.remove('has-loader');
+    if (shownAt) stamp('loader-skip');
+    shownAt = 0;
+  }
+  function markDownloaded() {
+    downloadDone = true;
+    clearTimeout(showTimer);
+    showTimer = 0;
+    stamp('download-done');
+    if (posterIsVisible(el)) hideLoaderEarly();
+  }
   const progress = p => {
-    const pc = Math.max(0, Math.min(100, Math.floor((+p || 0) * 100)));
+    const frac = +p || 0;
+    const pc = Math.max(0, Math.min(100, Math.floor(frac * 100)));
     if (pc < lastPc) return;
     lastPc = pc;
+    if (frac >= 0.9) markDownloaded();
+    else if (!done) {
+      downloadDone = false;
+      if (!shownAt) scheduleLoader();
+    }
     if (!box) return;
     box.classList.add('has-pc');
     box.style.setProperty('--pc', pc + '%');
@@ -154,16 +201,18 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
     box.dataset.pc = String(pc);
     stamp('progress');
   };
-  const armLoader = () => {
-    if (done || !box) return;
-    box.classList.add('on');
+  if (box && box.classList.contains('on') && !box.classList.contains('out')) {
     if (wrap) wrap.classList.add('has-loader');
-    shownAt = performance.now();
-    stamp('loader-on');
-  };
-  const showTimer = immediate ? 0 : setTimeout(armLoader, LOAD_DELAY);
-  if (immediate) armLoader();
+    shownAt = performance.now() || 1;
+    stamp('loader-boot');
+  } else if (immediate) {
+    armLoader();
+  }
   stamp('init');
+  window.__onPetPosterReady = () => {
+    stamp('poster-ready');
+    if (downloadDone) hideLoaderEarly();
+  };
   function frames(n = 2) {
     return new Promise(r => {
       const step = () => { n -= 1; if (n <= 0) r(); else requestAnimationFrame(step); };
@@ -177,16 +226,18 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
     if (el.standin && wrap && !wrap.classList.contains('is-fallback')) {
       el.standin.classList.add('is-spent');
     }
+    if (el.sil) el.sil.classList.add('is-covered');
     stamp('painted');
     await frames(2);
   }
   async function finish() {
     clearTimeout(showTimer);
+    showTimer = 0;
     done = true;
     progress(1);
     await paint();
     if (!shownAt) {
-      if (box) box.classList.remove('on');
+      if (box) { box.classList.remove('on'); box.classList.add('out'); }
       if (wrap) wrap.classList.remove('has-loader');
       reveal();
       return;
@@ -204,42 +255,52 @@ function bindPetLoader(el, { immediate = false, showHint = true } = {}) {
   }
   function reveal() {
     if (wrap) wrap.classList.add('is-ready', 'is-painted');
+    if (el.sil) el.sil.classList.add('is-covered');
     if (showHint && hint) { hint.classList.add('in'); hint.removeAttribute('aria-hidden'); }
     document.documentElement.dataset.pet = 'ready';
     stamp('ready');
   }
   document.documentElement.dataset.pet = 'loading';
   if (hint) hint.setAttribute('aria-hidden', 'true');
-  window.__petLoad = { pc: 0, shown: false, ready: false, painted: false, log };
-  return { progress, paint, finish, log };
+  window.__petLoad = { pc: 0, shown: !!(shownAt), ready: false, painted: false, log };
+  return { progress, paint, finish, markDownloaded, log };
 }
 
 /* ---------------- запуск ---------------- */
 export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' }) {
   const app = document.querySelector('.app');
+  const bootRoot = document.getElementById('petBoot');
   const bootStandin = document.getElementById('petStandin');
+  const bootLoad = document.getElementById('petLoad');
+  const bootSil = document.getElementById('petSil');
   app.insertAdjacentHTML('afterbegin', HUD);
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
   const $ = id => document.getElementById(id);
   const wrapEl = $('petWrap');
-  const hudStandin = $('petStandin');
-  if (bootStandin && wrapEl && bootStandin !== hudStandin) {
-    if (hudStandin) hudStandin.replaceWith(bootStandin);
-    else wrapEl.insertBefore(bootStandin, wrapEl.firstChild);
+  if (wrapEl) {
+    if (bootSil) wrapEl.insertBefore(bootSil, wrapEl.firstChild);
+    if (bootStandin) wrapEl.insertBefore(bootStandin, wrapEl.firstChild);
+    if (bootLoad) wrapEl.appendChild(bootLoad);
   }
+  if (bootRoot && bootRoot.parentNode) bootRoot.remove();
   const standin = $('petStandin');
   if (standin) {
     if (START.known && START.src) {
-      if (standin.getAttribute('src') !== START.src) standin.src = START.src;
+      if (typeof window.__revealPetPoster === 'function') {
+        window.__revealPetPoster(standin, START.src);
+      } else if (standin.getAttribute('src') !== START.src) {
+        standin.src = START.src;
+      }
       standin.classList.remove('is-empty');
       standin.hidden = false;
     } else {
       standin.removeAttribute('src');
       standin.classList.add('is-empty');
+      standin.classList.remove('is-decoded');
       standin.hidden = true;
     }
   }
-  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: wrapEl, flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad'), standin };
+  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: wrapEl, flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad'), standin, sil: $('petSil') };
   const ico = new Image(); ico.alt = ''; ico.src = coinSrc(24); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
   if (el.enNum) el.enNum.textContent = fmt(S.energy);
@@ -597,6 +658,7 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     const stChanged = nextSt !== prevSt || petChanged;
     E.pet = nextPet; E.level = nextLv;
     persistHome(E.pet, E.level);
+    paintPlate();
     if (st && st.empty) {
       try {
         st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: nextPet, stage: nextSt });
@@ -605,11 +667,26 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
         if (input === 'zone') bindZone();
       } catch (e) { console.warn('Сцена питомца не поднялась', e); }
     } else if (stChanged) {
+      /* сразу прячем старую 3D-модель; на её месте — постер нового питомца или силуэт */
+      if (el.wrap) el.wrap.classList.remove('is-painted');
+      if (el.sil) el.sil.classList.remove('is-covered');
+      if (el.standin) {
+        el.standin.classList.remove('is-spent');
+        if (typeof window.__revealPetPoster === 'function') {
+          window.__revealPetPoster(el.standin, posterUrl(nextPet, nextSt));
+        } else {
+          el.standin.hidden = false;
+          el.standin.classList.remove('is-empty', 'is-decoded');
+          el.standin.src = posterUrl(nextPet, nextSt);
+        }
+      }
       await st.show(E.pet, nextSt);
       layout();
+      if (el.wrap) el.wrap.classList.add('is-painted', 'is-ready');
+      if (el.standin) el.standin.classList.add('is-spent');
+      if (el.sil) el.sil.classList.add('is-covered');
       if (evolve && nextSt > prevSt && !petChanged) playEvolve();
       if (petChanged) st.preload(E.pet);
-      if (el.standin) el.standin.classList.add('is-spent');
     }
     paintPlate();
   }
