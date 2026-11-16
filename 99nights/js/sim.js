@@ -14,7 +14,7 @@ export const CFG = {
   // v0.8 (баланс §10, заменяет §9.2; гипотеза, проверка — test/balance-sim.mjs): по группам ночей 1–3 / 4–9 / 10–12
   MIST_DMG: [1.5, 2.5, 3.5], MIST_MAX_BLOW: [8, 0, 20], MOTH_DMG: 1, CROW_STAY: 15, FOG10_BURN: 1.15,
   // §12 (v0.8.3): ветер 11–12, мотыльки 11/12 двумя волнами, урон клубочка 11–12; кооп — горение/мотыльки/клубочки за каждого игрока сверх первого
-  WIND_BURN: 1.35, MOTHS11: 5, MOTHS12: 6, MIST_DMG_WIND: 4, COOP_BURN_K: [[1, 1.1, 1.2, 1.2], [1, 1.2, 1.4, 1.6], [1, 1.7, 1.6, 1.7]], COOP_MOTH: 1, COOP_MIST: 1,   // §14: множитель горения ночью по числу игроков (соло, 2, 3, 4) для ночей 1–3 / 4–9 / 10–12; §14.1 (v0.8.6): ночи 10–12 — двое ×1,7 (при ×1,6 медиана ночи 12 = 28 % > 25 %), четверо ×1,7
+  WIND_BURN: 1.35, MOTHS11: 5, MOTHS12: 6, MIST_DMG_WIND: 4, COOP_BURN_K: [[1, 1.1, 1.2, 1.1], [1, 1.2, 1.4, 1.6], [1, 1.7, 1.6, 1.65]], COOP_MOTH: 1, COOP_MIST: 1,   // §14: множитель горения ночью по числу игроков (соло, 2, 3, 4) для ночей 1–3 / 4–9 / 10–12; §14.1 (v0.8.6): ночи 10–12 — двое ×1,7 (при ×1,6 медиана ночи 12 = 28 % > 25 %); §16 (v0.8.7): четверо — ночи 1–3 ×1,1, 10–12 ×1,65 (финал)
   BAG_BASKET: 12, BAG_BASKET2: 16,   // v0.8.3: с v0.8.0 эта пара случайно оказалась внутри комментария (MIST_MAX_BLOW: 0 — без лимита) → вместимость с корзинкой была NaN
   SPEED: 4.4, PLAYER_R: .38, GATHER_T: .25,   // §15 п.5: замах сбора, с (енот — /1,2)
   FIRE: { x: 0, z: 0 }, BENCH: { x: 3.6, z: -2.4 }, CHEST: { x: -3.6, z: -2.4 }, BED: { x: 0, z: 2.8 }, LAMP: { x: 0, z: -4.2 },
@@ -119,8 +119,28 @@ export function createState({ seed = 99, timeScale = 1, mode = 'solo', nPlayers 
   add('stump', Math.round(7 * loot), 9, 23, 1.4, () => ({ r: .35, loot: true, back: 0 }));
   add('branch', Math.round(30 * loot), 6.5, 22, .7, () => ({}));
   add('stone', Math.round(22 * loot), 7, 22, .7, () => ({}));
+  ensureStump(s);
   return s;
 }
+// §16.3 (v0.8.7): при костре ур. 1 (открытая зона 16 м) хотя бы один пень с лоскутками должен быть доступен: точка подхода внутри зоны,
+// от лагеря (r = 3,2 м) до неё — прямой путь без препятствий. Если такого нет — ближайший пень переносим (свой генератор от seed,
+// общий s.rng не трогаем: остальной мир и ход игры у сида не меняются).
+const segD = (px, pz, ax, az, bx, bz) => { const dx = bx - ax, dz = bz - az, L = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / L)); return hyp(px - ax - dx * t, pz - az - dz * t); };
+export function stumpAccess(s, n, lv = 1) {   // → { px, pz } точка подхода или null
+  const OR = CFG.OPEN[lv], d = hyp(n.x, n.z) || 1, off = n.r * (n.s || 1) + .9, px = n.x - n.x / d * off, pz = n.z - n.z / d * off, pr = hyp(px, pz);
+  if (pr > OR - .4 - CFG.PLAYER_R - .15 || pr < 3.4) return null;
+  const ax = px / pr * 3.2, az = pz / pr * 3.2;
+  for (const o of s.nodes) { if (o === n) continue; const r = (o.r || 0) * (o.s || 1);
+    if (o.r && (o.alive || o.k === 'stump' || o.k === 'tree') && segD(o.x, o.z, ax, az, px, pz) < (o.k === 'tree' && !o.alive ? .3 : r) + CFG.PLAYER_R + .1) return null;   // препятствие на пути
+    if (o.alive && o.k !== 'rock' && hyp(o.x - px, o.z - pz) - r < 1.5) return null; }   // у точки подхода цель — именно пень
+  return { px, pz }; }
+export const reachStump = (s, lv = 1) => s.nodes.filter(n => n.k === 'stump' && n.alive && n.loot).sort((a, b) => hyp(a.x, a.z) - hyp(b.x, b.z)).find(n => stumpAccess(s, n, lv)) || null;
+function ensureStump(s) {
+  if (reachStump(s)) return; const st = s.nodes.filter(n => n.k === 'stump').sort((a, b) => hyp(a.x, a.z) - hyp(b.x, b.z))[0]; if (!st) return;
+  let g = (s.seed * 7919 + 13) % 2147483646 + 1; const rnd = () => (g = g * 16807 % 2147483647) / 2147483647; const x0 = st.x, z0 = st.z;
+  for (let k = 0; k < 3000; k++) { const a = rnd() * 6.283, r = 8.5 + rnd() * 5; st.x = +(Math.cos(a) * r).toFixed(2); st.z = +(Math.sin(a) * r).toFixed(2);
+    if (s.nodes.every(o => o === st || hyp(o.x - st.x, o.z - st.z) > (o.r || .4) + 1.4) && stumpAccess(s, st)) { st.moved = 1; return; } }
+  st.x = x0; st.z = z0; }
 // Старт этапа «с карты»: лагерь собирается из конфига этапа (набор главы), а не из прошлого захода.
 export function beginStage(s, stage = 1, { firstEver = false } = {}) {
   const st = STAGES[stage - 1], kit = KITS[stage] || KITS[1], n = startN(s);

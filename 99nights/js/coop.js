@@ -2,8 +2,8 @@
 // Сервер авторитарен (тот же sim.js). Клиент шлёт команды; свой питомец — предсказание (SIM.moveP) с мягкой коррекцией,
 // чужие питомцы и враги — интерполяция по буферу снимков (~120 мс назад). Мир (узлы, сундук, постройки, рюкзаки) — сообщением 'world'.
 // v0.8.2: компактный дельта-протокол (js/netproto.js): snap/world несут только изменения; полное состояние — 'start'/'resync'.
-import * as SIM from './sim.js?v=0.8.6';
-import * as NP from './netproto.js?v=0.8.6';
+import * as SIM from './sim.js?v=0.8.7';
+import * as NP from './netproto.js?v=0.8.7';
 const { PETS, STAGES } = SIM;
 const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
