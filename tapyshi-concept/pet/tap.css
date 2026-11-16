@@ -17,6 +17,7 @@ svg.ic{display:block;flex:none}
 .bokeh{position:absolute;border-radius:50%;opacity:.6;background:radial-gradient(closest-side,var(--c,var(--white)),transparent)}
 .pet-wrap{position:absolute;inset:0;z-index:2;pointer-events:none;will-change:transform}
 canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation;pointer-events:auto}
+.pet-wrap:not(.is-ready) canvas.scene,.pet-wrap:not(.is-ready) .pet-poster{visibility:hidden}
 .hud{position:absolute;inset:0;pointer-events:none;z-index:5}
 .hud .pe{pointer-events:auto}
 .card{background:var(--white);box-shadow:var(--sh-md)}
@@ -49,9 +50,10 @@ canvas.scene{position:absolute;inset:0;width:100%;height:100%;display:block;touc
   box-shadow:0 5px 0 var(--green-edge),0 14px 24px -10px color-mix(in srgb,var(--green) 70%,transparent),inset 0 2px 0 rgb(var(--white-rgb) / .45)}
 .up .ic{width:22px;height:22px;color:var(--white)}
 .tap-hint{position:absolute;left:58%;top:46%;z-index:6;pointer-events:none;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 8px;border-radius:19px;background:var(--white);color:var(--violet-edge);font-size:15px;font-weight:1000;white-space:nowrap;
-  box-shadow:0 10px 24px -10px rgb(var(--shade) / .55);transform:translate(-50%,0);transition:opacity .3s,transform .3s var(--spring)}
+  box-shadow:0 10px 24px -10px rgb(var(--shade) / .55);transform:translate(-50%,0);opacity:0;visibility:hidden;transition:opacity .3s,transform .3s var(--spring),visibility .3s}
 .tap-hint .ic{width:28px;height:28px;color:var(--violet)}
-.tap-hint.gone{opacity:0;transform:translate(-50%,0) scale(.7)}
+.tap-hint.in{opacity:1;visibility:visible}
+.tap-hint.gone,.tap-hint.in.gone{opacity:0;visibility:hidden;transform:translate(-50%,0) scale(.7)}
 .tabbar{pointer-events:auto}
 .tab .ic{width:28px;height:28px}
 
@@ -172,3 +174,24 @@ body.is-fresh .lvl.has-nick #lvlLab{font-size:13px;font-weight:900;color:var(--i
 .day.done{opacity:.55}
 .day.ready{background:color-mix(in srgb,var(--green) 16%,var(--white));box-shadow:inset 0 0 0 2px var(--green)}
 .day .btn{width:100%;height:32px;padding:0 8px;font-size:13px}
+
+/* загрузка 3D/постера — тот же стиль, что в магазине (.sk-load): кольцо, «Загружаем», % и полоска, которая только растёт */
+.pet-load{position:absolute;left:0;right:0;top:80px;bottom:calc(var(--tabbar-space) + 90px);z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none;
+  opacity:0;visibility:hidden;--pc:0%}
+.pet-load.on{opacity:1;visibility:visible}
+.pet-load.out{opacity:0;transition:opacity .28s ease}
+.pet-load-sh{position:absolute;left:50%;bottom:16%;width:44%;height:9%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(closest-side,rgb(40 30 90 / .16),rgb(40 30 90 / 0))}
+.pet-load-r{width:42px;height:42px;border-radius:50%;border:4.5px solid color-mix(in srgb,var(--violet) 22%,var(--white));border-top-color:var(--violet);animation:pet-load-spin .8s linear infinite}
+.pet-load b{font-size:12.5px;font-weight:800;color:var(--ink-2);opacity:.8;font-variant-numeric:tabular-nums}
+@keyframes pet-load-spin{to{transform:rotate(360deg)}}
+.pet-load-pc{display:inline-block;min-width:4.4ch;text-align:right;visibility:hidden}
+.pet-load-pc::before{content:" "}
+.pet-load-bar{display:block;width:96px;height:4px;margin-top:-2px;border-radius:2px;overflow:hidden;background:color-mix(in srgb,var(--violet) 18%,var(--white));visibility:hidden}
+.pet-load-bar>i{display:block;height:100%;width:var(--pc,0%);border-radius:2px;background:var(--violet);transition:width .2s linear}
+.pet-load.has-pc .pet-load-pc,.pet-load.has-pc .pet-load-bar{visibility:visible}
+@media (prefers-reduced-motion:reduce){
+  .pet-load-r{animation-duration:2.4s}
+  .pet-load-bar>i{transition:none}
+  .pet-load.out{transition:none}
+}
+@media (max-height:760px){.pet-load{top:72px;bottom:calc(var(--tabbar-space) + 78px)}}

@@ -101,7 +101,7 @@ export function plusURL(text, tier) { return spriteURL(plusCanvas(text, tier, SD
 
 /* ---------------- разметка HUD ---------------- */
 const HUD = `
-  <div class="pet-wrap" id="petWrap"><canvas class="scene"></canvas></div>
+  <div class="pet-wrap" id="petWrap"><canvas class="scene"></canvas><span class="pet-load" id="petLoad" aria-live="polite" aria-label="Загружаем"><i class="pet-load-sh"></i><i class="pet-load-r"></i><b>Загружаем<span class="pet-load-pc"></span></b><i class="pet-load-bar"><i></i></i></span></div>
   <div class="hud">
     <div class="top">
       <div class="pill card bal" id="bal"><span class="cico" id="balIco"></span><span class="num" id="balNum"></span></div>
@@ -132,13 +132,75 @@ const HUD = `
   <div class="flash x2" id="flash2"><div class="glow"></div><div class="big">×2!</div><div class="sub">Двойные монеты</div></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
 
+
+/* ---------------- загрузка питомца (стиль магазина: «Загружаем», %, полоска только растёт) ---------------- */
+const LOAD_DELAY = 250, LOAD_MIN = 400, LOAD_FADE = 280;
+function bindPetLoader(el) {
+  const box = el.petLoad, hint = el.hint, wrap = el.wrap;
+  let shownAt = 0, done = false, lastPc = -1;
+  const log = [];
+  const stamp = (ev, extra) => {
+    const rec = Object.assign({ t: Math.round(performance.now()), ev, pc: lastPc, loader: !!(box && box.classList.contains('on') && !box.classList.contains('out')), hint: !!(hint && hint.classList.contains('in') && !hint.classList.contains('gone')) }, extra || {});
+    log.push(rec);
+    window.__petLoad = { pc: Math.max(0, lastPc), shown: rec.loader, ready: ev === 'ready' || (window.__petLoad && window.__petLoad.ready), log };
+  };
+  const progress = p => {
+    const pc = Math.max(0, Math.min(100, Math.floor((+p || 0) * 100)));
+    if (pc < lastPc) return;
+    lastPc = pc;
+    if (!box) return;
+    box.classList.add('has-pc');
+    box.style.setProperty('--pc', pc + '%');
+    const t = box.querySelector('.pet-load-pc');
+    if (t) t.textContent = pc + '%';
+    box.dataset.pc = String(pc);
+    stamp('progress');
+  };
+  const showTimer = setTimeout(() => {
+    if (done || !box) return;
+    box.classList.add('on');
+    shownAt = performance.now();
+    stamp('loader-on');
+  }, LOAD_DELAY);
+  stamp('init');
+  async function finish() {
+    clearTimeout(showTimer);
+    done = true;
+    progress(1);
+    if (!shownAt) {
+      if (box) box.classList.remove('on');
+      reveal();
+      return;
+    }
+    const wait = Math.max(0, LOAD_MIN - (performance.now() - shownAt));
+    if (wait) await new Promise(r => setTimeout(r, wait));
+    if (box) {
+      box.classList.add('out');
+      stamp('loader-fade');
+      await new Promise(r => setTimeout(r, LOAD_FADE));
+      box.classList.remove('on');
+    }
+    reveal();
+  }
+  function reveal() {
+    if (wrap) wrap.classList.add('is-ready');
+    if (hint) { hint.classList.add('in'); hint.removeAttribute('aria-hidden'); }
+    document.documentElement.dataset.pet = 'ready';
+    stamp('ready');
+  }
+  document.documentElement.dataset.pet = 'loading';
+  if (hint) hint.setAttribute('aria-hidden', 'true');
+  window.__petLoad = { pc: 0, shown: false, ready: false, log };
+  return { progress, finish, log };
+}
+
 /* ---------------- запуск ---------------- */
 export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' }) {
   const app = document.querySelector('.app');
   app.insertAdjacentHTML('afterbegin', HUD);
   if (tag) app.insertAdjacentHTML('beforeend', `<div class="vtag">${tag}</div>`);
   const $ = id => document.getElementById(id);
-  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast') };
+  const el = { app, bal: $('bal'), balIco: $('balIco'), balNum: $('balNum'), enNum: $('enNum'), enBar: $('enBar'), combo: $('combo'), cn: $('cn'), cm: $('cm'), ct: $('ct'), hint: $('hint'), wrap: $('petWrap'), flash: $('flash'), flash2: $('flash2'), evoFlash: $('evoFlash'), lvlPlate: $('lvlPlate'), lvlN: $('lvlN'), lvlName: $('lvlName'), lvlLab: $('lvlLab'), stgLab: $('stgLab'), btnUp: $('btnUp'), btnTasks: $('btnTasks'), btnReward: $('btnReward'), demo: $('demo'), demoPets: $('demoPets'), playerNick: $('playerNick'), toast: $('toast'), petLoad: $('petLoad') };
   const ico = new Image(); ico.alt = ''; ico.src = coinSrc(24); el.balIco.appendChild(ico);
   el.balNum.textContent = fmt(S.coins);
 
@@ -150,11 +212,13 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   let appRect = app.getBoundingClientRect();
   const canvas = app.querySelector('canvas.scene');
   if (START.fresh) document.body.classList.add('is-fresh');
+  const loadUi = bindPetLoader(el);
   let st;
   try {
-    st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.fresh ? 1 : stageOf(7) });
+    st = await petStage({ canvas, onTap: e => tap(e.clientX, e.clientY), petInput: input !== 'zone', pet: START.pet, stage: START.fresh ? 1 : stageOf(7), onProgress: p => loadUi.progress(p) });
   } catch (e) {
     console.warn('Сцена питомца не поднялась', e);
+    try { await loadUi.finish(); } catch (err) {}
     throw e;
   }
   if (input === 'zone') bindZone();
@@ -521,6 +585,8 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   window.__measure = () => st.measure();
   window.__yaw = () => st.yaw;
   st.onSpinSettle = () => layout();
+  await loadUi.finish();
+  layout();
   onReady && onReady(ctx);
   document.documentElement.dataset.ready = '1';
   return ctx;

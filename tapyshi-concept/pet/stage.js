@@ -9,7 +9,7 @@ function posterUrl(pet, stage) {
   return `${root}shared/pets/stage/${pet}_${stage}.png`;
 }
 
-function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', stage = 2 } = {}) {
+async function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', stage = 2, onProgress } = {}) {
   const host = canvas.parentElement || canvas;
   canvas.style.display = 'none';
   canvas.style.pointerEvents = 'none';
@@ -44,6 +44,7 @@ function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', stage 
     current = { pet: id, stage: n, object: null };
     img.src = posterUrl(id, n);
     try { if (img.decode) await img.decode(); } catch (e) {}
+    if (onProgress) onProgress(1);
     return current;
   }
   function spinEnd(_v, onSettle) { onSettle && onSettle(); onSpinSettle && onSpinSettle(); }
@@ -51,7 +52,7 @@ function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', stage 
   if (petInput) {
     img.addEventListener('pointerdown', e => { if (onTap) onTap(e); }, { passive: true });
   }
-  show(pet, stage);
+  await show(pet, stage);
 
   return {
     cam: null, toScreen, headTop, requestDraw() {}, setHappy() {}, hit, show,
@@ -67,11 +68,11 @@ function fallbackStage({ canvas, onTap, petInput = true, pet = 'raccoon', stage 
 
 export async function petStage(opts = {}) {
   try {
-    if (!webglOK()) return fallbackStage(opts);
+    if (!webglOK()) return await fallbackStage(opts);
     const { create3dStage } = await import('./stage3d.js');
     return await create3dStage(opts);
   } catch (e) {
     console.warn('3D сцена недоступна, показываю 2D-заглушку', e);
-    try { return fallbackStage(opts); } catch (err) { throw e; }
+    try { return await fallbackStage(opts); } catch (err) { throw e; }
   }
 }

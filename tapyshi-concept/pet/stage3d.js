@@ -3,7 +3,7 @@ import { THREE, makeRenderer, blob } from './kit.js';
 import { loadEvo, preloadEvo, nearbyEvoStages, PETS, scheduleNearbyPreload } from './evo.js';
 export { THREE };
 
-export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2, fit = 'app', padTop = 8, padBottom = 10 } = {}) {
+export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = .32, onTap, petInput = true, pet = 'raccoon', stage = 2, fit = 'app', padTop = 8, padBottom = 10, onProgress } = {}) {
   const R = makeRenderer(canvas, { exposure: 1.0, alpha: true });
   if (!R) throw new Error('WebGLRenderer unavailable');
   R.setClearColor(0, 0);
@@ -331,10 +331,10 @@ export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = 
     hitE = { x: c.x, y: c.y, rx: Math.abs(side.x - c.x) * 1.15, ry: Math.abs(c.y - top.y) * 1.15 };
   }
 
-  async function show(petId, stg) {
+  async function show(petId, stg, prog) {
     const id = PETS[petId] ? petId : 'raccoon';
     const n = Math.max(1, Math.min(6, stg | 0));
-    const obj = await loadEvo(id, n);
+    const obj = await loadEvo(id, n, prog);
     if (current.object && current.object !== obj) holder.remove(current.object);
     if (obj.parent !== holder) holder.add(obj);
     current = { pet: id, stage: n, object: obj };
@@ -349,12 +349,19 @@ export async function create3dStage({ canvas, f = .38, cy = .52, cx = .5, yaw = 
   }
 
   try {
-    await show(pet, stage);
+    await show(pet, stage, onProgress);
   } catch (e) {
     try { R.dispose(); } catch (err) {}
     throw e;
   }
   R.shadowMap.autoUpdate = false;
+  R.shadowMap.needsUpdate = true;
+  if (onProgress) onProgress(.97);
+  R.render(scene, cam);
+  await new Promise(r => requestAnimationFrame(r));
+  R.render(scene, cam);
+  if (onProgress) onProgress(1);
+  await new Promise(r => requestAnimationFrame(r));
   addEventListener('resize', () => { place(); rect = host.getBoundingClientRect(); calcHit(); R.shadowMap.needsUpdate = true; requestDraw(); });
   function setHappy(_on) {}
 
