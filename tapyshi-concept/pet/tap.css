@@ -200,22 +200,25 @@ body.is-fresh .lvl.has-nick #lvlLab{font-size:13px;font-weight:900;color:var(--i
 .trow .tbar{width:72px;height:8px;border-radius:4px;background:var(--fill);overflow:hidden;flex:none}
 .trow .tbar i{display:block;height:100%;border-radius:4px;background:var(--violet)}
 .trow.done{opacity:.55}
-/* карточка канала над заданиями: та же .trow; сверху иконка, заголовок и награда, снизу кнопка во всю ширину */
-.trow.chan{flex-direction:column;align-items:stretch;gap:10px;padding:12px;margin:0 0 4px;background:var(--violet-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--violet) 14%,var(--white))}
-.trow.chan.done{background:var(--bg);box-shadow:none;opacity:1}
-.chan-top{display:flex;align-items:center;gap:10px}
-.chan-top .tinfo{gap:6px}
-.chan-ico{flex:none;width:44px;height:44px;border-radius:14px;background:var(--white);box-shadow:var(--sh-sm);display:grid;place-items:center}
-.chan-ico svg{width:26px;height:26px}
-.chan-rw{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
-.trow .tinfo .chan-rw .chip{height:26px;padding:0 9px 0 6px;font-size:12.5px;font-weight:900;gap:4px;background:var(--white)}
-.trow .tinfo .chan-hat{color:var(--violet)}
-.trow .tinfo .chan-coin{color:var(--ink)}
-.chan-rw .chip svg{width:15px;height:15px}
-.chan-coin img{width:14px;height:14px}
-.chan-got{display:flex;align-items:center;justify-content:center;gap:6px;height:36px;border-radius:var(--r-pill);background:var(--white);font-size:15px;font-weight:1000;color:var(--green-edge)}
-.chan-got svg{width:16px;height:16px}
-.trow.chan.done .chan-top{opacity:.55}
+/* строки заданий: «Перейти» (как .b-btn.ghost в скинах), прогресс внутри строки, «Получено» (как .sk-have) */
+.trow.todo .tinfo{gap:3px}
+.tbar.tbar--in{display:block;width:100%;max-width:190px;height:8px;margin-top:5px;border-radius:4px;background:var(--fill);overflow:hidden}
+.tbar.tbar--in i{display:block;height:100%;border-radius:4px;background:var(--violet)}
+.tgo{flex:none;display:inline-flex;align-items:center;justify-content:center;height:40px;min-width:96px;padding:0 16px;border-radius:20px;font-size:15.5px;font-weight:1000;white-space:nowrap;
+  color:var(--violet);background:var(--violet-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--violet) 25%,var(--white));transition:transform .38s var(--spring)}
+.tgo:active{transform:scale(.94);transition-duration:.09s}
+.trow.done{opacity:1}
+.trow.done .tinfo b{color:var(--ink-2)}
+.trow.done .tinfo span{color:var(--ink-3)}
+.rw-got{flex:none;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 6px 0 4px;font-size:14.5px;font-weight:1000;color:var(--green-edge);white-space:nowrap}
+.rw-got svg{width:18px;height:18px}
+.rw{flex:none;white-space:nowrap}
+.rw .rw-n{font-weight:1000;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* B · рецепт .bc .price (ценник буста): .btn.btn--primary + h40, min-width, padding 0 13 0 9, 15.5px/1000, tabular */
+.tgo.tgo--sec{color:var(--violet);background:var(--white);box-shadow:var(--sh-sm),var(--stroke)}
+.rw--price{height:40px;min-width:104px;padding:0 14px 0 9px;font-size:15.5px;font-weight:1000;gap:5px;justify-content:center;font-variant-numeric:tabular-nums}
+.rw--price .rw-c{width:20px;height:20px;flex:none}
+@media (max-width:370px){.rw--price{min-width:0;padding:0 12px 0 8px}.tgo{min-width:0;padding:0 13px;font-size:14.5px}}
 .days{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 6px}
 .day{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:16px;background:var(--bg);text-align:center;min-height:78px}
 .day .dn{font-size:11px;font-weight:900;color:var(--ink-2);text-transform:uppercase}

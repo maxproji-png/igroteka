@@ -727,13 +727,18 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     document.body.classList.add('has-sheet');
     requestAnimationFrame(() => { bg.classList.add('on'); sh.classList.add('on'); });
     sh.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
-    bindChan(sh);
+    sh.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => goTask(b.getAttribute('data-go'))));
     sh.querySelectorAll('[data-claim]').forEach(b => b.addEventListener('click', () => {
       const name = b.getAttribute('data-claim') || 'Награда';
       const coins = Math.floor(+b.getAttribute('data-coins') || 0);
       const id = b.getAttribute('data-id') || '';
-      b.disabled = true; b.textContent = 'Получено';
+      b.disabled = true;
       const row = b.closest('.trow, .day');
+      if (b.classList.contains('rw')) {
+        const t = document.createElement('span'); t.innerHTML = GOT_HTML;
+        const got = t.firstChild; b.replaceWith(got);
+        if (!RM) got.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.08)', opacity: 1, offset: .6 }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out' });
+      } else b.textContent = 'Получено';
       if (row) row.classList.add('done');
       if (coins > 0 && window.TapyshiBal) { window.TapyshiBal.add(coins); S.coins = window.TapyshiBal.get(); }
       if (id) {
@@ -754,90 +759,43 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
   function claimed(id) {
     try { return !!(JSON.parse(localStorage.getItem('tapyshi.claims') || '{}') || {})[id]; } catch (e) { return false; }
   }
-  /* --- карточка «Подпишись на канал ТАПЫШИ» (разовая: шапка «Тапыш» + 300 монет) --- */
-  const TAPYSHI_CHANNEL_URL = 'https://max.ru/channel_tapyshi';
-  const CHAN_COINS = 300;
-  const CHAN_ID = 'o-channel';                         // отметка в общем tapyshi.claims, как у остальных заданий
-  const CHAN_OPENED_KEY = 'tapyshi.channel.opened';    // нажали «Подписаться» → дальше «Забрать»
-  const HAT_KEY = 'tapyshi.reward.hat_tapysh';         // только флаг выдачи шапки, без скина/модели
-  const HAT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.6" r="2.6" fill="var(--violet)"/><path d="M4.6 16.4C4.6 10.6 7.9 6.6 12 6.6s7.4 4 7.4 9.8z" fill="var(--violet)"/><path d="M8.2 8.8c1-.9 2.3-1.4 3.8-1.4" stroke="rgb(var(--white-rgb) / .55)" stroke-width="1.6" stroke-linecap="round" fill="none"/><rect x="3.2" y="15.2" width="17.6" height="5.2" rx="2.6" fill="var(--violet-edge)"/></svg>';
-  const CHAN_ICO = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 13.2c0-1.2 1-2.2 2.2-2.2H12l9.4-5.2c.9-.5 2 .1 2 1.2v18c0 1-1.1 1.7-2 1.2L12 21H8.2C7 21 6 20 6 18.8z" fill="var(--violet)"/><path d="M12 21l1.6 5.2c.2.8-.4 1.6-1.3 1.6h-1.5c-.6 0-1.1-.4-1.3-1L8 21z" fill="var(--violet-edge)"/><path d="M26.4 12.6c1 .9 1.6 2.1 1.6 3.4s-.6 2.5-1.6 3.4" stroke="var(--violet)" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>';
-  function lsFlag(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } }
-  function setFlag(k) { try { localStorage.setItem(k, '1'); } catch (e) {} }
-  function chanState() { return claimed(CHAN_ID) ? 'done' : lsFlag(CHAN_OPENED_KEY) ? 'claim' : 'sub'; }
-  function chanHtml() {
-    const st = chanState();
-    const act = st === 'done' ? '<span class="chan-got"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.4l2.8 2.8 6.2-6.4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Получено</span>'
-      : st === 'claim' ? '<button type="button" class="btn btn--success btn--s btn--wide" data-chan="claim">Забрать</button>'
-      : '<button type="button" class="btn btn--primary btn--s btn--wide" data-chan="sub">Подписаться</button>';
-    const rw = '<span class="chan-rw"><span class="chip chip--s chip--violet chan-hat">' + HAT_SVG + 'Шапка «Тапыш»</span><span class="chip chip--s chip--sun chan-coin"><img src="' + coinSrc(16) + '" width="14" height="14" alt="">+' + fmt(CHAN_COINS) + '</span></span>';
-    return '<div class="trow chan ' + st + '" data-task="' + CHAN_ID + '">' +
-      '<div class="chan-top"><span class="chan-ico">' + CHAN_ICO + '</span><div class="tinfo"><b>Подпишись на канал ТАПЫШИ</b>' + rw + '</div></div>' + act + '</div>';
-  }
-  function openChannel(url) {
-    const W = window.WebApp;
-    try {
-      if (W && /^https:\/\/max\.ru\//.test(url) && typeof W.openMaxLink === 'function') return W.openMaxLink(url);
-      if (W && typeof W.openLink === 'function') return W.openLink(url);
-    } catch (e) {}
-    try { window.open(url, '_blank', 'noopener'); } catch (e) {}
-  }
-  function popCoins(from) {
-    if (RM || !from) return;
-    const r = from.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, src = coinSrc(24);
-    for (let i = 0; i < 6; i++) {
-      const c = new Image(); c.src = src; c.alt = ''; c.width = 24; c.height = 24;
-      c.style.cssText = 'position:fixed;left:' + (cx - 12) + 'px;top:' + (cy - 12) + 'px;z-index:260;pointer-events:none;will-change:transform,opacity';
-      document.body.appendChild(c);
-      const a = -Math.PI / 2 + (i - 2.5) * .42, d = 46 + (i % 3) * 14, dx = Math.cos(a) * d, dy = Math.sin(a) * d;
-      c.animate([{ transform: 'translate(0,0) scale(.3)', opacity: 0 }, { transform: 'translate(' + dx * .7 + 'px,' + dy * .7 + 'px) scale(1.1)', opacity: 1, offset: .35 },
-        { transform: 'translate(' + dx + 'px,' + (dy + 26) + 'px) scale(.8)', opacity: 0 }], { duration: 620 + i * 30, easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = () => c.remove();
-    }
-  }
-  function bindChan(root) {
-    root.querySelectorAll('[data-chan]').forEach(b => b.addEventListener('click', () => {
-      const card = b.closest('.chan');
-      if (b.dataset.chan === 'sub') {
-        openChannel(TAPYSHI_CHANNEL_URL);
-        setFlag(CHAN_OPENED_KEY);
-      } else {
-        if (claimed(CHAN_ID)) return;                  // повторно не начисляем
-        b.disabled = true;
-        try {
-          const raw = JSON.parse(localStorage.getItem('tapyshi.claims') || '{}') || {};
-          raw[CHAN_ID] = 1; localStorage.setItem('tapyshi.claims', JSON.stringify(raw));
-        } catch (e) {}
-        setFlag(HAT_KEY);
-        if (window.TapyshiBal) { window.TapyshiBal.add(CHAN_COINS); S.coins = window.TapyshiBal.get(); }
-        popCoins(b);
-        toast('Канал ТАПЫШИ · +' + fmt(CHAN_COINS) + ' и шапка «Тапыш»');
-      }
-      if (!card) return;
-      const t = document.createElement('div'); t.innerHTML = chanHtml();
-      const next = t.firstChild; card.replaceWith(next); bindChan(next);
-      if (!RM) next.classList.add('boing');
-    }));
+  /* строки заданий: «Перейти» → «Забрать» с монетой → «Получено» */
+  const fmtNb = n => fmt(n);   // тот же тонкий пробел, что в балансе и ценниках; перенос запрещён white-space:nowrap
+  const GOT_HTML = '<span class="rw-got"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Получено</span>';
+  // B · ценник буста в магазине один в один (.btn.btn--primary.price): фиолетовая кнопка, монета и сумма; «Перейти» — белая .btn--secondary
+  const GO_CLS = 'tgo tgo--sec';
+  const claimBtn = q => '<button type="button" class="btn btn--primary price rw rw--price" data-claim="'+q.title+'" data-coins="'+q.coins+'" data-id="'+q.id+'" aria-label="Забрать '+q.coins+' монет"><img class="rw-c" src="'+coinSrc(24)+'" width="20" height="20" alt=""><b class="rw-n">+'+fmtNb(q.coins)+'</b></button>';
+  function goTask(target) {
+    if (target === 'pet') { closeSheet(); return; }
+    let d = document;
+    try { if (window.top !== window && window.top.document) d = window.top.document; } catch (e) {}
+    const a = d.querySelector('a.tab[data-tab="' + target + '"]');
+    if (a) { a.click(); return; }
+    closeSheet();
+    location.href = { games: 'games/', clan: 'clan/', shop: 'shop/' }[target] || location.href;
   }
   function tasksHtml() {
     const taps = Math.min(300, S.taps | 0);
     const rows = [
-      { id: 'd-taps', title: 'Сделай 300 тапов', sub: taps + ' из 300', coins: 200, kind: 'daily', ready: taps >= 300 },
-      { id: 'd-duo', title: 'Сыграй 1 партию на двоих', sub: 'С ботом тоже засчитывается', coins: 200, kind: 'daily', ready: true },
-      { id: 'd-solo', title: 'Сыграй 1 соло-игру', sub: 'Любая из трёх соло-игр', coins: 200, kind: 'daily', ready: true },
-      { id: 'd-clan', title: 'Внеси 200 тапов в цель клана', sub: 'Тапы в клановой цели', coins: 200, kind: 'daily', ready: false, prog: 80 },
-      { id: 'o-clan', title: 'Вступи в клан', sub: 'Разовое задание', coins: 500, kind: 'once', ready: true },
-      { id: 'o-chat', title: 'Напиши в чат клана', sub: 'Разовое задание', coins: 500, kind: 'once', ready: true },
-      { id: 'o-games', title: 'Попробуй все 8 игр', sub: 'Разовое задание', coins: 1000, kind: 'once', ready: true }
+      { id: 'd-taps', title: 'Сделай 300 тапов', sub: taps + ' из 300', coins: 200, kind: 'daily', ready: taps >= 300, prog: taps / 3, go: 'pet' },
+      { id: 'd-duo', title: 'Сыграй 1 партию на двоих', sub: 'С ботом тоже засчитывается', coins: 200, kind: 'daily', ready: true, go: 'games' },
+      { id: 'd-solo', title: 'Сыграй 1 соло-игру', sub: 'Любая из трёх соло-игр', coins: 200, kind: 'daily', ready: true, go: 'games' },
+      { id: 'd-clan', title: 'Внеси 200 тапов в цель клана', sub: 'Тапы в клановой цели', coins: 200, kind: 'daily', ready: false, prog: 80, go: 'clan' },
+      { id: 'o-clan', title: 'Вступи в клан', sub: 'Разовое задание', coins: 500, kind: 'once', ready: true, go: 'clan' },
+      { id: 'o-chat', title: 'Напиши в чат клана', sub: 'Разовое задание', coins: 500, kind: 'once', ready: true, go: 'clan' },
+      { id: 'o-games', title: 'Попробуй все 8 игр', sub: 'Разовое задание', coins: 1000, kind: 'once', ready: true, go: 'games' }
     ];
     function row(q) {
-      if (claimed(q.id)) return '<div class="trow done" data-task="'+q.id+'"><div class="tinfo"><b>'+q.title+'</b><span>Получено +'+fmt(q.coins)+'</span></div></div>';
-      if (q.ready) return '<div class="trow ready" data-task="'+q.id+'"><div class="tinfo"><b>'+q.title+'</b><span>'+q.sub+'</span></div><button type="button" class="btn btn--success btn--s" data-claim="'+q.title+'" data-coins="'+q.coins+'" data-id="'+q.id+'">+'+fmt(q.coins)+'</button></div>';
-      const w = q.prog != null ? q.prog : 0;
-      return '<div class="trow" data-task="'+q.id+'"><div class="tinfo"><b>'+q.title+'</b><span>'+q.sub+'</span></div><div class="tbar"><i style="width:'+w+'%"></i></div></div>';
+      const head = '<div class="tinfo"><b>'+q.title+'</b><span>'+q.sub+'</span>';
+      if (claimed(q.id)) return '<div class="trow done" data-task="'+q.id+'">'+head+'</div>'+GOT_HTML+'</div>';
+      if (q.ready) return '<div class="trow ready" data-task="'+q.id+'">'+head+'</div>'+claimBtn(q)+'</div>';
+      const bar = q.prog != null ? '<i class="tbar tbar--in"><i style="width:'+Math.max(0, Math.min(100, q.prog))+'%"></i></i>' : '';
+      const go = q.go ? '<button type="button" class="'+GO_CLS+'" data-go="'+q.go+'">Перейти</button>' : '';
+      return '<div class="trow todo" data-task="'+q.id+'">'+head+bar+'</div>'+go+'</div>';
     }
     const daily = rows.filter(q => q.kind === 'daily').map(row).join('');
     const once = rows.filter(q => q.kind === 'once').map(row).join('');
-    return '<p class="sheet-sub">Ежедневно 800 монет · разовые 2 000</p>'+chanHtml()+'<p class="tsec">Сегодня</p>'+daily+'<p class="tsec">Разовые</p>'+once;
+    return '<p class="sheet-sub">Ежедневно 800 монет · разовые 2 000</p><p class="tsec">Сегодня</p>'+daily+'<p class="tsec">Разовые</p>'+once;
   }
   function rewardHtml() {
     return '<p class="sheet-sub">Заходи каждый день — награда растёт. За неделю 660 монет</p><div class="days">' +
