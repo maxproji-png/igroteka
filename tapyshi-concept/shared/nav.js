@@ -51,6 +51,25 @@
     } catch (e) { return false; }
   }
 
+  /* Плавающие шторки (клан, «О клане», скины, профиль игрока) стоят в 8 px над таб-баром,
+     и таб-бар при них остаётся видимым — и на отдельной странице, и во вкладке хоста.
+     Полноэкранные шторки снизу (дуэль, задания главной, T.sheet, «Позвать друга») прячут таб-бар
+     и стоят у самого низа — как эталонная шторка дуэли. */
+  var FLOAT_SEL = '.cx-sheet.on, .cx-scrim.on, .cx-dlg-wrap.on, .sk-sheet.on, .sk-scrim.on, .pp-sheet.on, .pp-scrim.on';
+  var FULL_SEL = 'body > .sheet.on, body > .sheet-bg.on, .home-sheet.on, .home-sheet-bg.on, body > .inv-sheet';
+
+  /* true — таб-бар надо прятать: открыта полноэкранная шторка. Если открыты только плавающие — false. */
+  function sheetHidesTabs(doc) {
+    if (!sheetOpenIn(doc)) return false;
+    try {
+      if (doc.querySelector(FULL_SEL)) return true;
+      var nodes = doc.querySelectorAll('[role="dialog"].on'), i;
+      for (i = 0; i < nodes.length; i++) if (!nodes[i].matches(FLOAT_SEL)) return true;
+      if (doc.querySelector(FLOAT_SEL)) return false;
+    } catch (e) {}
+    return true;
+  }
+
   function closeDocSheet(doc) {
     if (!doc) return;
     var win = doc.defaultView;
@@ -58,6 +77,12 @@
       if (win && win.SK && typeof win.SK.close === 'function' && doc.querySelector('.sk-sheet.on, .sk-scrim.on')) {
         win.SK.close();
       }
+    } catch (e) {}
+    try {
+      if (win && win.TapProfile && typeof win.TapProfile.close === 'function' && doc.querySelector('.pp-sheet.on')) win.TapProfile.close();
+    } catch (e) {}
+    try {
+      if (win && win.CX && typeof win.CX.close === 'function' && doc.querySelector('.cx-sheet.on, .cx-dlg-wrap.on')) win.CX.close();
     } catch (e) {}
     try {
       if (win && win.T && typeof win.T.closeSheet === 'function' && doc.querySelector('body > .sheet.on, body > .sheet-bg.on')) {
@@ -96,12 +121,12 @@
     } catch (e) {}
     /* Сообщаем хосту об открытии/закрытии шитов, в том числе .sk-sheet без has-sheet. */
     try {
-      var lastSheet = false;
+      var lastSheet = '';
       function reportSheet() {
-        var on = sheetOpenIn(document);
-        if (on === lastSheet) return;
-        lastSheet = on;
-        window.parent.postMessage({ type: 'tapyshi-tab', ev: 'sheet', on: on }, location.origin);
+        var on = sheetOpenIn(document), hide = on && sheetHidesTabs(document), key = on + '/' + hide;
+        if (key === lastSheet) return;
+        lastSheet = key;
+        window.parent.postMessage({ type: 'tapyshi-tab', ev: 'sheet', on: on, hide: hide }, location.origin);
       }
       var mo = new MutationObserver(reportSheet);
       if (document.body) mo.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true, childList: true });
@@ -110,6 +135,26 @@
         reportSheet();
       });
       reportSheet();
+    } catch (e) {}
+    /* Хост сообщает, спрятан ли таб-бар. Если спрятан (рядом открыта полноэкранная шторка),
+       плавающая шторка встаёт к низу экрана без пустой полосы — как шторка дуэли; высота та же. */
+    window.addEventListener('message', function (e) {
+      if (e.origin !== location.origin || !e.data || e.data.type !== 'tapyshi-tab' || e.data.ev !== 'tabs') return;
+      document.documentElement.classList.toggle('is-tabs-hidden', !!e.data.hidden);
+      if (e.data.tb > 0) document.documentElement.style.setProperty('--host-tb', e.data.tb + 'px');
+    });
+    try {
+      var fcss = document.createElement('style');
+      fcss.id = 'tab-frame-css';
+      fcss.textContent =
+        /* таб-бар рисует хост: низ шторки — 8 px над его реальной высотой (вместе с safe-area) */
+        'html.is-tab-frame .cx-scrim,html.is-tab-frame .sk-scrim,html.is-tab-frame .cx-dlg-wrap{bottom:var(--host-tb,var(--tb,72px))}' +
+        'html.is-tab-frame .pp-scrim{bottom:var(--host-tb,var(--pp-tb,72px))}' +
+        'html.is-tab-frame .cx-sheet,html.is-tab-frame .sk-sheet{bottom:calc(var(--host-tb,var(--tb,72px)) + 8px)}' +
+        'html.is-tab-frame .pp-sheet{bottom:calc(var(--host-tb,var(--pp-tb,72px)) + 8px)}' +
+        'html.is-tab-frame.is-tabs-hidden .cx-scrim,html.is-tab-frame.is-tabs-hidden .sk-scrim,html.is-tab-frame.is-tabs-hidden .pp-scrim,html.is-tab-frame.is-tabs-hidden .cx-dlg-wrap{bottom:0}' +
+        'html.is-tab-frame.is-tabs-hidden .cx-sheet,html.is-tab-frame.is-tabs-hidden .sk-sheet,html.is-tab-frame.is-tabs-hidden .pp-sheet{bottom:0;left:0;right:0;max-width:430px;border-bottom-left-radius:0;border-bottom-right-radius:0}';
+      (document.head || document.documentElement).appendChild(fcss);
     } catch (e) {}
     return;
   }
@@ -149,7 +194,13 @@
   css.textContent =
     'html.is-tab-host{background:#F8F7FF}' +
     'html.is-tab-away,html.is-tab-away body{height:100%;height:100dvh;overflow:hidden}' +
-    'html.is-tab-host body>:not(.tabbar):not(.tab-host-layers):not(.sheet):not(.sheet-bg){position:relative;z-index:1}' +
+    /* fixed-слои шторок (.cx-*, .sk-*, профиль .pp-*, «Позвать друга» .inv-*) не трогаем — иначе они уезжают за экран */
+    'html.is-tab-host body>:not(.tabbar):not(.tab-host-layers):not(.sheet):not(.sheet-bg)' +
+      ':not([class^="cx-"]):not([class*=" cx-"]):not([class^="sk-"]):not([class*=" sk-"])' +
+      ':not([class^="pp-"]):not([class*=" pp-"]):not([class^="inv-"]):not([class*=" inv-"]){position:relative;z-index:1}' +
+    /* на самой странице: при плавающей шторке таб-бар остаётся (skins.js ставит body.has-sheet ради блокировки прокрутки) */
+    'html.is-tab-host body:has(>.cx-sheet.on,>.sk-sheet.on,>.pp-sheet.on):not(:has(>.sheet.on,>.home-sheet.on,>.inv-sheet)) .tabbar{transform:translateX(-50%);visibility:visible;pointer-events:auto}' +
+    'html.is-tab-host body.has-float-sheet .tabbar{transform:translateX(-50%);visibility:visible;pointer-events:auto}' +
     'html.is-tab-host .tab-host-layers{position:fixed;inset:0;z-index:2;pointer-events:none;background:transparent}' +
     'html.is-cover-tabs .tab-host-layers,html.is-tab-away .tab-host-layers{' +
       'z-index:80;-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0)}' +
@@ -244,14 +295,29 @@
     setTitle(id);
   }
 
-  function syncHostSheet(open) {
-    var hide = !!open;
+  /* Вкладке-iframe сообщаем реальную высоту таб-бара хоста (с safe-area) и спрятан ли он. */
+  function postTabs(hidden, id) {
+    id = id || current;
+    var p = panes[id];
+    if (!p || id === active) return;
+    try {
+      p.iframe.contentWindow.postMessage({ type: 'tapyshi-tab', ev: 'tabs', hidden: !!hidden, tb: nav.offsetHeight || 0 }, location.origin);
+    } catch (e) {}
+  }
+
+  /* open — шторка открыта (запись в историю, «назад» её закрывает);
+     hideTabs — прятать таб-бар (только для полноэкранных шторок). По умолчанию = open. */
+  function syncHostSheet(open, hideTabs) {
+    open = !!open;
+    var hide = hideTabs === undefined ? open : (open && !!hideTabs);
     document.body.classList.toggle('has-sheet', hide);
     document.body.classList.toggle('is-sheet', hide);
-    if (hide && !sheetHist) {
+    document.body.classList.toggle('has-float-sheet', open && !hide);
+    postTabs(hide);
+    if (open && !sheetHist) {
       sheetHist = true;
       try { history.pushState({ tapyshiTab: current, sheet: true }, '', location.href); } catch (e) {}
-    } else if (!hide && sheetHist) {
+    } else if (!open && sheetHist) {
       sheetHist = false;
       if (history.state && history.state.sheet) {
         ignoringPop = true;
@@ -262,6 +328,11 @@
     }
   }
 
+  function syncHostDoc(doc) {
+    var on = sheetOpenIn(doc);
+    syncHostSheet(on, on && sheetHidesTabs(doc));
+  }
+
   function sheetDocFor(id) {
     if (id === active) return document;
     var p = panes[id];
@@ -270,7 +341,7 @@
 
   function hookSheet(iframe) {
     function sync() {
-      if (current === (iframe.getAttribute('data-tab') || '')) syncHostSheet(sheetOpenIn(iframe.contentDocument));
+      if (current === (iframe.getAttribute('data-tab') || '')) syncHostDoc(iframe.contentDocument);
     }
     iframe.addEventListener('load', function () {
       sync();
@@ -425,12 +496,13 @@
     shownId = id;
     pendingId = null;
     if (native) {
-      document.body.classList.remove('has-sheet', 'is-sheet');
+      document.body.classList.remove('has-sheet', 'is-sheet', 'has-float-sheet');
       try { window.dispatchEvent(new Event('resize')); } catch (e) {}
     } else {
       wake(id);
       markReady(id);
-      syncHostSheet(sheetOpenIn(sheetDocFor(id)));
+      syncHostDoc(sheetDocFor(id));
+      postTabs(document.body.classList.contains('has-sheet'), id);
     }
   }
 
@@ -475,7 +547,7 @@
         try { window.dispatchEvent(new Event('resize')); } catch (e) {}
       } else {
         wake(id);
-        syncHostSheet(sheetOpenIn(sheetDocFor(id)));
+        syncHostDoc(sheetDocFor(id));
       }
       return;
     }
@@ -555,7 +627,7 @@
     if (sheetHist && !st.sheet) {
       sheetHist = false;
       closeDocSheet(sheetDocFor(current));
-      document.body.classList.remove('has-sheet', 'is-sheet');
+      document.body.classList.remove('has-sheet', 'is-sheet', 'has-float-sheet');
       return;
     }
     if (st.sheet) sheetHist = true;
@@ -614,17 +686,20 @@
           if (panes[k].iframe && panes[k].iframe.contentWindow === e.source) from = k;
         }
       } catch (err) {}
-      if (from && from === current) syncHostSheet(!!e.data.on);
+      if (from && from === current) syncHostSheet(!!e.data.on, e.data.hide === undefined ? !!e.data.on : !!e.data.hide);
     }
     if (e.data.ev === 'ready') {
       var id = e.data.tab;
       if (id && panes[id]) {
+        postTabs(id === current && document.body.classList.contains('has-sheet'), id);
         panes[id].iframe.setAttribute('data-ready', '1');
         markReady(id);
         if (current === id) setTitle(id);
       }
     }
   });
+
+  window.addEventListener('resize', function () { postTabs(document.body.classList.contains('has-sheet')); });
 
   document.addEventListener('click', boing);
 })();

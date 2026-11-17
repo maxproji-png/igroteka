@@ -205,11 +205,6 @@
 .fd-meta small{font-size:12.5px;font-weight:800;color:var(--ink-2)}
 .fd-join{flex:none}
 .fd-full{flex:none;font-size:12.5px;font-weight:900;color:var(--ink-3);padding:0 6px}
-/* хост вкладок (shared/nav.js, страница открыта напрямую) ставит всем детям body position:relative — кроме .sheet.
-   Шторки клана должны оставаться fixed над таб-баром, иначе уезжают за экран (было и у «О клане»). */
-html.is-tab-host body>.cx-scrim{position:fixed!important;z-index:220!important}
-html.is-tab-host body>.cx-sheet{position:fixed!important;z-index:221!important}
-html.is-tab-host body>.cx-dlg-wrap{position:fixed!important;z-index:240!important}
 .fd-clear[hidden]{display:none}
 .fd-join{height:40px;padding:0 14px;font-size:14px}
 @media (max-width:370px){.fd-card{gap:10px;padding:9px 8px 9px 10px}.fd-card .emb{width:42px;height:42px;border-radius:14px}.fd-join{height:36px;padding:0 11px;font-size:13px}.fd-t>b{font-size:15px}}
