@@ -797,19 +797,89 @@ export async function startApp({ tag, onTap, onComboEnd, onReady, input = 'pet' 
     const once = rows.filter(q => q.kind === 'once').map(row).join('');
     return '<p class="sheet-sub">Ежедневно 800 монет · разовые 2 000</p><p class="tsec">Сегодня</p>'+daily+'<p class="tsec">Разовые</p>'+once;
   }
+  /* --- ежедневная награда: те же суммы, ключи (tapyshi.claims / daily-N) и правило «сегодня = день 3» (демо) --- */
+  const DAILY_TODAY = 3; // исходное правило концепта: сегодня день 3 (без календаря/новых ключей)
+  const CHEST_V = 'tc11152130';
+  let chestP = null;
+  function ensureChest() {                       // сундук из арта клана (shared-clan/js/chest-art.js), грузим только по требованию
+    if (window.CH) return Promise.resolve(true);
+    if (chestP) return chestP;
+    chestP = new Promise(res => {
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'shared-clan/css/chest-art.css?v=tc11150030'; document.head.appendChild(l);
+      const sc = document.createElement('script'); sc.src = 'shared-clan/js/chest-art.js?v=' + CHEST_V; sc.async = true;
+      sc.onload = () => res(!!window.CH); sc.onerror = () => res(false); document.head.appendChild(sc);
+    });
+    return chestP;
+  }
+  const DR_PILES = [                            // монеты из плашки баланса: x, y (низ), размер — горка растёт по дням
+    [[50, 92, 40]],
+    [[38, 92, 34], [60, 90, 36]],
+    [[28, 94, 32], [50, 92, 36], [72, 94, 32]],
+    [[30, 94, 32], [52, 92, 34], [74, 94, 32], [52, 70, 34]],
+    [[24, 95, 30], [44, 93, 32], [64, 93, 32], [84, 95, 30], [40, 72, 32], [62, 70, 34]],
+    [[20, 96, 30], [40, 94, 32], [60, 94, 32], [80, 96, 30], [32, 74, 32], [52, 72, 34], [72, 74, 32], [52, 52, 34]]
+  ];
+  function pileHtml(d) {
+    const src = coinSrc(48);
+    return '<span class="dr-pile">' + DR_PILES[d - 1].map(([x, y, z], k) =>
+      '<img src="' + src + '" alt="" style="left:' + x + '%;bottom:' + (100 - y) + '%;width:' + z + 'px;height:' + z + 'px;z-index:' + (k + 1) + '">').join('') + '</span>';
+  }
+  const DR_CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+  const DR_LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="3" fill="currentColor"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="2.6" fill="none"/></svg>';
+  function dayState(d) { return claimed('daily-' + d) || d < DAILY_TODAY ? 'done' : d === DAILY_TODAY ? 'ready' : 'lock'; }
+  function dayHtml(d) {
+    const amt = DAILY_REWARD[d - 1], id = 'daily-' + d, st = dayState(d), big = d === 7;
+    const lab = big ? (st === 'ready' ? 'Сегодня · день 7' : 'День 7') : st === 'ready' ? 'Сегодня' : d === DAILY_TODAY + 1 ? 'Завтра' : 'День ' + d;
+    const foot = st === 'done' ? '<span class="dr-got">' + DR_CHECK + 'Получено</span>'
+      : st === 'ready' ? '<button type="button" class="dr-claim" data-claim="Ежедневная награда" data-coins="' + amt + '" data-id="' + id + '">Забрать</button>'
+      : '<span class="dr-lock">' + DR_LOCK + (big ? 'Сундук недели' : 'Скоро') + '</span>';
+    const art = big ? '<span class="dr-chest" data-chest="' + (st === 'done' ? 'open' : 'closed') + '">' + (window.CH ? CH.svg('a', 2, st === 'done', { noScale: true }) : pileHtml(6)) + '</span>' : pileHtml(d);
+    const sum = '<b class="dr-amt">' + (big ? '<img src="' + coinSrc(24) + '" width="24" height="24" alt="">' : '') + '+' + fmt(amt) + '</b>';
+    if (big) return '<div class="day dr-day dr-7 ' + st + '" data-day="7"><span class="dr-glow" aria-hidden="true"></span>' + art +
+      '<span class="dr-7tx"><span class="dr-lab">' + lab + '</span><span class="dr-7t">Большой сундук</span>' + sum + foot + '</span></div>';
+    return '<div class="day dr-day ' + st + '" data-day="' + d + '"><span class="dr-lab">' + lab + '</span><span class="dr-art">' + art + '</span>' + sum + foot + '</div>';
+  }
   function rewardHtml() {
-    return '<p class="sheet-sub">Заходи каждый день — награда растёт. За неделю 660 монет</p><div class="days">' +
-      [1,2,3,4,5,6,7].map(d => {
-        const amt = DAILY_REWARD[d-1];
-        const id = 'daily-'+d;
-        const st = claimed(id) || d < 3 ? 'done' : d === 3 ? 'ready' : '';
-        const lab = '+' + fmt(amt);
-        const btn = (st === 'ready' && !claimed(id)) ? '<button type="button" class="btn btn--success btn--s" data-claim="Ежедневная награда" data-coins="'+amt+'" data-id="'+id+'">Забрать</button>' : '';
-        return '<div class="day ' + st + '"><span class="dn">день ' + d + '</span><b>' + lab + '</b>' + btn + '</div>';
-      }).join('') + '</div>';
+    const got = [1, 2, 3, 4, 5, 6, 7].filter(d => dayState(d) === 'done').length;
+    return '<div class="dr-hero"><span class="dr-hero-tx"><b>День ' + DAILY_TODAY + ' из 7</b><span>Заходи каждый день — награда растёт. За неделю 660 монет</span>' +
+      '<span class="dr-steps">' + [1, 2, 3, 4, 5, 6, 7].map(d => '<i class="' + (d <= got ? 'on' : d === DAILY_TODAY ? 'now' : '') + '"></i>').join('') + '</span></span>' +
+      '<img class="dr-pet" src="' + posterUrl('raccoon', 1) + '" width="128" height="128" alt="Булочка"></div>' +
+      '<div class="days dr-grid">' + [1, 2, 3, 4, 5, 6].map(dayHtml).join('') + dayHtml(7) + '</div>';
+  }
+  function dailyFx(sh) {                          // поверх общего [data-claim]: перерисовать плитку, открыть сундук, монеты вверх
+    ensureChest().then(ok => {
+      if (!ok) return;
+      const c = sh.querySelector('.dr-chest');
+      if (c) c.innerHTML = CH.svg('a', 2, c.dataset.chest === 'open', { noScale: true });
+    });
+    sh.querySelectorAll('.dr-day [data-claim]').forEach(b => b.addEventListener('click', () => {
+      const tile = b.closest('.dr-day'); if (!tile) return;
+      const d = +tile.dataset.day;
+      requestAnimationFrame(() => {
+        const t = document.createElement('div'); t.innerHTML = dayHtml(d);
+        const next = t.firstChild; tile.replaceWith(next);
+        const nx = sh.querySelector('.dr-day[data-day="' + (d + 1) + '"] .dr-lab'); if (nx && d + 1 <= 7) nx.textContent = d + 1 === 7 ? 'Завтра · день 7' : 'Завтра';
+        const steps = sh.querySelectorAll('.dr-steps i'); if (steps[d - 1]) steps[d - 1].className = 'on';
+        if (window.CH && d === 7) { const c = next.querySelector('.dr-chest'); if (c) c.innerHTML = CH.svg('a', 2, true, { noScale: true }); }
+        if (RM) return;
+        next.animate([{ transform: 'scale(.94)' }, { transform: 'scale(1.04)', offset: .55 }, { transform: 'scale(1)' }], { duration: 420, easing: 'ease-out' });
+        const art = next.querySelector('.dr-art, .dr-chest'), r = art.getBoundingClientRect(), src = coinSrc(24);
+        for (let k = 0; k < 7; k++) {
+          const c = new Image(); c.src = src; c.alt = ''; c.className = 'dr-fly';
+          c.style.position = 'fixed'; c.style.left = (r.left + r.width / 2 - 12) + 'px'; c.style.top = (r.top + r.height / 2 - 12) + 'px';
+          document.body.appendChild(c);
+          const a = -Math.PI / 2 + (k - 3) * .38, dist = 54 + (k % 3) * 16;
+          c.animate([{ transform: 'translate(0,0) scale(.4)', opacity: 0 }, { transform: 'translate(' + (Math.cos(a) * dist * .7).toFixed(1) + 'px,' + (Math.sin(a) * dist * .7).toFixed(1) + 'px) scale(1.1)', opacity: 1, offset: .35 },
+            { transform: 'translate(' + (Math.cos(a) * dist).toFixed(1) + 'px,' + (Math.sin(a) * dist + 30).toFixed(1) + 'px) scale(.8)', opacity: 0 }], { duration: 640 + k * 30, easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = () => c.remove();
+        }
+      });
+    }));
   }
   if (el.btnTasks) el.btnTasks.addEventListener('click', () => openSheet('Задания', tasksHtml()));
-  if (el.btnReward) el.btnReward.addEventListener('click', () => openSheet('Награда', rewardHtml()));
+  if (el.btnReward) {
+    el.btnReward.addEventListener('pointerdown', ensureChest, { passive: true });
+    el.btnReward.addEventListener('click', () => { openSheet('Награда', rewardHtml()); const sh = document.querySelector('.home-sheet'); if (sh) { sh.classList.add('dr-sheet'); dailyFx(sh); } });
+  }
 
   /* --- эволюции: уровень, стадия, демо-переключатель --- */
   const E = { pet: START.known ? START.pet : null, level: START.known ? START.level : 1 };

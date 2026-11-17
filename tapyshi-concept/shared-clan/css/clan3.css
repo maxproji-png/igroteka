@@ -67,3 +67,149 @@
 .tb-badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--pink);color:var(--white);font-size:11px;font-weight:900;display:inline-grid;place-items:center;margin-left:2px}
 #panel.swap{animation:swapIn .45s var(--out)}
 @keyframes swapIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ── qa-fix-14 · клановые окна в фирменном стиле ───────────────────────────── */
+/* общие шторки клана: над таб-баром (8 px), высота фиксирована на тип шторки */
+.cx-sheet.q14-sheet .cx-page{display:flex;flex-direction:column}
+.cx-sheet.m-sheet,.cx-sheet.fd-sheet{height:min(600px,calc(100dvh - var(--tb) - 36px))}
+.cx-sheet.iv-sheet{height:min(476px,calc(100dvh - var(--tb) - 36px))}
+.q14-col{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 16px 16px}
+.q14-head{padding:10px 48px 0 2px;flex:none}
+.q14-head h3{margin:0;font-size:22px;font-weight:1000;letter-spacing:-.3px;line-height:1.15}
+.q14-head p{margin:4px 0 0;font-size:13px;font-weight:800;color:var(--ink-2);line-height:1.35}
+.q14-head p b{color:var(--ink);font-weight:1000}
+.q14-coin{width:16px;height:16px;vertical-align:-3px;display:inline-block}
+.q14-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:12px -16px -16px;padding:2px 16px 16px;scrollbar-width:none}
+.q14-scroll::-webkit-scrollbar{display:none}
+.q14-fill{flex:1;min-height:8px}
+
+/* участники — карточки как у «Друзей» */
+.m-list{display:flex;flex-direction:column;gap:8px}
+.m-card{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:10px 14px 10px 10px;border:0;border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-sm);text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .25s var(--spring,cubic-bezier(.34,1.56,.64,1))}
+.m-card:active{transform:scale(.98)}
+.m-card.me{background:linear-gradient(90deg,var(--sun-soft),var(--white) 85%);box-shadow:var(--sh-sm),inset 0 0 0 2px color-mix(in srgb,var(--sun) 45%,var(--white))}
+.m-ava{position:relative;flex:none;width:52px;height:52px;border-radius:18px;background:var(--pb,var(--fill));display:block}
+.m-ava img{width:100%;height:100%;border-radius:inherit;object-fit:cover;object-position:center 40%;display:block}
+.m-on{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--white)}
+.m-rk{position:absolute;left:-5px;top:-5px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:grid;place-items:center;font-size:11.5px;font-weight:1000;background:var(--white);color:var(--ink-2);box-shadow:0 0 0 2px var(--line),0 2px 4px rgb(var(--shade) / .12)}
+.m-rk.r1{background:var(--sun);color:var(--ink);box-shadow:0 2px 0 var(--sun-edge)}
+.m-rk.r2{background:var(--violet-soft);color:var(--violet);box-shadow:0 0 0 2px var(--white)}
+.m-rk.r3{background:var(--pink-soft);color:var(--pink-edge);box-shadow:0 0 0 2px var(--white)}
+.m-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.m-tx>b{display:block;font-size:16px;font-weight:1000;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-tx>small{display:block;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.m-meta{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+.m-meta small{font-size:12.5px;font-weight:800;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
+.m-meta small em{font-style:normal;color:var(--green-edge)}
+.m-role{display:inline-flex;align-items:center;gap:3px;flex:none;height:20px;padding:0 8px;border-radius:var(--r-pill);font-size:11px;font-weight:1000;background:var(--fill);color:var(--ink-2)}
+.m-role svg{width:13px;height:13px;margin-left:-2px}
+.m-role.is-owner{background:var(--sun-soft);color:var(--ink);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--sun) 50%,var(--white))}
+.m-role.is-me{background:var(--violet);color:var(--white)}
+.m-bar{display:block;height:6px;border-radius:3px;background:var(--fill);overflow:hidden;margin-top:1px}
+.m-bar i{display:block;height:100%;border-radius:3px}
+.m-val{flex:none;text-align:right;display:flex;flex-direction:column;gap:2px}
+.m-val b{font-size:15.5px;font-weight:1000;white-space:nowrap}
+.m-val small{font-size:12px;font-weight:800;color:var(--ink-3);white-space:nowrap}
+.m-more .m-tx>b{color:var(--violet);font-size:15px}
+.m-stack{display:flex;flex:none;padding-left:8px}
+.m-mini{width:36px;height:36px;border-radius:13px;margin-left:-10px;background:var(--pb,var(--fill));box-shadow:0 0 0 2.5px var(--white);overflow:hidden}
+.m-mini img{width:100%;height:100%;object-fit:cover;object-position:center 40%}
+.q14-scroll .m-list{padding-top:4px}
+@media (max-width:370px){.m-card{gap:10px;padding:9px 12px 9px 9px}.m-ava{width:46px;height:46px;border-radius:16px}.m-tx>b{font-size:15px}.m-val b{font-size:14.5px}.m-role{padding:0 7px}}
+
+/* приглашение в клан — игровая карточка клана */
+.iv-card{margin-top:14px;padding:14px;border-radius:var(--r-lg);flex:none;
+  background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--cs,var(--violet-soft)) 90%,var(--white)),transparent 70%),linear-gradient(180deg,var(--white),color-mix(in srgb,var(--cs,var(--violet-soft)) 55%,var(--white)));
+  box-shadow:var(--sh-sm),inset 0 0 0 2px color-mix(in srgb,var(--cc,var(--violet)) 22%,var(--white))}
+.iv-top{display:flex;align-items:center;gap:12px}
+.iv-crest{position:relative;flex:none}
+.iv-crest .iv-emb{width:56px;height:56px;border-radius:18px}
+.iv-lvl{position:absolute;right:-6px;bottom:-6px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;display:grid;place-items:center;background:var(--sun);color:var(--ink);font-size:12.5px;font-weight:1000;box-shadow:0 2px 0 var(--sun-edge),0 0 0 2.5px var(--white)}
+.iv-t{flex:1;min-width:0}
+.iv-t b{display:block;font-size:20px;font-weight:1000;letter-spacing:-.3px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iv-t small{display:block;margin-top:2px;font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.iv-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.iv-chips .chip svg{width:14px;height:14px}
+.iv-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+.iv-call{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ink)}
+.iv-heads{flex:none}
+.iv-link{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 10px 10px 12px;border-radius:var(--r-md);background:var(--white);box-shadow:var(--sh-sm),var(--stroke);flex:none}
+.iv-li{width:40px;height:40px;flex:none;border-radius:14px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue)}
+.iv-li svg{width:20px;height:20px}
+.iv-lt{flex:1;min-width:0}
+.iv-lt small{display:block;font-size:12px;font-weight:800;color:var(--ink-2)}
+.iv-lt b{display:block;margin-top:1px;font-size:14.5px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iv-cp{width:44px;height:44px;flex:none;border:0;padding:0;border-radius:15px;display:grid;place-items:center;background:var(--violet-soft);color:var(--violet);cursor:pointer}
+.iv-cp svg{width:20px;height:20px}
+.iv-go{width:100%;flex:none;gap:8px}
+.iv-go svg{width:20px;height:20px}
+@media (max-width:370px){.iv-t b{font-size:18px}.iv-call{font-size:13px}}
+
+/* пустые состояния клана */
+.ec{display:flex;flex-direction:column;align-items:center;text-align:center}
+.ec--page{padding:24px 4px 8px}
+.ec-art{position:relative;width:300px;max-width:100%;height:188px;margin:0 auto 6px}
+.ec-blob{position:absolute;left:50%;top:50%;width:250px;height:150px;transform:translate(-50%,-46%);border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--violet) 22%,var(--white)),color-mix(in srgb,var(--violet-soft) 70%,transparent) 70%,transparent)}
+.ec-blob.b2{width:150px;height:110px;left:76%;top:34%;background:radial-gradient(closest-side,color-mix(in srgb,var(--sun) 30%,var(--white)),transparent)}
+.ec-p{position:absolute;bottom:0;width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 8px 10px rgb(var(--shade) / .18));pointer-events:none;user-select:none}
+.ec-p1{left:50%;transform:translateX(-50%);width:150px;height:150px;z-index:2}
+.ec-p2{left:6px;bottom:10px;width:112px;height:112px;transform:rotate(-6deg);z-index:1}
+.ec-p3{right:6px;bottom:10px;width:112px;height:112px;transform:rotate(6deg);z-index:1}
+.ec-slot{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:3;width:46px;height:46px;border-radius:16px;display:grid;place-items:center;color:var(--violet);background:var(--white);box-shadow:var(--sh-sm),inset 0 0 0 2px color-mix(in srgb,var(--violet) 30%,var(--white))}
+.ec-slot svg{width:22px;height:22px}
+.ec h1{margin:6px 0 0;font-size:26px;font-weight:1000;letter-spacing:-.4px;line-height:1.15}
+.ec h3{margin:8px 0 0;font-size:20px;font-weight:1000;letter-spacing:-.3px}
+.ec p{margin:8px 12px 0;max-width:300px;font-size:14.5px;font-weight:800;color:var(--ink-2);line-height:1.38}
+.ec-perks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin:18px 0 0}
+.ec-perk{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px 10px;border-radius:var(--r-md);background:var(--white);box-shadow:var(--sh-sm)}
+.ec-perk i{width:40px;height:40px;border-radius:14px;display:grid;place-items:center}
+.ec-perk i svg{width:22px;height:22px}
+.ec-perk i img{width:34px;height:34px;object-fit:contain}
+.ec-perk i.sun{background:var(--sun-soft)}
+.ec-perk i.vio{background:var(--violet-soft);color:var(--violet)}
+.ec-perk i.grn{background:var(--green-soft);color:var(--green)}
+.ec-perk b{font-size:12.5px;font-weight:1000;line-height:1.15}
+.ec-btns{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:18px}
+.ec-btns .btn{width:100%;gap:8px}
+.ec-btns .btn svg{width:20px;height:20px}
+.ec-demo{display:inline-flex;align-items:center;gap:3px;height:32px;margin-top:16px;padding:3px;border-radius:var(--r-pill);background:var(--fill)}
+.ec-demo span{padding:0 6px 0 8px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-3)}
+.ec-demo a{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:13px;background:var(--white);box-shadow:var(--sh-sm);font-size:12px;font-weight:900;color:var(--ink-2);text-decoration:none}
+.ec--sm{padding:6px 4px 4px}
+.ec-art--sm{width:180px;height:132px}
+.ec-art--sm .ec-blob{width:170px;height:110px}
+.ec-art--sm .ec-p1{width:124px;height:124px}
+.ec-q{position:absolute;right:18px;top:6px;width:36px;height:36px;border-radius:13px;display:grid;place-items:center;font-size:20px;font-weight:1000;color:var(--violet);background:var(--white);box-shadow:var(--sh-sm);transform:rotate(8deg)}
+.ec--sm .ec-btns{margin-top:14px}
+@media (max-width:370px){.ec-art{height:170px}.ec-p1{width:136px;height:136px}.ec-p2,.ec-p3{width:100px;height:100px}.ec h1{font-size:24px}.ec p{font-size:14px}}
+@media (max-height:760px){.ec--page{padding-top:12px}.ec-art{height:160px}.ec-p1{width:130px;height:130px}.ec-p2,.ec-p3{width:96px;height:96px}.ec-perks{margin-top:14px}.ec-perk{padding:10px 6px 8px}.ec-btns{margin-top:14px}}
+
+/* найти клан */
+.fd-search{display:flex;align-items:center;gap:8px;height:48px;margin-top:12px;padding:0 6px 0 14px;border-radius:var(--r-pill);background:var(--white);box-shadow:var(--sh-sm),var(--stroke);flex:none;color:var(--ink-3)}
+.fd-search:focus-within{box-shadow:var(--sh-sm),var(--stroke-on);color:var(--violet)}
+.fd-search>svg{width:20px;height:20px;flex:none}
+.fd-search input{flex:1;min-width:0;height:100%;border:0;background:none;font:inherit;font-size:16px;font-weight:800;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+.fd-search input::placeholder{color:var(--ink-3)}
+.fd-search input::-webkit-search-cancel-button{display:none}
+.fd-clear{width:32px;height:32px;flex:none;border:0;padding:0;border-radius:50%;background:var(--fill);color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+.fd-clear svg{width:14px;height:14px}
+.fd-sec{display:flex;justify-content:space-between;margin:2px 4px 8px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3)}
+.fd-list{display:flex;flex-direction:column;gap:8px}
+.fd-card{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:var(--r-lg);background:var(--white);box-shadow:var(--sh-sm)}
+.fd-card .emb{width:48px;height:48px;border-radius:16px}
+.fd-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.fd-t>b{font-size:16px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-meta{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.fd-meta .chip{height:20px;padding:0 7px;font-size:11px}
+.fd-meta small{font-size:12.5px;font-weight:800;color:var(--ink-2)}
+.fd-join{flex:none}
+.fd-full{flex:none;font-size:12.5px;font-weight:900;color:var(--ink-3);padding:0 6px}
+/* хост вкладок (shared/nav.js, страница открыта напрямую) ставит всем детям body position:relative — кроме .sheet.
+   Шторки клана должны оставаться fixed над таб-баром, иначе уезжают за экран (было и у «О клане»). */
+html.is-tab-host body>.cx-scrim{position:fixed!important;z-index:220!important}
+html.is-tab-host body>.cx-sheet{position:fixed!important;z-index:221!important}
+html.is-tab-host body>.cx-dlg-wrap{position:fixed!important;z-index:240!important}
+.fd-clear[hidden]{display:none}
+.fd-join{height:40px;padding:0 14px;font-size:14px}
+@media (max-width:370px){.fd-card{gap:10px;padding:9px 8px 9px 10px}.fd-card .emb{width:42px;height:42px;border-radius:14px}.fd-join{height:36px;padding:0 11px;font-size:13px}.fd-t>b{font-size:15px}}

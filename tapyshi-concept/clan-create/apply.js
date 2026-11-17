@@ -89,34 +89,95 @@
     }
   }
 
+  /* qa-fix-14: пустое состояние «нет клана» — как живые экраны: питомцы-рендеры, польза клана, две кнопки.
+     «Найти клан» — шторка поиска над таб-баром; если ничего не нашлось — своё пустое состояние. */
+  var ROOT = (document.documentElement.getAttribute('data-root') || '../').replace(/\/?$/, '/');
+  function pet(n, cls) { return '<img class="' + (cls || '') + '" src="' + ROOT + 'shared/pets/stage/' + n + '.png" alt="" draggable="false">'; }
+  var IC = {
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.5 4h13A3.5 3.5 0 0 1 22 7.5v7a3.5 3.5 0 0 1-3.5 3.5H11l-4.6 3.4c-.7.5-1.4.1-1.4-.7V18A3.5 3.5 0 0 1 2 14.5v-7A3.5 3.5 0 0 1 5.5 4z"/></svg>',
+    top: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.4 10.2 7.6 13.4 12 5.4l4.4 8 3.2-3.2v8.2H4.4z"/></svg>',
+    clear: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'
+  };
+  function chestImg() { return '<img src="' + ROOT + 'shared-clan/img/v2/chest-gold.png" alt="">'; }
+  function norm(s) { return String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, ''); }
+
+  function nothingFound(q) {
+    return '<div class="ec ec--sm">' +
+      '<div class="ec-art ec-art--sm" aria-hidden="true"><i class="ec-blob"></i>' + pet('goose_3', 'ec-p ec-p1') + '<span class="ec-q">?</span></div>' +
+      '<h3>Ничего не найдено</h3>' +
+      '<p>Клана «' + esc(q) + '» нет. Проверь название или создай свой — и позови друзей.</p>' +
+      '<div class="ec-btns"><a class="btn btn--primary btn--l" href="../clan-create/">' + IC.plus + 'Создать клан</a>' +
+      '<button type="button" class="btn btn--secondary btn--m btn--wide" data-fd-reset>Сбросить поиск</button></div></div>';
+  }
+  function clanCard(c) {
+    var emb = (window.ClanCreate && ClanCreate.embHTML) ? ClanCreate.embHTML(c, 'sm') : '<span class="emb sm clan-badge"></span>';
+    var cap = c.lvl >= 3 ? 50 : c.lvl >= 2 ? 45 : 40, full = c.m >= cap;
+    return '<div class="fd-card">' + emb +
+      '<span class="fd-t"><b>' + esc(c.n) + '</b><span class="fd-meta"><span class="chip chip--s chip--sun"><b>ур. ' + c.lvl + '</b></span><small>' + c.m + ' из ' + cap + '</small></span></span>' +
+      (full ? '<span class="fd-full">мест нет</span>'
+            : '<button type="button" class="btn btn--primary btn--s fd-join tap" data-fd-join="' + esc(c.n) + '">Вступить</button>') +
+      '</div>';
+  }
+  function findSheet(q0) {
+    var C = T.c3; if (!C || !C.dock) return;
+    var list = (C.top || []).slice();
+    var html = '<div class="q14-col fd">' +
+      '<div class="q14-head"><h3>Найти клан</h3><p>Открытые кланы — вступай в любой, где есть места</p></div>' +
+      '<label class="fd-search">' + IC.search + '<input type="search" id="fd-q" placeholder="Название клана" autocomplete="off" enterkeyhint="search" maxlength="18">' +
+      '<button type="button" class="fd-clear" data-fd-reset aria-label="Очистить" hidden>' + IC.clear + '</button></label>' +
+      '<div class="q14-scroll" id="fd-res"></div></div>';
+    var sh = C.dock(html, 'fd-sheet');
+    if (!sh) return;
+    var inp = sh.querySelector('#fd-q'), res = sh.querySelector('#fd-res'), clr = sh.querySelector('.fd-clear');
+    function paint() {
+      var q = inp.value.trim(), n = norm(q);
+      var hit = list.filter(function (c) { return !n || norm(c.n).indexOf(n) >= 0; });
+      clr.hidden = !q;
+      res.innerHTML = hit.length
+        ? '<div class="fd-sec"><span>' + (q ? 'Нашлось' : 'Популярные кланы') + '</span><span>' + hit.length + '</span></div><div class="fd-list">' + hit.map(clanCard).join('') + '</div>'
+        : nothingFound(q);
+    }
+    inp.addEventListener('input', paint);
+    sh.addEventListener('click', function (e) {
+      if (e.target.closest('[data-fd-reset]')) { inp.value = ''; paint(); inp.focus(); return; }
+      var j = e.target.closest('[data-fd-join]');
+      if (j) { j.disabled = true; j.textContent = 'Заявка'; j.classList.remove('btn--primary'); j.classList.add('btn--secondary');
+        if (T.toast) T.toast('Заявка в «' + j.getAttribute('data-fd-join') + '» отправлена'); }
+    });
+    if (q0) inp.value = q0;
+    paint();
+  }
+
   function showEmpty() {
     document.title = 'Тапыши · Мой клан';
     var app = document.getElementById('app');
     if (app) app.classList.remove('is-chat');
     var mine = window.ClanCreate && ClanCreate.load();
-    var back = mine
-      ? '<a class="back-my" href="?mine=1">Вернуться в мой клан</a><a class="back-my" href="./">Демо-клан «Дикий зоопарк»</a>'
-      : '<a class="back-my" href="./">Вернуться в демо-клан</a>';
+    var demo = '<div class="ec-demo"><span>демо</span>' +
+      (mine ? '<a href="?mine=1">Мой клан</a>' : '') + '<a href="./">Клан «Дикий зоопарк»</a></div>';
     var s = document.querySelector('.scroll');
     if (!s) return;
-    s.innerHTML = '<div class="empty-clan">' +
-      '<div class="ghost"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l7.5 3v6c0 4.6-3.1 8.4-7.5 10-4.4-1.6-7.5-5.4-7.5-10v-6z"/><path d="M12 7.6l1.4 2.9 3.1.4-2.3 2.2.6 3.1-2.8-1.5-2.8 1.5.6-3.1-2.3-2.2 3.1-.4z" fill="var(--white)" opacity=".95"/></svg></div>' +
+    s.innerHTML = '<div class="ec ec--page">' +
+      '<div class="ec-art" aria-hidden="true"><i class="ec-blob"></i><i class="ec-blob b2"></i>' +
+        pet('capybara_3', 'ec-p ec-p2') + pet('dragon_3', 'ec-p ec-p3') + pet('raccoon_3', 'ec-p ec-p1') +
+        '<span class="ec-slot">' + IC.plus + '</span></div>' +
       '<h1>Пока нет клана</h1>' +
-      '<p>Собери друзей, копите сундук вместе и попадайте в топ.</p>' +
-      '<a class="btn btn--primary btn--l" href="../clan-create/">Создать клан</a>' +
-      back +
-      '</div>';
-    var st = document.createElement('style');
-    st.textContent = '.empty-clan{display:flex;flex-direction:column;align-items:center;text-align:center;padding:72px 16px 24px}' +
-      '.empty-clan .ghost{width:112px;height:112px;border-radius:32px;display:grid;place-items:center;margin-bottom:18px;color:var(--white);' +
-      'background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 82%,var(--white)),var(--violet));box-shadow:0 6px 14px color-mix(in srgb,var(--violet) 30%,transparent),0 3px 0 var(--violet-edge)}' +
-      '.empty-clan .ghost svg{width:56px;height:56px}' +
-      '.empty-clan h1{margin:0;font-size:26px;font-weight:1000;letter-spacing:-.4px}' +
-      '.empty-clan p{margin:8px 8px 28px;font-size:15px;font-weight:800;color:var(--ink-2);line-height:1.35;max-width:280px}' +
-      '.empty-clan .btn{max-width:280px}' +
-      '.empty-clan .back-my{margin-top:16px;font-size:14px;font-weight:800;color:var(--ink-2)}';
-    document.head.appendChild(st);
+      '<p>Вступи в клан к друзьям или собери свой: вместе копите сундук и попадайте в топ недели.</p>' +
+      '<div class="ec-perks">' +
+        '<span class="ec-perk"><i class="sun">' + chestImg() + '</i><b>Общий сундук</b></span>' +
+        '<span class="ec-perk"><i class="vio">' + IC.top + '</i><b>Топ недели</b></span>' +
+        '<span class="ec-perk"><i class="grn">' + IC.chat + '</i><b>Чат клана</b></span>' +
+      '</div>' +
+      '<div class="ec-btns"><a class="btn btn--primary btn--l" href="../clan-create/">' + IC.plus + 'Создать клан</a>' +
+      '<button type="button" class="btn btn--secondary btn--l tap" data-find-clan>' + IC.search + 'Найти клан</button></div>' +
+      demo + '</div>';
+    s.addEventListener('click', function (e) { if (e.target.closest('[data-find-clan]')) findSheet(); });
+    var hm = (location.hash || '').match(/^#find(?:=(.*))?$/);
+    if (hm) setTimeout(function () { findSheet(hm[1] ? decodeURIComponent(hm[1]) : ''); }, 60);
   }
+  window.TapClanFind = { open: findSheet };
 
   function enhanceDemo() {
     /* шапка и шторка «О клане» рисуются из каталога гербов (CX / CXC). */

@@ -8,37 +8,43 @@
 <link rel="icon" href="../favicon.ico" sizes="any">
 <link rel="stylesheet" href="../shared/tokens.css?v=tc11132356">
 <link rel="stylesheet" href="../shared/components.css?v=tc11132356">
-<link rel="stylesheet" href="shared.css?v=tc11132356">
+<link rel="stylesheet" href="shared.css?v=tc11170633">
 </head>
 <body>
-<div class="app" id="app">
+<div class="app cc-page" id="app">
   <div class="scroll">
     <header class="top">
       <a class="ibtn spring" href="../clan/?empty=1" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></a>
       <span class="ttl"><b>Создать клан</b></span>
     </header>
 
-    <div class="preview-hero" id="hero"></div>
+    <!-- qa-fix-14: компактное превью-строка, гербы 6×2 без подписей, цвета одним рядом — всё над доком -->
+    <div class="preview-row cc-prev" id="hero"></div>
 
     <label class="lab" for="name">Название</label>
     <input class="field" id="name" type="text" maxlength="18" placeholder="Название клана" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done">
     <div class="hint" id="hint"></div>
 
-    <div class="lab">Герб</div>
-    <div class="crest-grid" id="crests"></div>
+    <div class="lab">Герб <em class="lab-v" id="crest-name"></em></div>
+    <div class="crest-grid cc-crests" id="crests"></div>
 
-    <div class="lab">Цвет клана</div>
-    <div class="color-grid" id="colors"></div>
+    <div class="lab">Цвет клана <em class="lab-v" id="color-name"></em></div>
+    <div class="color-row cc-colors" id="colors"></div>
   </div>
   <div class="dock"><button type="button" class="btn btn--primary btn--l" id="create" disabled>Создать</button></div>
 </div>
 <script src="shared.js?v=tc11132356"></script>
 <script>
 ClanCreate.init({
-  preview:[{el:'#hero',kind:'hero'}],
+  preview:[{el:'#hero',kind:'row'}],
   nameInput:'#name', crests:'#crests', colors:'#colors', create:'#create', hint:'#hint',
   afterCreate:'../clan/?mine=1'
 });
+/* qa-fix-14: подписи выбранного герба и цвета — в заголовках секций (на плитках их больше нет) */
+(function(){ function lab(){ var c=document.querySelector('#crests .crest.on'), w=document.querySelector('#colors .swatch.on');
+  document.getElementById('crest-name').textContent=c?'· '+c.getAttribute('aria-label'):'';
+  document.getElementById('color-name').textContent=w?'· '+w.getAttribute('aria-label'):''; }
+  ['crests','colors'].forEach(function(id){ document.getElementById(id).addEventListener('click',function(){ setTimeout(lab,0); }); }); lab(); })();
 </script>
 <script src="../shared/nav.js?v=tc11162148"></script>
 </body>

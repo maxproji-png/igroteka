@@ -236,3 +236,30 @@ body.has-sheet .tabbar,body.is-sheet .tabbar{transform:translateX(-50%) translat
 .fr-pick .sh-var{min-height:148px}
 .sheet > .btn--l,.sheet > .btn--max,.sheet > .btn--primary{position:sticky;bottom:0;z-index:2;margin-top:8px;box-shadow:0 -12px 16px var(--white)}
 .fr-ava img,.sh-me img,.pl .av img,.slot img,.mepet img,.rpet img,.mini,.orb img{object-fit:cover;object-position:center 40%}
+
+/* qa-fix-13 · нижние CTA экранов дуэли не уходят под таббар.
+   Во вкладке (iframe) таббар рисует верхнее окно поверх кадра, поэтому отступ считаем от его реальной высоты
+   + safe-area. В отдельном окне с .no-tabs таббара нет — остаётся обычный отступ. */
+:root{--tabbar-host:calc(var(--tabbar-pad-top) + var(--tabbar-row) + env(safe-area-inset-bottom, 0px))}
+html.is-tab-frame body.no-tabs .stage{padding-bottom:calc(var(--tabbar-host) + 16px)}
+.stage{min-height:100vh;min-height:100dvh;box-sizing:border-box}
+.stg-actions .btn--l{width:100%}
+@media (max-height:700px){
+ .stage{padding-top:12px}
+ .stg-title{margin-top:10px}.stg-title h1{font-size:23px}.stg-title p{font-size:13px;margin-top:4px}
+ .radar{width:228px;height:228px}.radar::before,.sweep{inset:24px}.mepet img{height:112px}.orb{width:44px;height:44px}.orb img{width:34px;height:38px}
+ .o1{left:0;top:44px}.o2{top:80px}.o3{left:28px;bottom:6px}
+ .s-search .stg-info{margin-top:10px}
+ .duo-pre{margin-top:14px;gap:10px}.slot,.duo-pre.big .slot{width:112px;height:128px;border-radius:26px;padding-bottom:10px}
+ .slot img,.duo-pre.big .slot img{height:88px;margin-bottom:4px}.slot .plus{width:52px;height:52px;font-size:30px;margin-bottom:12px}.typing{height:52px;margin-bottom:12px}
+ .linkcard{margin-top:14px;padding:8px 8px 8px 10px}.li{width:38px;height:38px}
+ .hint-s{margin-top:6px}.s-invite .stg-info,.s-wait .stg-info{margin-top:8px}
+ .steps{margin-top:10px;padding:10px 14px;gap:8px}.steps li{font-size:13px}.steps li>span{width:24px;height:24px}
+ .stg-actions{gap:8px;padding-top:12px}.stg-actions .btn--l{height:52px}.stg-actions .btn--m{height:44px}
+}
+@media (max-height:650px){
+ .stg-title p{max-width:280px}
+ .radar{width:206px;height:206px}.mepet img{height:100px}
+ .slot,.duo-pre.big .slot{width:104px;height:118px}.slot img,.duo-pre.big .slot img{height:80px}
+ .steps li:last-child{display:none}
+}

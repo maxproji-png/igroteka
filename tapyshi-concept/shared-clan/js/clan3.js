@@ -57,15 +57,30 @@ function escAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&q
 C.pct = function(){ return Math.round(C.goal.now / C.goal.goal * 100); };
 C.ava = function(p, cls, lvl){ var src=(window.TAP_petThumb?TAP_petThumb(p,lvl):H(p)); return '<span class="ava '+p+' '+(cls||'')+'"><img src="'+src+'" alt=""></span>'; };
 C.inviteRow = function(lbl){ return '<button class="inv-row tap" data-invite><span class="max-ic big">'+T.IC.max+'</span><span class="tx"><b>'+(lbl||'Позвать друга')+'</b><small>через MAX · +2500 '+(T.coin?T.coin('',16):'')+' за первый вход</small></span><span class="go">'+T.IC.chev+'</span></button>'; };
+/* qa-fix-14: участники — карточки как у «Друзей»: питомец-рендер, имя, роль-чип, вклад. */
+var PET_BG = { dragon:'var(--green-soft)', goose:'var(--blue-soft)', raccoon:'var(--violet-soft)', capybara:'var(--sun-soft)' };
+C.roleChip = function(m){
+  if(m.owner) return '<span class="m-role is-owner">'+T.IC.crown+'Глава</span>';
+  if(m.me) return '<span class="m-role is-me">Ты</span>';
+  return '<span class="m-role">Участник</span>';
+};
+C.memberCard = function(m, i, o, max){
+  o=o||{};
+  var share=(m.t/C.goal.now*100).toFixed(1).replace('.',',')+'%';
+  var bar = o.bars ? '<span class="m-bar"><i style="width:'+(m.t/max*100).toFixed(1)+'%;background:'+(i<5?C.colors[i]:C.rest)+'"></i></span>' : '';
+  return '<div class="m-card tap'+(m.me?' me':'')+'" data-profile="'+escAttr(m.n)+'"'+(m.me?' data-me="1"':'')+'>'+
+    '<span class="m-ava" style="--pb:'+(PET_BG[m.pet]||'var(--fill)')+'"><img src="'+(window.TAP_petThumb?TAP_petThumb(m.pet,m.lvl):H(m.pet))+'" alt="" loading="lazy">'+
+      (o.rank?'<span class="m-rk r'+(i+1)+'">'+(i+1)+'</span>':'')+(m.on?'<i class="m-on" aria-label="в сети"></i>':'')+'</span>'+
+    '<span class="m-tx"><b>'+(m.me?'Ты':m.n)+'</b><span class="m-meta">'+C.roleChip(m)+'<small>ур. '+m.lvl+(m.on?' · <em>в сети</em>':'')+'</small></span>'+bar+'</span>'+
+    '<span class="m-val"><b class="num">'+T.fmt(m.t)+'</b><small>'+(o.bars?share:'тапов')+'</small></span></div>';
+};
 C.members_ = function(o){ o=o||{}; var list=(o.all?C.allMembers():C.members).slice(); if(o.all) list.sort(function(a,b){return b.t-a.t;}); var max=list[0].t;
-  return '<div class="list">'+list.map(function(m,i){
-    var bar = o.bars ? '<span class="cbar"><i style="width:'+(m.t/max*100).toFixed(1)+'%;background:'+(i<5?C.colors[i]:C.rest)+'"></i></span>' : '';
-    var share = o.bars ? '<small class="share">'+(m.t/C.goal.now*100).toFixed(1).replace('.',',')+'%</small>' : '';
-    return '<div class="row tap'+(m.me?' me':'')+'" data-profile="'+escAttr(m.n)+'"'+(m.me?' data-me="1"':'')+'>'+(o.rank?'<span class="rk r'+(i+1)+'">'+(i+1)+'</span>':'')+
-      '<span class="avw">'+C.ava(m.pet,'sm',m.lvl)+(m.on?'<i class="on-dot"></i>':'')+'</span>'+
-      '<span class="nm"><b>'+(m.me?'Ты':m.n)+(m.owner?' '+T.IC.crown:'')+'</b>'+(o.bars?bar:'<small>ур. '+m.lvl+(m.owner?' · глава':'')+'</small>')+'</span>'+
-      '<span class="val"><b class="num">'+T.fmt(m.t)+'</b>'+(o.bars?share:'<small>тапов</small>')+'</span></div>';
-  }).join('')+((C.restN && !o.all)?'<button type="button" class="row more tap" data-members-all><span class="nm"><b>Ещё '+C.restN+' участников</b><small>'+T.fmt(C.restT)+' тапов вместе</small></span><span class="go">'+T.IC.chev+'</span></button>':'')+'</div>';
+  var more='';
+  if(C.restN && !o.all){
+    var ex=(C.extra||[]).slice(0,3).map(function(m){ return '<span class="m-mini" style="--pb:'+(PET_BG[m.pet]||'var(--fill)')+'"><img src="'+(window.TAP_petThumb?TAP_petThumb(m.pet,m.lvl):H(m.pet))+'" alt=""></span>'; }).join('');
+    more='<button type="button" class="m-card m-more tap" data-members-all><span class="m-stack">'+ex+'</span><span class="m-tx"><b>Ещё '+C.restN+' участников</b><small>'+T.fmt(C.restT)+' тапов вместе</small></span><span class="go">'+T.IC.chev+'</span></button>';
+  }
+  return '<div class="m-list">'+list.map(function(m,i){ return C.memberCard(m,i,o,max); }).join('')+more+'</div>';
 };
 var topEmb = function(c){
   if (window.ClanCreate && ClanCreate.embHTML) return ClanCreate.embHTML(c, 'sm');
@@ -86,9 +101,18 @@ C.chat_ = function(){
   }).join('')+'</div>';
 };
 
+/* qa-fix-14: шторка участников — над таб-баром (8 px), фиксированная высота, список прокручивается внутри */
+C.X = '<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+C.dock = function(html, cls){
+  var head='<div class="cx-grab"></div><button type="button" class="cx-x" data-cx-close aria-label="Закрыть">'+C.X+'</button>';
+  if(window.CX && CX.open){ CX.open(head+html, 'q14-sheet '+(cls||'')); return document.querySelector('.cx-sheet'); }
+  T.sheet(html); return document.querySelector('body > .sheet');
+};
 C.membersSheet = function(){
-  var html='<div class="clan-members-sheet"><h3>Участники</h3><p class="ci-sub">'+C.allMembers().length+' из '+((T.clan&&T.clan.cap)||45)+'</p>'+C.members_({all:1,rank:1})+'</div>';
-  T.sheet(html);
+  var n=C.allMembers().length, cap=(window.CX&&CX.clan&&CX.clan.cap)||(T.clan&&T.clan.cap)||45;
+  var html='<div class="q14-col"><div class="q14-head"><h3>Участники</h3><p>'+n+' из '+cap+' · по вкладу за неделю</p></div>'+
+    '<div class="q14-scroll">'+C.members_({all:1,rank:1})+'</div></div>';
+  C.dock(html,'m-sheet');
 };
 C.chatbar = function(){ return '<div class="chatbar"><input placeholder="Сообщение клану…"><button class="snd tap">'+T.IC.send.replace('M12 15 V3 M7 8 L12 3 L17 8"/><path d="M5 12 V19 Q5 21 7 21 H17 Q19 21 19 19 V12','M12 19 V5 M6 11 L12 5 L18 11')+'</button></div>'; };
 /* вкладки: [data-tab] кнопки внутри tabsEl, панель #panel. hash #top / #chat открывает сразу */
@@ -116,6 +140,48 @@ C.tabs = function(tabsEl, opts){ opts=opts||{}; var app=document.querySelector('
   tabsEl.addEventListener('click',function(e){ var b=e.target.closest('[data-tab]'); if(b) go(b.dataset.tab,true); });
   var h=(location.hash||'').slice(1); go(R[h]?h:'members',false);
   app.insertAdjacentHTML('beforeend',C.chatbar());
+};
+
+/* qa-fix-14: шторка «Позвать в клан» — игровая карточка клана + плашка ссылки. Вызывается из ../shared/invite.js. */
+var IV = {
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="3"/><path d="M15.5 5.5A2.5 2.5 0 0 0 13 3.5H7A3.5 3.5 0 0 0 3.5 7v6A2.5 2.5 0 0 0 5.5 15.5"/></svg>',
+  ppl: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 19.5Q3 13.5 9 13.5t6.5 6z"/><circle cx="17" cy="9" r="2.8"/><path d="M15.8 13.6Q21 13.4 21.5 19.5h-4.2q-.1-3.5-1.5-5.9z"/></svg>'
+};
+C.IV = IV;
+function coinPng(px){ return T.coinSrc ? '<img class="q14-coin" src="'+T.coinSrc(px)+'" width="'+px+'" height="'+px+'" alt="">' : ''; }
+C.coinPng = coinPng;
+function shortLink(u){ return String(u||'').replace(/^https?:\/\//,''); }
+C.inviteSheet = function(p, api){
+  var c=(window.CX&&CX.clan)||T.clan||{}, n=(window.TapInvite&&TapInvite.REWARD)||2500, max=api&&api.inMax&&api.inMax();
+  var badge=window.CX&&CX.badge ? CX.badge('iv-emb') : '<span class="emb clan-badge iv-emb"></span>';
+  var heads=window.CX&&CX.heads ? '<span class="cx-heads iv-heads">'+CX.heads(3)+'</span>' : '';
+  var html='<div class="q14-col iv">'+
+    '<div class="q14-head"><h3>Позвать в клан</h3><p><b>+'+T.fmt(n)+'</b> '+coinPng(16)+' тебе и другу, когда он впервые откроет игру по ссылке</p></div>'+
+    '<div class="iv-card">'+
+      '<div class="iv-top"><span class="iv-crest">'+badge+'<span class="iv-lvl num">'+(c.lvl||1)+'</span></span>'+
+        '<span class="iv-t"><b>'+escAttr(c.name||'Клан')+'</b><small>Клан в Тапышах</small></span></div>'+
+      '<div class="iv-chips"><span class="chip chip--s chip--sun"><b>ур. '+(c.lvl||1)+'</b></span>'+
+        '<span class="chip chip--s chip--violet">'+IV.ppl+(c.members||1)+' из '+(c.cap||45)+'</span>'+
+        '<span class="chip chip--s chip--green"><i class="iv-dot"></i>'+(c.online||1)+' в сети</span></div>'+
+      '<div class="iv-call">'+heads+'<span>Залетай к нам! Растим питомцев, вместе копим сундук и идём в топ недели.</span></div>'+
+    '</div>'+
+    '<div class="iv-link"><span class="iv-li">'+IV.link+'</span><span class="iv-lt"><small>Ссылка-приглашение</small><b>'+escAttr(shortLink(p.link))+'</b></span>'+
+      '<button type="button" class="iv-cp tap" data-iv="copy" aria-label="Скопировать ссылку">'+IV.copy+'</button></div>'+
+    '<div class="q14-fill"></div>'+
+    (max ? '<button type="button" class="btn btn--max btn--l iv-go tap" data-iv="max">'+T.IC.max+'Поделиться в MAX</button>'
+         : '<button type="button" class="btn btn--primary btn--l iv-go tap" data-iv="copy">'+IV.copy+'Скопировать ссылку</button>')+
+  '</div>';
+  var sh=C.dock(html,'iv-sheet');
+  if(!sh) return;
+  var page=sh.querySelector('.cx-page')||sh;
+  page.addEventListener('click',function(e){
+    var b=e.target.closest('[data-iv]'); if(!b) return;
+    if(b.getAttribute('data-iv')==='max' && api && api.shareMax){ api.shareMax(); return; }
+    if(api && api.copy) api.copy(p.full);
+    if(api && api.toast) api.toast('Ссылка скопирована');
+    if(window.CX && CX.close) CX.close();
+  });
 };
 
 /* Сундуки на шкале цели недели — каждый открывает свою шторку с наградами (демо). */

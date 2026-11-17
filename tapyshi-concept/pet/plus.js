@@ -2,7 +2,7 @@
 // Битмап «+N» рисуется один раз на canvas и показывается через <img>: слой-картинка,
 // движок не перерисовывает текст при scale. Двигается только transform/opacity (WAAPI).
 // Если тапы чаще 1 раз/70 мс, соседние склеиваются в «+2», «+3»… — на экране не больше ~11 чисел.
-import { RM, fmtGain, plusURL } from './core.js?v=tc11170615';
+import { RM, fmtGain, plusURL } from './core.js?v=tc11170633';
 import { pool, play } from './fxkit.js';
 export function plusFx(app, { life = 760, merge = 70, size = 12 } = {}) {
   const P = pool(app, size, () => { const i = new Image(); i.className = 'plus-img'; i.alt = ''; i.decoding = 'sync'; i.src = plusURL('+1', 1); return i; });

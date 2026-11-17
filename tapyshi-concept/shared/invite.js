@@ -88,6 +88,12 @@
       '.inv-preview{background:var(--bg,var(--fill));border-radius:20px;padding:12px 14px;margin:0 0 12px;font-size:14.5px;font-weight:800;line-height:1.35;color:var(--ink)}' +
       '.inv-preview .lnk{display:block;margin-top:8px;font-size:12.5px;font-weight:800;color:var(--violet);word-break:break-all}' +
       '.inv-sheet .row{display:flex;flex-direction:column;gap:8px}' +
+      '.inv-x{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:50%;border:0;padding:0;background:var(--fill);color:var(--ink-2);display:grid;place-items:center;cursor:pointer}' +
+      '.inv-sheet h3{padding-right:44px}' +
+      '.inv-link{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:10px 12px;border-radius:var(--r-md,20px);background:var(--white);box-shadow:var(--sh-sm),inset 0 0 0 2px var(--line)}' +
+      '.inv-li{width:40px;height:40px;flex:none;border-radius:14px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue)}.inv-li svg{width:20px;height:20px}' +
+      '.inv-lt{flex:1;min-width:0}.inv-lt small{display:block;font-size:12px;font-weight:800;color:var(--ink-2)}' +
+      '.inv-lt b{display:block;margin-top:1px;font-size:14.5px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.inv-toast{position:fixed;left:50%;bottom:calc(var(--tabbar-space,72px) + 16px);transform:translateX(-50%) translateY(10px);z-index:210;' +
       'padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--white);font-size:14px;font-weight:900;' +
       'box-shadow:var(--sh-md,0 8px 24px rgb(80 62 160 / .16));opacity:0;pointer-events:none;white-space:nowrap;max-width:calc(100% - 32px);' +
@@ -107,9 +113,23 @@
     document.querySelectorAll('.inv-scrim, .inv-sheet').forEach(function (n) { n.remove(); });
     if (!document.querySelector('body > .sheet.on')) document.body.classList.remove('is-sheet');
   }
+  function shareMax(p) {
+    var W = wa();
+    try {
+      if (W && W.shareMaxContent) return W.shareMaxContent({ text: p.text, link: p.link });
+      if (W && W.shareContent) return W.shareContent({ text: p.text, link: p.link });
+      if (W && W.openMaxLink) return W.openMaxLink('https://max.ru/:share?text=' + encodeURIComponent(p.full));
+    } catch (e) {}
+    copy(p.full); toast('Ссылка скопирована');
+  }
   function showSheet(p, opts) {
     opts = opts || {};
     injectCss();
+    /* qa-fix-14: приглашение в клан — игровая карточка клана в шторке клана (над таб-баром, высота фиксирована) */
+    if (opts.clan && w.T && T.c3 && T.c3.inviteSheet && w.CX && CX.open) {
+      T.c3.inviteSheet(p, { copy: copy, toast: toast, inMax: inMax, shareMax: function () { shareMax(p); } });
+      return;
+    }
     closeSheet();
     sheetOnDone = opts.onDone || null;
     var scrim = document.createElement('div');
@@ -120,13 +140,13 @@
     sh.setAttribute('aria-label', 'Позвать друга');
     sh.innerHTML =
       '<i class="grab"></i>' +
+      '<button type="button" class="inv-x" data-inv="close" aria-label="Закрыть"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>' +
       '<h3>Позвать друга</h3>' +
       '<p class="ex">Награда <b>+' + REWARD.toLocaleString('ru-RU') + ' тебе</b> и <b>+' + REWARD.toLocaleString('ru-RU') + ' другу</b>, когда он <b>впервые откроет игру</b> по твоей ссылке. Лимита нет. За саму отправку монеты не даём.</p>' +
-      '<div class="inv-preview">' + esc(p.text) + '<span class="lnk">' + esc(p.link) + '</span></div>' +
+      '<div class="inv-link"><span class="inv-li"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg></span>' +
+      '<span class="inv-lt"><small>Ссылка-приглашение</small><b>' + esc(p.link.replace(/^https?:\/\//, '')) + '</b></span></div>' +
       '<div class="row">' +
       '<button type="button" class="btn btn--primary btn--l" data-inv="copy">Скопировать ссылку</button>' +
-      '<button type="button" class="btn btn--secondary btn--m btn--wide" data-inv="demo">Друг зашёл по ссылке — демо</button>' +
-      '<button type="button" class="btn btn--ghost btn--m btn--wide" data-inv="close">Закрыть</button>' +
       '</div>';
     document.body.appendChild(scrim);
     document.body.appendChild(sh);
@@ -203,6 +223,6 @@
   w.TapInvite = {
     BOT: BOT, REF: REF, REWARD: REWARD, GAME_LINE: GAME_LINE,
     link: link, text: text, payload: payload, startapp: startapp,
-    share: share, showSheet: showSheet, toast: toast, demoFriendJoined: demoFriendJoined, copy: copy, inMax: inMax
+    share: share, showSheet: showSheet, shareMax: shareMax, toast: toast, demoFriendJoined: demoFriendJoined, copy: copy, inMax: inMax
   };
 })(window);
